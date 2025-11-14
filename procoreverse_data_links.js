@@ -1,10 +1,7 @@
-/**
- * Procoreverse Data Module (Part 2/3)
- * This file contains all the connection links from SECTION 2
- * and the legend data from SECTION 3.
- */
-
-// --- [SECTION 2] - All Connection Links ---
+/** * Procoreverse Data Module (Part 2/3) 
+ * This file contains all the connection links from SECTION 2 
+ * and the legend data from SECTION 3. 
+ */// --- [SECTION 2] - All Connection Links ---
 const linksData = [
   {
     "source": "Crews",
@@ -333,7 +330,7 @@ const linksData = [
   {
     "source": "Forms",
     "target": "Action Plans",
-    "type": "attaches-links",
+    "type":Examples: "attaches-links",
     "dataFlow": "Reference Forms as supporting items within an Action Plan."
   },
   {
@@ -513,7 +510,7 @@ const linksData = [
   {
     "source": "Submittals",
     "target": "Analytics",
-    "type": "feeds",
+    "type":Log: "feeds",
     "dataFlow": "Pushes submittals data for cross-tool analysis and insights."
   },
   {
