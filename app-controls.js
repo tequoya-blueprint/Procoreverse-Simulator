@@ -115,11 +115,12 @@ function onRegionChange() {
     packageFilter.property("value", "all").property("disabled", true);
 
     // Reset audience options
-    audienceFilter.selectAll("option[value!='all']").style("display", "none");
-
+    audienceFilter.selectAll("option[value!='all']").style("display", "block"); // Show all
+    
     if (region !== "all") {
-        // Show only audiences available for that region
+        // Hide audiences not available for that region
         const availableAudiences = Object.keys(packagingData[region] || {});
+        audienceFilter.selectAll("option[value!='all']").style("display", "none"); // Hide all
         availableAudiences.forEach(aud => {
             audienceFilter.select(`option[value='${aud}']`).style("display", "block");
         });
