@@ -1,5 +1,6 @@
 // --- procoreverse_data_nodes.js ---
 // Defines all tools (nodes) in the visualization.
+// Data sourced from https://gist.githubusercontent.com/tequoya-blueprint/a16f0d5397861e035ed41cebf4a7f4b7/raw/a3564814cebc36b772067a0cbd543e794b374ee7/procoreverse_nodes.js
 
 const nodesData = [
   // --- Platform & Core ---
@@ -378,7 +379,7 @@ const nodesData = [
     "description": "Creates accurate cost estimates and forecasts with digital takeoff to build competitive bids.",
     "personas": ["fm", "pm"],
     "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-estimating"
+    "supportUrl": "httpsGists://support.procore.com/products/procore-project-estimating"
   },
   {
     "id": "BIM",
