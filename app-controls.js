@@ -1,5 +1,6 @@
 // --- app-controls.js ---
 // Manages all interactions for the left control panel (filters, search, accordions).
+// VERSION 2: Fixes filter cascade logic.
 
 /**
  * Initializes all event listeners for the control panel.
@@ -8,25 +9,23 @@ function initializeControls() {
     // --- Accordion Setup ---
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {
-            toggleAccordion(header.parentElement);
+            toggleAccordion(header.parentElement); // from app-utils.js
         });
     });
 
-    // --- Filter Dropdowns ---
-    populatePersonaFilter();
-    d3.select("#region-filter").on("change", updatePackageFilters);
-    d3.select("#audience-filter").on("change", updatePackageFilters);
-    d3.select("#package-filter").on("change", () => updateGraph(true));
+    // --- Filter Dropdowns (NEW CASCADE LOGIC) ---
+    d3.select("#region-filter").on("change", onRegionChange);
+    d3.select("#audience-filter").on("change", onAudienceChange);
+    d3.select("#package-filter").on("change", onPackageChange);
     d3.select("#persona-filter").on("change", () => updateGraph(true));
     
     // --- Category Filters ---
-    populateCategoryFilters();
+    populateCategoryFilters(); // This will now dynamically create the list
     d3.select("#toggle-categories").on("click", toggleAllCategories);
 
     // --- Search ---
     d3.select("#search-input").on("input", handleSearchInput);
     d3.select("body").on("click", (e) => {
-        // Close search results when clicking outside
         if (!document.getElementById('search-container').contains(e.target)) {
             d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
         }
@@ -34,9 +33,9 @@ function initializeControls() {
 
     // --- Buttons ---
     d3.select("#reset-view").on("click", resetView);
-    d3.select("#help-button").on("click", startOnboarding);
-    d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
-    d3.select("#left-panel-expander").on("click", toggleLeftPanel);
+    d3.select("#help-button").on("click", startOnboarding); // from app-utils.js
+    d3.select("#left-panel-toggle").on("click", toggleLeftPanel); // from app-utils.js
+    d3.select("#left-panel-expander").on("click", toggleLeftPanel); // from app-utils.js
 }
 
 /**
@@ -53,7 +52,6 @@ function populatePersonaFilter() {
 
     // Sort and add to dropdown
     [...allPersonas].sort().forEach(p => {
-        // A simple map for more user-friendly names
         const personaMap = {
             "pm": "Project Manager (GC)",
             "super": "Superintendent (GC)",
@@ -70,10 +68,13 @@ function populatePersonaFilter() {
 }
 
 /**
- * Populates the category filter checkboxes.
+ * Populates the category filter checkboxes dynamically from app.categories.
  */
 function populateCategoryFilters() {
     const filtersContainer = d3.select("#category-filters");
+    filtersContainer.html(""); // Clear old filters
+    
+    // app.categories is now built dynamically in app-main.js
     Object.keys(app.categories).sort().forEach(cat => {
         const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
         
@@ -102,28 +103,56 @@ function toggleAllCategories() {
     updateGraph(true);
 }
 
-/**
- * Updates the package filter dropdown based on region and audience.
- */
-function updatePackageFilters() {
-    const region = d3.select("#region-filter").property("value");
-    const audience = d3.select("#audience-filter").property("value");
-    const packageFilter = d3.select("#package-filter");
-    
-    packageFilter.html(""); // Clear options
-    packageFilter.append("option").attr("value", "all").text("All Packages");
+// --- NEW FILTER CASCADE LOGIC ---
 
-    if (region !== 'all' && audience !== 'all' && packagingData[region] && packagingData[region][audience]) {
-        const packages = packagingData[region][audience];
-        Object.keys(packages).forEach(pkgName => {
-            packageFilter.append("option").attr("value", pkgName).text(pkgName);
-        });
-        packageFilter.property("disabled", false);
+function onRegionChange() {
+    const region = d3.select(this).property("value");
+    const audienceFilter = d3.select("#audience-filter");
+    const packageFilter = d3.select("#package-filter");
+
+    // Reset and disable Audience and Package
+    audienceFilter.property("value", "all").property("disabled", region === "all");
+    packageFilter.property("value", "all").property("disabled", true);
+
+    if (region === "all") {
+        audienceFilter.selectAll("option[value!='all']").style("display", "none");
     } else {
-        packageFilter.property("disabled", true);
+        // Show only audiences available for that region
+        const availableAudiences = Object.keys(packagingData[region] || {});
+        audienceFilter.selectAll("option[value!='all']").style("display", "none"); // Hide all
+        availableAudiences.forEach(aud => {
+            audienceFilter.select(`option[value='${aud}']`).style("display", "block");
+        });
     }
     
-    // Trigger a graph update as filters have changed
+    updateGraph(true); // Update graph based on region change
+}
+
+function onAudienceChange() {
+    const region = d3.select("#region-filter").property("value");
+    const audience = d3.select(this).property("value");
+    const packageFilter = d3.select("#package-filter");
+
+    packageFilter.html(""); // Clear old options
+    packageFilter.append("option").attr("value", "all").text("All Packages");
+    packageFilter.property("disabled", true);
+
+    if (region !== 'all' && audience !== 'all') {
+        const packages = packagingData[region]?.[audience];
+        if (packages) {
+            Object.keys(packages).forEach(pkgName => {
+                packageFilter.append("option").attr("value", pkgName).text(pkgName);
+            });
+            packageFilter.property("disabled", false);
+        }
+    }
+    
+    updateGraph(true); // Update graph based on audience change
+}
+
+function onPackageChange() {
+    // Just update the graph. The add-ons/services logic
+    // is handled inside getActiveFilters()
     updateGraph(true);
 }
 
@@ -146,6 +175,12 @@ function getActiveFilters() {
     const servicesContainer = d3.select("#package-services-container");
     const servicesList = d3.select("#package-services-list");
 
+    // Clear old add-ons and services
+    addOnsCheckboxes.html("");
+    servicesList.html("");
+    addOnsContainer.classed('hidden', true);
+    servicesContainer.classed('hidden', true);
+
     if (region !== 'all' && audience !== 'all' && pkg !== 'all') {
         const packageInfo = packagingData[region]?.[audience]?.[pkg];
         if (packageInfo) {
@@ -157,8 +192,6 @@ function getActiveFilters() {
                 .map(el => el.value);
             selectedAddOns.forEach(addOn => packageTools.add(addOn));
             
-            // Populate and show add-ons
-            addOnsCheckboxes.html("");
             if (packageInfo.addOns && packageInfo.addOns.length > 0) {
                 packageInfo.addOns.forEach(addOn => {
                     const label = addOnsCheckboxes.append("label").attr("class", "flex items-center cursor-pointer py-1");
@@ -170,12 +203,9 @@ function getActiveFilters() {
                     label.append("span").attr("class", "text-gray-700").text(addOn);
                 });
                 addOnsContainer.classed('hidden', false);
-            } else {
-                addOnsContainer.classed('hidden', true);
             }
 
             // Populate and show services
-            servicesList.html("");
             if (packageInfo.services && packageInfo.services.length > 0) {
                 packageInfo.services.forEach(service => {
                     servicesList.append("div")
@@ -183,14 +213,8 @@ function getActiveFilters() {
                         .html(`<i class="fas fa-check-circle text-green-500 mr-2"></i> ${service}`);
                 });
                 servicesContainer.classed('hidden', false);
-            } else {
-                servicesContainer.classed('hidden', true);
             }
-
         }
-    } else {
-        addOnsContainer.classed('hidden', true);
-        servicesContainer.classed('hidden', true);
     }
 
     return {
@@ -209,7 +233,7 @@ function resetView() {
     
     // Reset filters
     d3.select("#region-filter").property('value', 'all');
-    d3.select("#audience-filter").property('value', 'all');
+    d3.select("#audience-filter").property('value', 'all').property("disabled", true);
     d3.select("#persona-filter").property('value', 'all');
     d3.select("#package-filter").property('value', 'all').property('disabled', true);
     d3.selectAll("#category-filters input").property("checked", true);
@@ -219,7 +243,6 @@ function resetView() {
     d3.select("#add-ons-container").classed('hidden', true);
     d3.select("#package-services-container").classed('hidden', true);
 
-    // Update graph and reset view
     updateGraph(false);
     resetZoom(); // From app-d3-helpers.js
 }
@@ -267,16 +290,13 @@ function selectNodeFromSearch(d) {
         resetView();
     }
     
-    // Wait for graph update if resetView was called
     setTimeout(() => {
         const nodeData = app.simulation.nodes().find(n => n.id === d.id);
         if (nodeData) {
-            // Manually trigger click event
             nodeClicked(new Event('click'), nodeData);
         }
-    }, isVisible ? 0 : 600); // Delay if graph needs update
+    }, isVisible ? 0 : 600); 
 
-    // Clear search
     d3.select("#search-input").property("value", "");
     d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
 }
