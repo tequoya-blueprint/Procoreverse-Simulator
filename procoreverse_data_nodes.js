@@ -3,467 +3,714 @@
 // Data sourced from https://gist.githubusercontent.com/tequoya-blueprint/a16f0d5397861e035ed41cebf4a7f4b7/raw/a3564814cebc36b772067a0cbd543e794b374ee7/procoreverse_nodes.js
 
 const nodesData = [
-  // --- Platform & Core ---
+
+  // --- [Group: External Integrations] ---
   {
-    "id": "Documents",
-    "group": "Platform & Core",
-    "level": "Project",
-    "description": "Centralized repository for all project documents, including plans, specs, and photos.",
-    "personas": ["pm", "super", "fm", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-project-documents"
-  },
-  {
-    "id": "Drawings",
-    "group": "Platform & Core",
-    "level": "Project",
-    "description": "Ensures the team works from the latest plans with version control, markups, and linking.",
-    "personas": ["pm", "super", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-project-drawings"
-  },
-  {
-    "id": "Specifications",
-    "group": "Platform & Core",
-    "level": "Project",
-    "description": "Stores and manages the project's technical specifications with versioning and search.",
-    "personas": ["pm", "super", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-specifications"
-  },
-  {
-    "id": "Directory",
-    "group": "Platform & Core",
-    "level": "Company",
-    "description": "Central contact list and permissions management for all users and companies.",
-    "personas": ["pm", "fm", "super", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-company-directory"
-  },
-  {
-    "id": "Admin",
-    "group": "Platform & Core",
-    "level": "Company",
-    "description": "Manages company-level settings, tool configurations, templates, and permissions.",
-    "personas": ["admin"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-company-admin"
-  },
-  {
-    "id": "Forms",
-    "group": "Platform & Core",
-    "level": "Project",
-    "description": "Digital custom project forms (checklists, reports) for field and office use.",
-    "personas": ["super", "pm", "sub"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-forms"
-  },
-  {
-    "id": "Photos",
-    "group": "Platform & Core",
-    "level": "Project",
-    "description": "Central repository for all jobsite photos, linkable to other tools and drawings.",
-    "personas": ["pm", "super", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-photos"
-  },
-  {
-    "id": "Workflows",
-    "group": "Platform & Core",
-    "level": "Company",
-    "description": "Custom approval workflows for various tools (e.g., Submittals, Invoicing, RFIs).",
-    "personas": ["pm", "fm", "admin"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-company-workflows"
-  },
-  {
-    "id": "Custom Tools",
-    "group": "Platform & Core",
-    "level": "Project",
-    "description": "Build custom tools and applications within the Procore platform to meet unique needs.",
-    "personas": ["admin", "pm"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-custom-tools"
-  },
-  {
-    "id": "Procore Sync",
-    "group": "Platform & Core",
-    "level": "Company",
-    "description": "Desktop application for syncing files between your computer and Procore Documents.",
-    "personas": ["pm", "super", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-procore-sync"
-  },
-  {
-    "id": "My-Tasks",
-    "group": "Platform & Core",
-    "level": "Project",
-    "description": "A personal dashboard aggregating all assigned tasks (e.g., from Observations, Punch) for a user.",
-    "personas": ["pm", "super", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-project-tasks"
+    "id": "ERP Systems",
+    "group": "External Integrations",
+    "level": "company",
+    "description": "Connection to external ERP or accounting system (e.G., Sage, Viewpoint).",
+    "personas": [
+      "fm"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": ""
   },
 
-  // --- Project Management ---
-  {
-    "id": "Daily Log",
-    "group": "Project Management",
-    "level": "Project",
-    "description": "Daily diary for the jobsite: manpower, weather, notes, equipment, and incidents.",
-    "personas": ["super", "pm", "sub"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "https://support.procore.com/products/procore-project-daily-log"
-  },
-  {
-    "id": "RFIs",
-    "group": "Project Management",
-    "level": "Project",
-    "description": "Manages Requests for Information to clarify plans and resolve issues.",
-    "personas": ["pm", "super", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-rfis"
-  },
-  {
-    "id": "Submittals",
-    "group": "Project Management",
-    "level": "Project",
-    "description": "Manages the review and approval process for project submittals (e.g., shop drawings, materials).",
-    "personas": ["pm", "super", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-project-submittals"
-  },
-  {
-    "id": "Meetings",
-    "group": "Project Management",
-    "level": "Project",
-    "description": "Organizes meetings, tracks attendance, assigns action items, and distributes minutes.",
-    "personas": ["pm", "super", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-project-meetings"
-  },
-  {
-    "id": "Schedule",
-    "group": "Project Management",
-    "level": "Project",
-    "description": "Manages the project schedule, tracks progress, and links tasks to other items.",
-    "personas": ["pm", "super", "owner", "sub"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-schedule"
-  },
-  {
-    "id": "Correspondence",
-    "group": "Project Management",
-    "level": "Project",
-    "description": "Central hub for managing all formal project communications and tracking threads.",
-    "personas": ["pm", "super", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-correspondence"
-  },
-  {
-    "id": "Transmittals",
-    "group": "Project Management",
-    "level": "Project",
-    "description": "Create and track transmittals for sending documents to project stakeholders.",
-    "personas": ["pm", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-transmittals"
-  },
-  {
-    "id": "Prime Contract",
-    "group": "Financial Management",
-    "level": "Project",
-    "description": "Manages the primary contract with the Owner, including SOV, changes, and invoicing.",
-    "personas": ["fm", "pm", "owner"],
-    "audience": ["GC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-prime-contract"
-  },
+  // --- [Group: Financial Management] ---
   {
     "id": "Budget",
     "group": "Financial Management",
-    "level": "Project",
-    "description": "Real-time view of project financial health, tracking budgets, costs, and forecasts.",
-    "personas": ["fm", "pm", "owner"],
-    "audience": ["GC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-budget"
-  },
-  {
-    "id": "Commitments",
-    "group": "Financial Management",
-    "level": "Project",
-    "description": "Manages subcontracts and purchase orders, establishing committed costs for the project.",
-    "personas": ["fm", "pm", "sub"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-commitments"
+    "level": "project",
+    "description": "Real-time view of project financial health, tracking data like budgets, costs, and forecasts.",
+    "personas": [
+      "fm",
+      "pm",
+      "owner"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/budget-project/"
   },
   {
     "id": "Change Events",
     "group": "Financial Management",
-    "level": "Project",
-    "description": "Captures and manages any event that could impact cost or schedule, forming the basis for change orders.",
-    "personas": ["pm", "fm", "super", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-change-events"
+    "level": "project",
+    "description": "Captures any event that could impact cost or schedule.",
+    "personas": [
+      "pm",
+      "fm",
+      "super",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/change-events-project/"
   },
   {
     "id": "Change Orders",
     "group": "Financial Management",
-    "level": "Project",
-    "description": "Manages the entire change order process, including PCOs, CCOs, and OCOs.",
-    "personas": ["fm", "pm", "owner", "sub"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-change-orders"
+    "level": "project",
+    "description": "Manages the entire change order process (PCOs, CCOs).",
+    "personas": [
+      "fm",
+      "pm",
+      "owner",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/change-orders-project/"
   },
   {
-    "id": "Invoicing",
+    "id": "Commitments",
     "group": "Financial Management",
-    "level": "Project",
-    "description": "Manages billing upstream (to owners) and downstream (from subcontractors).",
-    "personas": ["fm", "owner", "pm", "sub"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-invoicing"
+    "level": "project",
+    "description": "Manages subcontracts and purchase orders, establishing committed costs for the project.",
+    "personas": [
+      "fm",
+      "pm",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/commitments-project/"
   },
   {
     "id": "Direct Costs",
     "group": "Financial Management",
-    "level": "Project",
+    "level": "company",
     "description": "Tracks project costs (e.g., labor, materials) not associated with a commitment.",
-    "personas": ["fm", "pm"],
-    "audience": ["GC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-direct-costs"
+    "personas": [
+      "fm",
+      "pm"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/direct-costs-company/ | https://v2.support.procore.com/product-manuals/directory-project/"
+  },
+  {
+    "id": "Invoicing",
+    "group": "Financial Management",
+    "level": "project",
+    "description": "Manages billing upstream (to owners) and downstream (from subcontractors).",
+    "personas": [
+      "fm",
+      "owner",
+      "pm",
+      "sub"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/allen-harrison-company",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/invoicing-project/"
+  },
+  {
+    "id": "Prime Contracts",
+    "group": "Financial Management",
+    "level": "project",
+    "description": "Manages the primary contract and funding sources.",
+    "personas": [
+      "fm",
+      "pm",
+      "owner"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/prime-contracts-project/"
   },
   {
     "id": "Procore Pay",
     "group": "Financial Management",
-    "level": "Company",
-    "description": "Automates payments to subcontractors and vendors, and manages lien waivers.",
-    "personas": ["fm", "sub"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "https://support.procore.com/products/procore-procore-pay"
+    "level": "company",
+    "description": "Centralizes lien waivers, payment requirements, payment holds, and invoice payments for payors, and allows payees to securely link their bank accounts to get paid.",
+    "personas": [
+      "pm",
+      "fm",
+      "owner"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/payments-company/"
+  },
+  {
+    "id": "Project Status Snapshots",
+    "group": "Financial Management",
+    "level": "project",
+    "description": "Simplifies how your team monitors and reviews project status snapshots of budgets for all your company's projects.",
+    "personas": [
+      "pm",
+      "fm",
+      "owner"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/project-status-snapshots/"
   },
 
-  // --- Quality & Safety ---
+  // --- [Group: Helix] ---
   {
-    "id": "Inspections",
-    "group": "Quality & Safety",
-    "level": "Project",
-    "description": "Creates and manages quality and safety inspection checklists and templates.",
-    "personas": ["super", "pm", "sub"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-inspections"
+    "id": "Analytics",
+    "group": "Helix",
+    "level": "company",
+    "description": "Provides BI and predictive insights via interactive dashboards.",
+    "personas": [
+      "pm",
+      "fm",
+      "owner"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/commodore-builders-analytics",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/analytics-company/"
   },
   {
-    "id": "Observations",
-    "group": "Quality & Safety",
-    "level": "Project",
-    "description": "Documents non-conforming work, safety issues, or other site observations.",
-    "personas": ["super", "pm", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-observations"
-  },
-  {
-    "id": "Punch List",
-    "group": "Quality & Safety",
-    "level": "Project",
-    "description": "Manages the punch list (snag list) process to track deficient items through to resolution.",
-    "personas": ["super", "pm", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-punch-list"
-  },
-  {
-    "id": "Incidents",
-    "group": "Quality & Safety",
-    "level": "Project",
-    "description": "Logs and tracks all project incidents, such as injuries, accidents, and safety violations.",
-    "personas": ["super", "pm"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-incidents"
-  },
-  {
-    "id": "Action Plans",
-    "group": "Quality & Safety",
-    "level": "Project",
-    "description": "Creates multi-step plans for quality and safety processes, referencing other Procore items.",
-    "personas": ["pm", "super"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-action-plans"
+    "id": "Insights",
+    "group": "Helix",
+    "level": "project",
+    "description": "Help you spot risks early, understand performance trends, and take action;  bringing the most critical patterns to the surface without guesswork or manual digging.",
+    "personas": [
+      "pm",
+      "fm",
+      "owner"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/insights/"
   },
 
-  // --- Workforce Management ---
+  // --- [Group: Platform & Core] ---
   {
-    "id": "Timesheets",
-    "group": "Workforce Management",
-    "level": "Project",
-    "description": "Collects worker hours on-site, providing accurate labor data for payroll and project costing.",
-    "personas": ["fm", "super", "sub"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-timesheets"
+    "id": "Models",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "Provides access to 3D BIM models for coordination and reference.",
+    "personas": [
+      "pm",
+      "super",
+      "design"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/bailey-harris-construction",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/models-project/"
   },
   {
-    "id": "MyTime",
-    "group": "Workforce Management",
-    "level": "Project",
-    "description": "Mobile tool for individual workers to clock in/out, syncing with Timesheets.",
-    "personas": ["super", "sub"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "https://support.procore.com/products/procore-my-time"
+    "id": "Documents",
+    "group": "Platform & Core",
+    "level": "company",
+    "description": "Centralized repository for all project documents.",
+    "personas": [
+      "pm",
+      "super",
+      "fm",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/document-management-project/ | https://v2.support.procore.com/product-manuals/documents-company/ | https://v2.support.procore.com/product-manuals/documents-project/"
   },
   {
-    "id": "Crews",
-    "group": "Workforce Management",
-    "level": "Project",
-    "description": "Organize labor resources into crews for easier management and time entry.",
-    "personas": ["super", "sub"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-crews"
+    "id": "Coordination Issues",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "Identifies, tracks, and resolves clashes in 3D models.",
+    "personas": [
+      "pm",
+      "super",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/coordination-issues-project/"
   },
   {
-    "id": "T&M Tickets",
-    "group": "Workforce Management",
-    "level": "Project",
-    "description": "Tracks out-of-scope work, capturing labor, equipment, and material costs for T&M billing.",
-    "personas": ["pm", "super", "fm", "sub"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-tm-tickets"
+    "id": "Daily Log",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "Daily diary for the jobsite: manpower, weather, notes.",
+    "personas": [
+      "super",
+      "pm",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/daily-log-project/"
   },
   {
-    "id": "Workforce Planning",
-    "group": "Workforce Management",
-    "level": "Company",
-    "description": "Company-level tool to schedule and dispatch workforce and equipment across projects.",
-    "personas": ["pm", "super", "admin"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "httpss://support.procore.com/products/procore-company-workforce-planning"
+    "id": "Directory",
+    "group": "Platform & Core",
+    "level": "company",
+    "description": "Central contact list and permissions management.",
+    "personas": [
+      "pm",
+      "fm",
+      "super",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/directory-company/ | https://v2.support.procore.com/product-manuals/directory-project/"
   },
   {
-    "id": "Equipment",
-    "group": "Workforce Management",
-    "level": "Project",
-    "description": "Tracks owned and rented equipment usage, costs, and maintenance.",
-    "personas": ["super", "fm"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-equipment"
+    "id": "Forms",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "Digital custom project forms (checklists, reports).",
+    "personas": [
+      "super",
+      "pm",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/forms-project/"
   },
   {
-    "id": "Field Productivity",
-    "group": "Workforce Management",
-    "level": "Project",
-    "description": "Compares budgeted production quantities and hours with actuals from Timesheets to track labor performance.",
-    "personas": ["pm", "super"],
-    "audience": ["GC", "SC"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-field-productivity"
+    "id": "Maps",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "Enhances project execution by visually showing your Procore items on a map, facilitating better planning, execution, and monitoring of construction projects.",
+    "personas": [
+      "pm",
+      "super",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/procore-maps/"
   },
-  
-  // --- Preconstruction ---
   {
-    "id": "Bid Management",
+    "id": "Photos",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "Central repository for all jobsite photos.",
+    "personas": [
+      "pm",
+      "super",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/photos-project/"
+  },
+  {
+    "id": "Projects",
+    "group": "Platform & Core",
+    "level": "company",
+    "description": "The central hub for managing all projects.",
+    "personas": [
+      "pm",
+      "fm",
+      "owner"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/portfolio-company/"
+  },
+  {
+    "id": "Tasks",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "A llows you to track and manage action items throughout the lifespan of the project.",
+    "personas": [],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/tasks-project/"
+  },
+  {
+    "id": "Conversations",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "P rovides a convenient solution for messaging across projects within Procore's web and mobile applications.",
+    "personas": [],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/conversations-company/"
+  },
+  {
+    "id": "Assist",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "Procore's AI-driven assistant; it responds to questions asked in a conversational style, like the kind of question you might ask a coworker",
+    "personas": [],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/assist-project/"
+  },
+  {
+    "id": "Training Center",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "TBD",
+    "personas": [],
+    "caseStudyUrl": "",
+    "supportDocUrl": ""
+  },
+  {
+    "id": "Premier Support Bronze",
+    "group": "Platform & Core",
+    "level": "project",
+    "description": "TBD",
+    "personas": [],
+    "caseStudyUrl": "",
+    "supportDocUrl": ""
+  },
+
+  // --- [Group: Preconstruction] ---
+  {
+    "id": "Bid Board",
     "group": "Preconstruction",
-    "level": "Company",
+    "level": "company",
+    "description": "Allows you to easily view and manage all bids for your company.",
+    "personas": [
+      "pm",
+      "estimator",
+      "fm"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/bid-board-company/"
+  },
+  {
+    "id": "Bidding",
+    "group": "Preconstruction",
+    "level": "project",
     "description": "Streamlines sending bid packages, collecting bids, and awarding contracts.",
-    "personas": ["fm", "pm", "sub"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-company-bid-management"
-  },
-  {
-    "id": "Prequalification",
-    "group": "Preconstruction",
-    "level": "Company",
-    "description": "Assesses and manages the qualifications and risk of subcontractors and vendors.",
-    "personas": ["pm", "fm"],
-    "audience": ["GC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-company-prequalification"
+    "personas": [
+      "fm",
+      "pm",
+      "sub"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/gilbane",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/bidding-project/"
   },
   {
     "id": "Estimating",
     "group": "Preconstruction",
-    "level": "Project",
-    "description": "Creates accurate cost estimates and forecasts with digital takeoff to build competitive bids.",
-    "personas": ["fm", "pm"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpsGists://support.procore.com/products/procore-project-estimating"
+    "level": "project",
+    "description": "Creates accurate cost estimates and forecasts to build competitive bids. Sub-features include digital takeoff and proposal generation.",
+    "personas": [
+      "fm",
+      "pm",
+      "estimator"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/gardner-builders",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/estimating-project/ | https://v2.support.procore.com/product-manuals/cost-catalog-company/"
   },
   {
-    "id": "BIM",
+    "id": "Prequalifications",
     "group": "Preconstruction",
-    "level": "Project",
-    "description": "Provides access to 3D BIM models in the field for coordination and issue tracking.",
-    "personas": ["pm", "super", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-bim"
+    "level": "company",
+    "description": "Assesses and manages the qualifications and risk of subcontractors.",
+    "personas": [
+      "pm",
+      "fm"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/prequalifications-company/"
   },
   {
-    "id": "Coordination Issues",
+    "id": "Procore Construction Network",
     "group": "Preconstruction",
-    "level": "Project",
-    "description": "Identifies, tracks, and resolves clashes and issues in 3D models.",
-    "personas": ["pm", "super", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-project-coordination-issues"
+    "level": "company",
+    "description": "Procore Construction Network: directory to find contractors and partners.",
+    "personas": [
+      "pm",
+      "fm",
+      "estimator",
+      "owner"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/peridot-mechanical",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/procore-construction-network/"
   },
 
-  // --- Construction Intelligence ---
+  // --- [Group: Project Execution] ---
   {
-    "id": "Analytics",
-    "group": "Construction Intelligence",
-    "level": "Company",
-    "description": "Provides BI and predictive insights via interactive dashboards across all Procore tools.",
-    "personas": ["pm", "fm", "owner", "admin"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-company-analytics"
+    "id": "Correspondence",
+    "group": "Project Execution",
+    "level": "project",
+    "description": "Central hub for managing all project communications.",
+    "personas": [
+      "pm",
+      "super",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/correspondence-project/"
   },
   {
-    "id": "Reporting",
-    "group": "Construction Intelligence",
-    "level": "Company",
-    "description": "Create and schedule custom reports across multiple projects and tools.",
-    "personas": ["pm", "fm", "owner", "admin"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-company-reporting"
+    "id": "Drawings",
+    "group": "Project Execution",
+    "level": "project",
+    "description": "Ensures the team works from the latest plans with version control and markups.",
+    "personas": [
+      "pm",
+      "super",
+      "owner",
+      "sub",
+      "design",
+      "fm"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/asturian-group",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/drawings-project/"
   },
   {
-    "id": "Portfolio",
-    "group": "Construction Intelligence",
-    "level": "Company",
-    "description": "The central hub for managing and reporting on all projects in your portfolio.",
-    "personas": ["pm", "fm", "owner", "admin"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "httpss://support.procore.com/products/procore-company-portfolio"
+    "id": "Emails",
+    "group": "Project Execution",
+    "level": "project",
+    "description": "Control your communications and manage all project-related emails using one centralized email client.",
+    "personas": [
+      "pm",
+      "super",
+      "owner",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/emails-project/"
   },
   {
-    "id": "Home",
-    "group": "Construction Intelligence",
-    "level": "Company",
-    "description": "A centralized dashboard for users to access key information and tasks across all their projects.",
-    "personas": ["pm", "fm",".super", "owner", "sub", "design"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-home"
+    "id": "Instructions",
+    "group": "Project Execution",
+    "level": "project",
+    "description": "Provides team members on a construction project with the ability to capture and record all types of instructions Available in Australia, New Zealand, and Canada.",
+    "personas": [
+      "pm",
+      "fm",
+      "owner",
+      "super"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/instructions-project/"
+  },
+  {
+    "id": "Meetings",
+    "group": "Project Execution",
+    "level": "project",
+    "description": "Organizes meetings, tracks attendance, assigns action items.",
+    "personas": [
+      "pm",
+      "super",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/meetings-project/"
+  },
+  {
+    "id": "RFIs",
+    "group": "Project Execution",
+    "level": "project",
+    "description": "Manages Requests for Information to clarify plans.",
+    "personas": [
+      "pm",
+      "super",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https::/v2.support.procore.com/product-manuals/rfi-project/"
+  },
+  {
+    "id": "Schedule",
+    "group": "Project Execution",
+    "level": "company",
+    "description": "Manages the project schedule and track progress.",
+    "personas": [
+      "pm",
+      "super",
+      "owner",
+      "sub"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/cyberco",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/schedule-company/ | https://v2.support.procore.com/product-manuals/schedule-project/"
+  },
+  {
+    "id": "Specifications",
+    "group": "Project Execution",
+    "level": "project",
+    "description": "Stores and manages the project's technical specifications.",
+    "personas": [
+      "pm",
+      "super",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/specifications-project/"
+  },
+  {
+    "id": "Submittals",
+    "group": "Project Execution",
+    "level": "project",
+    "description": "Manages the review and approval process for project submittals.",
+    "personas": [
+      "pm",
+      "super",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/submittals-project/"
+  },
+  {
+    "id": "Transmittals",
+    "group": "Project Execution",
+    "level": "project",
+    "description": "Keep documented records of any project-related correspondence with Procore's Transmittals tool.",
+    "personas": [
+      "pm",
+      "fm",
+      "owner"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/transmittals-project/"
   },
 
-  // --- External Integrations ---
+  // --- [Group: Quality & Safety] ---
   {
-    "id": "ERP Integrations",
-    "group": "External Integrations",
-    "level": "Company",
-    "description": "Connection to external ERP or accounting systems (e.g., Sage, Viewpoint, QuickBooks).",
-    "personas": ["fm", "admin"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://support.procore.com/products/procore-erp-integrations"
+    "id": "Action Plans",
+    "group": "Quality & Safety",
+    "level": "project",
+    "description": "Creates multi-step plans for standardizing processes, referencing other Procore items.",
+    "personas": [
+      "pm",
+      "super"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/action-plans-project/"
   },
   {
-    "id": "App Marketplace",
-    "group": "External Integrations",
-    "level": "Company",
-    "description": "Hub for third-party applications that integrate with Procore, enhancing platform capabilities.",
-    "personas": ["pm", "fm", "super", "admin"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https://procore.com/app-marketplace"
+    "id": "Incidents",
+    "group": "Quality & Safety",
+    "level": "project",
+    "description": "Logs and tracks all project incidents and safety violations.",
+    "personas": [
+      "super",
+      "pm"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/incidents-project/"
   },
   {
-    "id": "Scheduling Integration",
-    "group": "External Integrations",
-    "level": "Project",
-    "description": "Integration with external scheduling tools (e.g., P6, Microsoft Project, Asta).",
-    "personas": ["pm"],
-    "audience": ["GC", "SC", "O"],
-    "supportUrl": "https:"
+    "id": "Inspections",
+    "group": "Quality & Safety",
+    "level": "company",
+    "description": "Creates quality and safety inspection checklists.",
+    "personas": [
+      "super",
+      "pm",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/inspections-company/ | https://v2.support.procore.com/product-manuals/inspections-project/"
+  },
+  {
+    "id": "Observations",
+    "group": "Quality & Safety",
+    "level": "project",
+    "description": "Documents non-conforming work or safety issues.",
+    "personas": [
+      "super",
+      "pm",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/observations-project/"
+  },
+  {
+    "id": "Punch List",
+    "group": "Quality & Safety",
+    "level": "project",
+    "description": "Manages the punch list process to track deficient items.",
+    "personas": [
+      "super",
+      "pm",
+      "owner",
+      "sub",
+      "design"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/ameresco",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/punch-list-project/"
+  },
+
+  // --- [Group: Resource Management] ---
+  {
+    "id": "Crews",
+    "group": "Resource Management",
+    "level": "project",
+    "description": "Organize labor resources into crews for easier management and assignment.",
+    "personas": [
+      "super",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/crews-project/"
+  },
+  {
+    "id": "Equipment",
+    "group": "Resource Management",
+    "level": "company",
+    "description": "Tracks owned and rented equipment usage and costs.",
+    "personas": [
+      "super",
+      "fm"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/equipment-company/ | https://v2.support.procore.com/product-manuals/equipment-project/"
+  },
+  {
+    "id": "MyTime",
+    "group": "Resource Management",
+    "level": "project",
+    "description": "Mobile tool for individual workers to clock in/out.",
+    "personas": [
+      "super",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/my-time-ios/"
+  },
+  {
+    "id": "Resource Planning",
+    "group": "Resource Management",
+    "level": "company",
+    "description": "Schedule and dispatch resources and equipment across projects.",
+    "personas": [
+      "pm",
+      "super"
+    ],
+    "caseStudyUrl": "https://www.procore.com/casestudies/prime-build-Resource-planning",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/resource-planning-company/"
+  },
+  {
+    "id": "Resource Tracking",
+    "group": "Resource Management",
+    "level": "company",
+    "description": "Allows you to  track and manage your production quantities.",
+    "personas": [
+      "pm",
+      "fm",
+      "super"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timesheets-company/ | https://v2.support.procore.com/product-manuals/timesheets-project/ |"
+  },
+  {
+    "id": "T&M Tickets",
+    "group": "Resource Management",
+    "level": "project",
+    "description": "Tracks out-of-scope work, capturing labor, equipment, and material costs.",
+    "personas": [
+      "pm",
+      "super",
+      "fm",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/tm-tickets-project/"
+  },
+  {
+    "id": "Timesheets",
+    "group": "Resource Management",
+    "level": "company",
+    "description": "Collects worker hours on-site, providing accurate labor data (e.g., labor hours, cost codes) for payroll and project costing.",
+    "personas": [
+      "fm",
+      "super",
+      "sub"
+    ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timecard-company/ | https://v2.support.procore.com/product-manuals/timesheets-company/ | https://v2.support.procore.com/product-manuals/timesheets-project/"
   }
 ];
