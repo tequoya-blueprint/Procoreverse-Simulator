@@ -1,9 +1,9 @@
 /** * Procoreverse Data Module (Part 2/3)
  * This file contains all the connection links from SECTION 2
  * and the legend data from SECTION 3.
- * (This block is now corrected for typos)
+ * (This block is now corrected for all typos)
  */
- 
+
 // --- [SECTION 2] - All Connection Links ---
 const linksData = [
   {
@@ -508,4 +508,202 @@ const linksData = [
     "source": "RFIs",
     "target": "Analytics",
     "type": "feeds",
-    "
+    "dataFlow": "Pushes rfi data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Submittals",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes submittals data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Daily Log",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes daily log data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Incidents",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes incidents data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Observations",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes observations data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Inspections",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes inspections data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Punch List",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes punch list data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Budget",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes budget data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Change Orders",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes change orders data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Timesheets",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes timesheets data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Timesheets",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes Timesheets data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Commitments",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes commitments data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Direct Costs",
+    "target": "Analytics",
+    "type": "feeds",
+    "dataFlow": "Pushes direct costs data for cross-tool analysis and insights."
+  },
+  {
+    "source": "Emails",
+    "target": "Change Events",
+    "type": "creates",
+    "dataFlow": "Create change event from email correspondence for"
+  },
+  {
+    "source": "Estimating",
+    "target": "Change Events",
+    "type": "creates",
+    "dataFlow": "Link change order estimate to an existing change event for tracking."
+  },
+  {
+    "source": "Budget",
+    "target": "Change Events",
+    "type": "creates",
+    "dataFlow": "Creates change events from budget line item"
+  },
+  {
+    "source": "Drawings",
+    "target": "Punch List",
+    "type": "creates",
+    "dataFlow": "Create punch list item from drawings."
+  },
+  {
+    "source": "Drawings",
+    "target": "Coordination Issues",
+    "type": "creates",
+    "dataFlow": "Create coordination issue from drawings."
+  },
+  {
+    "source": "Action Plans",
+    "target": "Correspondence",
+    "type": "creates",
+    "dataFlow": "Creates correspondence from action plan."
+  },
+  {
+    "source": "Action Plans",
+    "target": "Forms",
+    "type": "creates",
+    "dataFlow": "Create form from action plan."
+  },
+  {
+    "source": "Action Plans",
+    "target": "Meetings",
+    "type": "creates",
+    "dataFlow": "Create a meeting from action plan."
+  },
+  {
+    "source": "Action Plans",
+    "target": "Observations",
+    "type": "creates",
+    "dataFlow": "Create observation from action plan."
+  },
+  {
+    "source": "Action Plans",
+    "target": "Photos",
+    "type": "attaches-links",
+    "dataFlow": "Create Photos from action plan."
+  },
+  {
+    "source": "Invoicing",
+    "target": "Procore Pay",
+    "type": "creates",
+    "dataFlow": "Invoice can be queued for payment disbursement using Procore Pay"
+  },
+  {
+    "source": "Procore Pay",
+    "target": "ERP Systems",
+    "type": "syncs",
+    "dataFlow": "Payment status is synced in the ERP system."
+  },
+  {
+  "source": "Bidding",
+  "target": "Drawings",
+  "type": "pulls-data-from",
+  "dataFlow": "Pulls drawings to include in Bid Packages."
+}
+];
+
+// --- [SECTION 3] - Connection Type Legend ---
+const legendData = [
+  {
+    "type_id": "creates",
+    "label": "Creates",
+    "description": "One-way item creation. Data from the origin tool is used to pre-populate fields in a new item in the destination tool.",
+    "visual_style": "Dashed line, one arrow"
+  },
+  {
+    "type_id": "converts-to",
+    "label": "Converts To",
+    "description": "One-way item conversion/generation. A specific, formal workflow that transforms one item type into another, or bulk-generates items from a source.",
+    "visual_style": "Dashed line, one arrow"
+  },
+  {
+    "type_id": "syncs",
+    "label": "Syncs",
+    "description": "Two-way data synchronization. Data is actively shared and updated (often automatically) between two tools.",
+    "visual_style": "Solid line, two arrows"
+  },
+  {
+    "type_id": "pushes-data-to",
+    "label": "Pushes Data To",
+    "description": "One-way data push/aggregation. Data from the origin tool is pushed to and aggregated by the destination tool, typically for reporting, costing, or rollup.",
+    "visual_style": "Solid line, one arrow"
+  },
+  {
+    "type_id": "pulls-data-from",
+    "label": "Pulls Data From",
+    "description": "One-way data pull/lookup. The origin tool pulls data (e.g., from a library, directory, or list) from the destination tool during item creation.",
+    "visual_style": "Dotted line, one arrow"
+  },
+  {
+    "type_id": "attaches-links",
+    "label": "Attaches/Links",
+    "description": "Attachment or linking. The origin tool links to or attaches an existing record from the destination tool.",
+    "visual_style": "Dotted line, one arrow"
+  },
+  {
+    "type_id": "feeds",
+    "label": "Feeds",
+    "description": "Reporting data flow. The origin tool's data is consumed by a data intelligence or business intelligence platform for analysis.",
+    "visual_style": "Solid line, one arrow, gray"
+  }
+];
