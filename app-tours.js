@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// Manages all logic for Workflow Tours and the AI Workflow Builder.
+// VERSION 2: Simplifies tour dropdown logic.
 
 /**
  * Initializes event listeners for tour controls and the AI modal.
@@ -50,9 +50,11 @@ function updateTourDropdown(packageTools) {
     const tourSelect = d3.select("#tour-select");
     const platformTours = d3.select("#platform-tours").html("");
     const packageTours = d3.select("#package-tours").html("");
+    const aiTours = d3.select("#ai-tours").html("");
 
     let platformTourCount = 0;
     let packageTourCount = 0;
+    let aiTourCount = 0;
 
     // Populate Platform Tours
     Object.entries(tours.platform).forEach(([tourId, tourData]) => {
@@ -72,8 +74,16 @@ function updateTourDropdown(packageTools) {
         });
     }
     
+    // Populate AI Tours
+    Object.entries(tours.ai).forEach(([tourId, tourData]) => {
+        aiTours.append("option").attr("value", tourId).text(tourData.name);
+        aiTourCount++;
+    });
+
     // Show/hide the package tour optgroup
     d3.select("#package-tours").style("display", packageTourCount > 0 ? "" : "none");
+    d3.select("#ai-tours").style("display", aiTourCount > 0 ? "" : "none");
+
 
     // If the currently selected tour is no longer valid, stop it
     const selectedTourValue = tourSelect.property("value");
@@ -87,11 +97,13 @@ function updateTourDropdown(packageTools) {
  * @param {Object} tourData - The data object for the tour.
  */
 function startTour(tourData) {
-    app.interactionState = 'tour';
-    app.currentTour = tourData;
-    app.currentStep = 0;
+    app.interactionState = 'tour_starting'; // Intermediate state
     
-    // Ensure all nodes for the tour are visible
+    // Reset filters to ensure tour nodes are visible
+    resetView(); 
+    app.interactionState = 'tour_starting'; // override resetView's 'explore'
+    
+    // Ensure all required tools for the tour are visible
     const tourNodes = new Set(tourData.steps.map(s => s.nodeId));
     let filtersChanged = false;
 
@@ -108,6 +120,10 @@ function startTour(tourData) {
     if (filtersChanged) {
         updateGraph(false);
     }
+    
+    app.currentTour = tourData;
+    app.currentStep = 0;
+    app.interactionState = 'tour';
     
     d3.select("#tour-controls").style("display", "flex");
     d3.select('#graph-container').classed('selection-active', true);
