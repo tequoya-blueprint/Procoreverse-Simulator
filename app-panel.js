@@ -1,7 +1,5 @@
 // --- app-panel.js ---
-// Manages the right-side info panel, including populating data
-// and handling AI explanations.
-// VERSION 2: Reads from 'legendData' and new link structure.
+// VERSION 3: Fixes 'supportDocUrl' typo.
 
 /**
  * Initializes the info panel event listeners.
@@ -18,7 +16,6 @@ function showInfoPanel(d) {
     const infoPanel = d3.select("#info-panel");
     infoPanel.classed("visible", true);
     
-    // Scroll to top
     infoPanel.node().scrollTop = 0;
 
     // --- Populate Header ---
@@ -34,19 +31,19 @@ function showInfoPanel(d) {
     // --- Populate Body ---
     infoPanel.select("#info-description").text(d.description || "No description available.");
 
-    // Support Link
+    // *** THIS IS THE FIX: Changed 'd.supportUrl' to 'd.supportDocUrl' ***
     const linkContainer = infoPanel.select("#info-link-container").html("");
-    if (d.supportUrl) {
+    if (d.supportDocUrl && d.supportDocUrl.trim() !== "") {
         linkContainer.append("a")
-            .attr("href", d.supportUrl)
+            .attr("href", d.supportDocUrl)
             .attr("target", "_blank")
             .attr("class", "text-blue-600 hover:text-blue-800 text-base font-medium block transition")
             .html(`<i class="fas fa-life-ring mr-3"></i> Procore Support & Documentation`);
     }
 
-    // Case Study Link
+    // This code is correct. It will only show a link if caseStudyUrl is not an empty string.
     const caseStudyContainer = infoPanel.select("#case-study-link-container").html("");
-    if (d.caseStudyUrl) { // This is ready for when you add case study URLs
+    if (d.caseStudyUrl && d.caseStudyUrl.trim() !== "") { 
         caseStudyContainer.append("a")
             .attr("href", d.caseStudyUrl)
             .attr("target", "_blank")
@@ -72,7 +69,6 @@ function populateConnectionList(d) {
         connections.forEach(l => {
             const otherNode = l.source.id === d.id ? l.target : l.source;
             const direction = l.source.id === d.id ? 'out' : 'in';
-            // *** THIS IS THE FIX: Read from legendData using type_id ***
             const connType = legendData.find(t => t.type_id === l.type);
 
             let arrowIcon = '';
