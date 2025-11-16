@@ -59,7 +59,8 @@ function populatePersonaFilter() {
             "sub": "Specialty Contractor",
             "design": "Design Team",
             "owner": "Owner",
-            "admin": "Admin"
+            "admin": "Admin",
+            "estimator": "Estimator" // Added from your new data
         };
         personaFilter.append("option")
             .attr("value", p)
