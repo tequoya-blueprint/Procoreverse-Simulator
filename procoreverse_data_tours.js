@@ -10,7 +10,7 @@ const tours = {
         { nodeId: "Drawings", info: "A discrepancy is found on the Drawings, and an RFI is created from a markup." },
         { nodeId: "RFIs", info: "The RFI is sent to the design team, who confirms a change in scope is required." },
         { nodeId: "Change Events", info: "A Change Event is created from the RFI to start tracking the potential cost and schedule impact." },
-        { nodeId: "Bid Management", info: "Quotes are requested from subcontractors (via Bid Management) to price the change." },
+        { nodeId: "Bidding", info: "Quotes are requested from subcontractors (via Bidding) to price the change." },
         { nodeId: "Change Orders", info: "A formal Prime Change Order (PCO) is generated, bundling all costs, and sent to the Owner for approval." },
         { nodeId: "Budget", info: "Once approved, the Change Order automatically updates the project Budget in real-time." }
       ]
