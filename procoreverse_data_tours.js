@@ -1,5 +1,4 @@
 // --- procoreverse_data_tours.js ---
-// Defines all platform and package-specific workflow tours.
 // FIX: Corrected node ID mismatches (ERP Systems, Tasks)
 
 const tours = {
@@ -65,7 +64,7 @@ const tours = {
         { "nodeId": "RFIs", "info": "An RFI response confirms a change, initiating the financial process." },
         { "nodeId": "Change Events", "info": "A 'Change Event' is created to track the potential cost." },
         { "nodeId": "Commitments", "info": "A Commitment Change Order (CCO) is created to get pricing from the subcontractor." },
-        { "nodeId": "Change Orders", "info": "The PCO is created and sent to the owner for approval." },
+        { "nodeId": "Change Orders", info: "The PCO is created and sent to the owner for approval." },
         { "nodeId": "T&M Tickets", "info": "The superintendent tracks the extra work being done in the field using a T&M Ticket." }
       ]
     }
