@@ -655,8 +655,8 @@ const linksData = [
     "dataFlow": "Payment status is synced in the ERP system."
   },
   {
-  "source": "Bidding",
-  "target": "Drawings",
+  "source": "Drawings",
+  "target": "Bidding",
   "type": "pulls-data-from",
   "dataFlow": "Pulls drawings to include in Bid Packages."
 }
