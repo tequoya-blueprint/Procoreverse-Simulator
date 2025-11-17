@@ -96,12 +96,13 @@
                 </div>
             </div>
 
-            <div class="accordion-item" id="filter-accordion">
+         <div class="accordion-item" id="filter-accordion">
                 <div class="accordion-header">
                     <span><i class="fas fa-filter mr-3 text-lg"></i>Filters</span>
                     <i class="fas fa-chevron-down accordion-icon"></i>
                 </div>
                 <div class="accordion-content">
+                    
                     <div class="mb-5" id="packaging-container">
                         <h4 class="text-sm font-semibold mb-2 text-gray-700">By Package</h4>
                         <div class="space-y-3">
@@ -110,10 +111,7 @@
                                 </select>
                             <select id="audience-filter" class="input-style" disabled>
                                 <option value="all">All Audiences</option>
-                                <option value="GC">General Contractor</option>
-                                <option value="SC">Specialty Contractor</option>
-                                <option value="O">Owner</option>
-                            </select>
+                                </select>
                             <select id="package-filter" class="input-style" disabled>
                                 <option value="all">All Packages</option>
                             </select>
@@ -127,6 +125,17 @@
                             <div id="package-services-list" class="space-y-2 text-sm"></div>
                         </div>
                     </div>
+                    
+                    <div id="filter-container" class="space-y-3">
+                        <div>
+                            <h4 class="text-sm font-semibold mb-2 text-gray-700">By Persona</h4>
+                            <select id="persona-filter" class="input-style">
+                                <option value="all">All Personas</option>
+                                </select>
+                        </div>
+                    </div>
+                    </div>
+            </div>
                     
                     <div id="filter-container" class="space-y-3">
                         <div>
