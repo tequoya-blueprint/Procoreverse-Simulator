@@ -114,9 +114,12 @@
                         <div class="space-y-3">
                             <select id="region-filter" class="input-style">
                                 <option value="all">All Regions</option>
-                                <option value="NAM">NAM</option>
-                                <option value="EMEA">EMEA</option>
-                                <option value="APAC">APAC</option>
+                                </select>
+                            <select id="audience-filter" class="input-style" disabled>
+                                <option value="all">All Audiences</option>
+                                <option value="GC">General Contractor</option>
+                                <option value="SC">Specialty Contractor</option>
+                                <option value="O">Owner</option>
                             </select>
                             <select id="package-filter" class="input-style" disabled>
                                 <option value="all">All Packages</option>
@@ -131,23 +134,23 @@
                             <div id="package-services-list" class="space-y-2 text-sm"></div>
                         </div>
                     </div>
-<div id="filter-container" class="space-y-3">
-    <div>
-        <h4 class="text-sm font-semibold mb-2 text-gray-700">By Audience</h4>
-        <select id="audience-filter" class="input-style" disabled>
-            <option value="all">All Audiences</option>
-            <option value="GC">General Contractor</option>
-            <option value="SC">Specialty Contractor</option>
-            <option value="O">Owner</option>
-        </select>
-    </div>
-    <div>
-        <h4 class="text-sm font-semibold mb-2 text-gray-700">By Persona</h4>
-        <select id="persona-filter" class="input-style">
-            <option value="all">All Personas</option>
-        </select>
-    </div>
-</div>
+                    <div id="filter-container" class="space-y-3">
+                         <div>
+                            <h4 class="text-sm font-semibold mb-2 text-gray-700">By Audience</h4>
+                            <select id="audience-filter" class="input-style" disabled>
+                                <option value="all">All Audiences</option>
+                                <option value="GC">General Contractor</option>
+                                <option value="SC">Specialty Contractor</option>
+                                <option value="O">Owner</option>
+                            </select>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold mb-2 text-gray-700">By Persona</h4>
+                            <select id="persona-filter" class="input-style">
+                                <option value="all">All Personas</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -224,7 +227,7 @@
         </div>
     </div>
 
-
+    
     <script src="procoreverse_data_nodes.js"></script>
     <script src="procoreverse_data_links.js"></script>
     <script src="procoreverse_data_tours.js"></script>
@@ -234,7 +237,7 @@
     <script src="app-d3-helpers.js"></script>
     <script src="app-panel.js"></script>
     <script src="app-tours.js"></script>
-    <script src="app-controls.js"></script>
+    <script src="app-controls.js"></script> 
     <script src="app-main.js"></script>
 
 </body>
