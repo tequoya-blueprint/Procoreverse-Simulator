@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION 6: Corrects the filter cascade logic for array-based package data.
+// VERSION 6: Correctly parses the package data array and fixes all filter logic.
 
 /**
  * Initializes all event listeners for the control panel.
@@ -14,7 +14,7 @@ function initializeControls() {
 
     // --- Filter Dropdowns (NEW CASCADE LOGIC) ---
     populateRegionFilter();
-    populatePersonaFilter(); // <-- This was missing from the broken logic
+    populatePersonaFilter(); // This will now run
     
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
@@ -28,7 +28,7 @@ function initializeControls() {
     // --- Search ---
     d3.select("#search-input").on("input", handleSearchInput);
     d3.select("body").on("click", (e) => {
-        if (!document.getElementById('search-container').contains(e.target)) {
+        if (e.target && !document.getElementById('search-container').contains(e.target)) {
             d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
         }
     });
@@ -106,6 +106,7 @@ function toggleAllCategories() {
 
 function populateRegionFilter() {
     const regionFilter = d3.select("#region-filter");
+    // Get unique regions from the new array structure
     const regions = [...new Set(packagingData.map(pkg => pkg.region))];
     regions.sort().forEach(region => {
         let label = region; 
@@ -125,7 +126,8 @@ function onRegionChange() {
     audienceFilter.property("value", "all").property("disabled", region === "all");
     d3.select("#package-filter").property("value", "all").property("disabled", true);
     
-    audienceFilter.html('<option value="all">All Audiences</option>'); // Clear old options
+    // Clear old options but keep the "All Audiences" default
+    audienceFilter.html('<option value="all">All Audiences</option>'); 
 
     if (region !== "all") {
         // Map data audiences (e.g., "Owners") to dropdown values (e.g., "O")
@@ -135,6 +137,7 @@ function onRegionChange() {
             "SC": "SC",
             "Owners": "O",
             "Owner Developer *Coming Soon": "O"
+            // "Resource Management" is not a standard audience, so we ignore it
         };
         const audienceLabels = {
             "GC": "General Contractor",
