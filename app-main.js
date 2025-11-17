@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 5: Fixes Helix color to be distinct.
+// VERSION 6: Fixes legend filter event listener and makes line styles distinct.
 
 // --- Global App State ---
 const app = {
@@ -47,9 +47,9 @@ function setupCategories() {
         "Platform & Core": "#757575",
         "Construction Intelligence": "#4A4A4A",
         "External Integrations": "#B0B0B0",
-        "Helix": "#000000", // <<<--- FIX: Changed to a distinct Procore-like Black
+        "Helix": "#000000", // Procore-like Black
         "Project Execution": procoreColors.orange,
-        "Resource Management": procoreColors.metal, // This one keeps metal
+        "Resource Management": procoreColors.metal,
         "Emails": "#c94b4b" // A reddish color
     };
     
@@ -57,7 +57,6 @@ function setupCategories() {
     app.categories = {}; // Start fresh
     nodesData.forEach(node => {
         if (!app.categories[node.group]) {
-            // Assign color from map, or a random color if group is unknown
             app.categories[node.group] = { 
                 color: colorMap[node.group] || "#" + Math.floor(Math.random()*16777215).toString(16)
             };
@@ -147,37 +146,45 @@ function populateLegend() {
     const legendContainer = d3.select("#connection-legend");
     legendContainer.html(""); 
 
+    // --- FIX: Distinct SVGs for legend ---
     const legendSVGs = {
         "creates": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='4,3'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
-        "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='4,3'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='8,4'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
         "syncs": "<svg width='24' height='10'><path d='M3,2 L9,5 L3,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path><line x1='6' y1='5' x2='18' y2='5' stroke='var(--procore-metal)' stroke-width='2'></line><path d='M21,2 L15,5 L21,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path></svg>",
         "pushes-data-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
         "pulls-data-from": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='2,4'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
-        "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='2,4'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
+        "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='1,3'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
         "feeds": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#4A4A4A' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='#4A4A4A' stroke-width='2' fill='none'></path></svg>"
     };
 
     legendData.forEach(type => {
         const svg = legendSVGs[type.type_id] || "<svg width='24' height='10'><line x1='0' y1='5' x2='24' y2='5' stroke='#a0a0a0' stroke-width='2'></line></svg>";
 
+        // --- FIX: Build elements correctly to preserve event listener ---
         const item = legendContainer.append("label")
             .attr("class", "flex items-start mb-2 cursor-pointer") 
             .attr("title", type.description);
         
+        // 1. Append Checkbox
         item.append("input")
             .attr("type", "checkbox")
             .attr("checked", true)
             .attr("value", type.type_id)
             .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 mt-0.5 focus:ring-orange-500 legend-checkbox")
-            .on("change", () => updateGraph(true));
+            .on("change", () => updateGraph(true)); // This listener will now work
 
-        item.node().innerHTML += `
-            <div class="flex-shrink-0 w-8">${svg}</div>
-            <div class="ml-2">
+        // 2. Append SVG container
+        item.append("div")
+            .attr("class", "flex-shrink-0 w-8")
+            .html(svg);
+        
+        // 3. Append Text container
+        item.append("div")
+            .attr("class", "ml-2")
+            .html(`
                 <span class="font-semibold">${type.label}</span>
                 <span class="block text-xs text-gray-500 leading-snug">${type.description}</span>
-            </div>
-        `;
+            `);
     });
 }
 
@@ -289,6 +296,7 @@ function updateGraph(isFilterChange = true) {
         .join("path")
         .attr("class", d => `link ${d.type}`) 
         .attr("stroke-width", 2)
+        // --- FIX: Apply new colors and distinct dash styles ---
         .attr("stroke", d => {
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return app.defaultArrowColor;
@@ -300,8 +308,11 @@ function updateGraph(isFilterChange = true) {
         .attr("stroke-dasharray", d => {
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return "none";
-            if (legend.visual_style.includes("Dashed")) return "4,3";
-            if (legend.visual_style.includes("Dotted")) return "2,4"; // More prominent dot
+            // --- FIX: Distinct dash styles ---
+            if (d.type === "creates") return "4,3";
+            if (d.type === "converts-to") return "8,4";
+            if (d.type === "pulls-data-from") return "2,4";
+            if (d.type === "attaches-links") return "1,3";
             return "none";
         })
         .attr("marker-end", d => {
