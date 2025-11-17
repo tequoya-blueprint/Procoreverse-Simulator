@@ -14,7 +14,7 @@ function initializeControls() {
 
     // --- Filter Dropdowns (NEW CASCADE LOGIC) ---
     populateRegionFilter();
-    populatePersonaFilter(); // <-- FIX: This was missing, now the persona list will populate.
+    populatePersonaFilter(); // <-- FIX: This will now run
     
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
@@ -125,13 +125,13 @@ function onRegionChange() {
     audienceFilter.property("value", "all").property("disabled", region === "all");
     d3.select("#package-filter").property("value", "all").property("disabled", true);
     
-    // Clear old options but keep the "All Audiences" default
-    audienceFilter.html('<option value="all">All Audiences</option>'); 
+    audienceFilter.html('<option value="all">All Audiences</option>'); // Clear old options
 
     if (region !== "all") {
-        // Map data audiences (e.g., "Owners") to dropdown values (e.g., "O")
+        // FIX: This map now includes "General Contractor"
         const audienceMap = {
             "Contractor": "GC",
+            "General Contractor": "GC", // <-- ADDED THIS
             "GC": "GC",
             "SC": "SC",
             "Owners": "O",
@@ -161,17 +161,17 @@ function onRegionChange() {
 
 function onAudienceChange() {
     const region = d3.select("#region-filter").property("value");
-    const audience = d3.select(this).property("value");
+    const audience = d3.select(this).property("value"); // This is "GC", "SC", or "O"
     const packageFilter = d3.select("#package-filter");
 
     packageFilter.html(""); 
     packageFilter.append("option").attr("value", "all").text("All Packages");
     packageFilter.property("disabled", true);
     
-    // FIX: Map dropdown value (e.g., "O") back to ALL matching data values
+    // FIX: This list now includes "General Contractor"
     const audienceDataKeys = [];
     if (audience === "O") audienceDataKeys.push("Owners", "Owner Developer *Coming Soon");
-    if (audience === "GC") audienceDataKeys.push("Contractor", "GC");
+    if (audience === "GC") audienceDataKeys.push("Contractor", "GC", "General Contractor"); // <-- ADDED THIS
     if (audience === "SC") audienceDataKeys.push("SC");
 
     if (region !== 'all' && audience !== 'all') {
@@ -227,10 +227,10 @@ function getActiveFilters() {
 
     if (region !== 'all' && audience !== 'all' && pkgName !== 'all') {
         
-        // FIX: Map dropdown value (e.g., "O") back to ALL matching data values
+        // FIX: This list now includes "General Contractor"
         const audienceDataKeys = [];
         if (audience === "O") audienceDataKeys.push("Owners", "Owner Developer *Coming Soon");
-        if (audience === "GC") audienceDataKeys.push("Contractor", "GC");
+        if (audience === "GC") audienceDataKeys.push("Contractor", "GC", "General Contractor"); // <-- ADDED THIS
         if (audience === "SC") audienceDataKeys.push("SC");
 
         const packageInfo = packagingData.find(pkg => 
