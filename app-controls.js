@@ -119,7 +119,8 @@ function onRegionChange() {
     audienceFilter.property("value", "all").property("disabled", region === "all");
     d3.select("#package-filter").property("value", "all").property("disabled", true);
     
-    audienceFilter.html('<option value="all">All Audiences</option>'); // Clear old options
+    // Clear old options but keep the "All Audiences" default
+    audienceFilter.selectAll("option[value!='all']").remove();
 
     if (region !== "all") {
         // Map data audiences (e.g., "Owners") to dropdown values (e.g., "O")
