@@ -1,10 +1,11 @@
 // --- app-controls.js ---
-// VERSION 5: Correctly parses the package data array and fixes filter logic.
+// VERSION 6: Corrects the filter cascade logic for array-based package data.
 
 /**
  * Initializes all event listeners for the control panel.
  */
 function initializeControls() {
+    // --- Accordion Setup ---
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {
             toggleAccordion(header.parentElement); // from app-utils.js
@@ -13,14 +14,18 @@ function initializeControls() {
 
     // --- Filter Dropdowns (NEW CASCADE LOGIC) ---
     populateRegionFilter();
+    populatePersonaFilter(); // <-- This was missing from the broken logic
+    
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange);
     d3.select("#persona-filter").on("change", () => updateGraph(true));
     
+    // --- Category Filters ---
     populateCategoryFilters(); 
     d3.select("#toggle-categories").on("click", toggleAllCategories);
 
+    // --- Search ---
     d3.select("#search-input").on("input", handleSearchInput);
     d3.select("body").on("click", (e) => {
         if (!document.getElementById('search-container').contains(e.target)) {
@@ -28,10 +33,11 @@ function initializeControls() {
         }
     });
 
+    // --- Buttons ---
     d3.select("#reset-view").on("click", resetView);
-    d3.select("#help-button").on("click", startOnboarding);
-    d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
-    d3.select("#left-panel-expander").on("click", toggleLeftPanel);
+    d3.select("#help-button").on("click", startOnboarding); // from app-utils.js
+    d3.select("#left-panel-toggle").on("click", toggleLeftPanel); // from app-utils.js
+    d3.select("#left-panel-expander").on("click", toggleLeftPanel); // from app-utils.js
 }
 
 /**
@@ -119,8 +125,7 @@ function onRegionChange() {
     audienceFilter.property("value", "all").property("disabled", region === "all");
     d3.select("#package-filter").property("value", "all").property("disabled", true);
     
-    // Clear old options but keep the "All Audiences" default
-    audienceFilter.selectAll("option[value!='all']").remove();
+    audienceFilter.html('<option value="all">All Audiences</option>'); // Clear old options
 
     if (region !== "all") {
         // Map data audiences (e.g., "Owners") to dropdown values (e.g., "O")
@@ -130,7 +135,6 @@ function onRegionChange() {
             "SC": "SC",
             "Owners": "O",
             "Owner Developer *Coming Soon": "O"
-            // "Resource Management" is not a standard audience, so we ignore it
         };
         const audienceLabels = {
             "GC": "General Contractor",
@@ -226,6 +230,7 @@ function getActiveFilters() {
         if (audience === "GC") audienceDataKey = "Contractor";
         if (audience === "SC") audienceDataKey = "SC";
 
+        // Find the specific package object from the array
         const packageInfo = packagingData.find(pkg => 
             pkg.region === region && 
             pkg.audience === audienceDataKey && 
