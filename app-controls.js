@@ -5,7 +5,6 @@
  * Initializes all event listeners for the control panel.
  */
 function initializeControls() {
-    // --- Accordion Setup ---
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {
             toggleAccordion(header.parentElement); // from app-utils.js
@@ -19,11 +18,9 @@ function initializeControls() {
     d3.select("#package-filter").on("change", onPackageChange);
     d3.select("#persona-filter").on("change", () => updateGraph(true));
     
-    // --- Category Filters ---
     populateCategoryFilters(); 
     d3.select("#toggle-categories").on("click", toggleAllCategories);
 
-    // --- Search ---
     d3.select("#search-input").on("input", handleSearchInput);
     d3.select("body").on("click", (e) => {
         if (!document.getElementById('search-container').contains(e.target)) {
@@ -31,11 +28,10 @@ function initializeControls() {
         }
     });
 
-    // --- Buttons ---
     d3.select("#reset-view").on("click", resetView);
-    d3.select("#help-button").on("click", startOnboarding); // from app-utils.js
-    d3.select("#left-panel-toggle").on("click", toggleLeftPanel); // from app-utils.js
-    d3.select("#left-panel-expander").on("click", toggleLeftPanel); // from app-utils.js
+    d3.select("#help-button").on("click", startOnboarding);
+    d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
+    d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 }
 
 /**
@@ -93,9 +89,6 @@ function populateCategoryFilters() {
     });
 }
 
-/**
- * Toggles all category checkboxes on or off.
- */
 let allCategoriesChecked = true;
 function toggleAllCategories() {
     allCategoriesChecked = !allCategoriesChecked;
@@ -136,7 +129,6 @@ function onRegionChange() {
             "SC": "SC",
             "Owners": "O",
             "Owner Developer *Coming Soon": "O"
-            // "Resource Management" is not a standard audience, so we ignore it
         };
         const audienceLabels = {
             "GC": "General Contractor",
@@ -281,13 +273,9 @@ function getActiveFilters() {
     };
 }
 
-/**
- * Resets all filters and the camera view.
- */
 function resetView() {
     stopTour(); // From app-tours.js
     
-    // Reset filters
     d3.select("#region-filter").property('value', 'all');
     d3.select("#audience-filter").property('value', 'all').property("disabled", true).html('<option value="all">All Audiences</option><option value="GC">General Contractor</option><option value="SC">Specialty Contractor</option><option value="O">Owner</option>');
     d3.select("#persona-filter").property('value', 'all');
@@ -296,7 +284,6 @@ function resetView() {
     d3.selectAll(".legend-checkbox").property("checked", true);
     allCategoriesChecked = true;
 
-    // Clear package extras
     d3.select("#add-ons-container").classed('hidden', true);
     d3.select("#package-services-container").classed('hidden', true);
 
@@ -304,9 +291,6 @@ function resetView() {
     resetZoom(); // From app-d3-helpers.js
 }
 
-/**
- * Handles user input in the search bar.
- */
 function handleSearchInput() {
     const searchInput = this.value.toLowerCase().trim();
     const searchResults = d3.select("#search-results");
@@ -317,7 +301,7 @@ function handleSearchInput() {
     }
 
     const results = nodesData.filter(d => d.id.toLowerCase().includes(searchInput));
-    searchResults.html(""); // Clear old results
+    searchResults.html("");
 
     if (results.length === 0) {
         searchResults.append("div").attr("class", "search-item text-sm text-gray-500").text("No results found.");
@@ -333,10 +317,6 @@ function handleSearchInput() {
     searchResults.style("opacity", 1).style("transform", "scale(1)");
 }
 
-/**
- * Selects a node from the search results.
- * @param {Object} d - The node data object.
- */
 function selectNodeFromSearch(d) {
     if (app.interactionState === 'tour') stopTour();
     
