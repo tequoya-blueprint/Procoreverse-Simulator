@@ -11,26 +11,10 @@ function initializeTourControls() {
         if (tourId === "none") {
             stopTour(); // This will hide controls and reset the view
         } else {
-            // Find the tour data from the flattened map
             const tourData = flatTours[tourId];
             if (tourData) {
-                // --- NEW: This just previews the tour ---
                 previewTour(tourData);
             }
-        }
-    });
-
-    // Tour step controls (Prev/Next)
-    d3.select("#tour-prev").on("click", () => {
-        if (app.currentStep > 0) {
-            app.currentStep--;
-            runTourStep();
-        }
-    });
-    d3.select("#tour-next").on("click", () => {
-        if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) {
-            app.currentStep++;
-            runTourStep();
         }
     });
 
@@ -60,16 +44,22 @@ function updateTourDropdown(packageTools) {
     // Populate Platform Tours
     if (tours.platform) {
         Object.entries(tours.platform).forEach(([tourId, tourData]) => {
-            platformTours.append("option").attr("value", tourId).text(tourData.name);
-            platformTourCount++;
+            // Check if all nodes for this tour *actually exist*
+            const allNodesExist = tourData.steps.every(step => nodesData.some(n => n.id === step.nodeId));
+            if (allNodesExist) {
+                platformTours.append("option").attr("value", tourId).text(tourData.name);
+                platformTourCount++;
+            }
         });
     }
 
     // Populate Package Tours (only if a package is selected)
     if (packageTools && tours.package) {
         Object.entries(tours.package).forEach(([tourId, tourData]) => {
-            const isTourVisible = tourData.steps.every(step => packageTools.has(step.nodeId));
-            if (isTourVisible) {
+            const allNodesInPackage = tourData.steps.every(step => packageTools.has(step.nodeId));
+            const allNodesExist = tourData.steps.every(step => nodesData.some(n => n.id === step.nodeId));
+            
+            if (allNodesInPackage && allNodesExist) {
                 packageTours.append("option").attr("value", tourId).text(tourData.name);
                 packageTourCount++;
             }
@@ -103,9 +93,27 @@ function previewTour(tourData) {
     app.currentTour = tourData; // Store the tour in case we launch it
     
     const tourNodeIds = new Set(tourData.steps.map(s => s.nodeId));
-    const tourLinks = new Set();
     
-    // Find all links that connect two nodes *within* the tour
+    // Ensure all nodes for the tour are visible
+    let filtersChanged = false;
+    const tourCategories = new Set(tourData.steps.map(s => {
+        const node = nodesData.find(n => n.id === s.nodeId);
+        return node ? node.group : null;
+    }).filter(Boolean));
+    
+    d3.selectAll("#category-filters input").each(function() {
+        if (tourCategories.has(this.value) && !this.checked) {
+            this.checked = true;
+            filtersChanged = true;
+        }
+    });
+
+    if (filtersChanged) {
+        updateGraph(false);
+    }
+    
+    // --- Highlight Logic ---
+    const tourLinks = new Set();
     for (let i = 0; i < tourData.steps.length - 1; i++) {
         const step1 = tourData.steps[i].nodeId;
         const step2 = tourData.steps[i+1].nodeId;
@@ -117,21 +125,17 @@ function previewTour(tourData) {
         });
     }
 
-    // Fade out non-tour nodes
     const opacity = 0.1;
     app.node.transition().duration(400)
         .style("opacity", n => tourNodeIds.has(n.id) ? 1 : opacity);
         
-    // Highlight tour links
     app.link.classed("highlighted", l => tourLinks.has(l));
-    app.link.classed("pulsing", false); // No pulsing for preview
+    app.link.classed("pulsing", false); 
     
     app.link.transition().duration(400)
         .style("stroke-opacity", l => tourLinks.has(l) ? 1 : opacity * 0.5)
         .attr("marker-end", l => {
-            // Find the legend type for this link
             const legendType = legendData.find(type => type.type_id === l.type);
-            // Only show an arrow if it's a one-way style
             if (tourLinks.has(l) && legendType && legendType.visual_style.includes("one arrow")) {
                  return `url(#arrow-highlighted)`;
             }
@@ -161,7 +165,6 @@ function startTour() {
     app.interactionState = 'tour';
     app.currentStep = 0;
     
-    // Update controls to show Prev/Next
     const tourControls = d3.select("#tour-controls");
     tourControls.html(`
         <button id="tour-prev" class="btn-primary py-2 px-4 text-sm">
@@ -173,7 +176,6 @@ function startTour() {
         </button>
     `);
     
-    // Re-bind Prev/Next listeners
     d3.select("#tour-prev").on("click", () => {
         if (app.currentStep > 0) {
             app.currentStep--;
@@ -200,7 +202,7 @@ function stopTour() {
     app.currentTour = null;
     app.currentStep = -1;
 
-    d3.select("#tour-controls").style("display", "none").html(""); // Hide and clear controls
+    d3.select("#tour-controls").style("display", "none").html(""); 
     d3.select("#tour-select").property('value', 'none');
     
     resetHighlight(); // From app-d3-helpers.js
@@ -221,7 +223,7 @@ function runTourStep() {
     }
 
     const tourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
-    const opacity = 0.05; // Strong fade
+    const opacity = 0.05; 
 
     app.node.transition().duration(500).style("opacity", n => tourNodeIds.has(n.id) ? 1 : opacity);
     app.node.classed("selected", n => n.id === nodeData.id);
@@ -253,7 +255,6 @@ function runTourStep() {
     d3.select("#tour-info-text").text(step.info);
     centerViewOnNode(nodeData); // From app-d3-helpers.js
     
-    // Update tour controls
     d3.select("#tour-step").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
@@ -337,7 +338,6 @@ async function generateAiWorkflow() {
                 
                 d3.select("#tour-select").property("value", tourId);
                 
-                // --- NEW: Preview the new AI tour ---
                 previewTour(newTour);
                 
                 d3.select("#ai-modal-overlay").classed("visible", false);
