@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION 10: Fixed Data Maps and Filter Logic
+// VERSION 11: Fixes NAMER label, Add-on Selection Loop, and Accordion Resizing.
 
 // --- DATA MAPPING CONSTANTS ---
 const audienceDataToKeyMap = {
@@ -56,7 +56,9 @@ function populateRegionFilter() {
     const regions = [...new Set(packagingData.map(pkg => pkg.region))];
     
     regions.sort().forEach(region => {
-        let label = region === "NAMER" ? "NAM" : (region === "EUR" ? "EMEA" : region);
+        // FIX: Use "NAMER" label as requested
+        let label = region; 
+        if (region === "EUR") label = "EMEA";
         regionFilter.append("option").attr("value", region).text(label);
     });
 }
@@ -66,9 +68,13 @@ function onRegionChange() {
     const audienceFilter = d3.select("#audience-filter");
     const packageFilter = d3.select("#package-filter");
     
+    // Reset
     audienceFilter.property("value", "all").property("disabled", region === "all");
     packageFilter.property("value", "all").property("disabled", true).html('<option value="all">All Packages</option>');
     audienceFilter.html('<option value="all">All Audiences</option>'); 
+    
+    // Clear Add-ons/Services when Region changes
+    clearPackageDetails();
 
     if (region !== "all") {
         const availableAudiences = new Set();
@@ -91,6 +97,9 @@ function onAudienceChange() {
     packageFilter.html('<option value="all">All Packages</option>');
     packageFilter.property("disabled", true);
     
+    // Clear Add-ons/Services when Audience changes
+    clearPackageDetails();
+    
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
 
     if (region !== 'all' && audience !== 'all') {
@@ -107,7 +116,77 @@ function onAudienceChange() {
     updateGraph(true);
 }
 
-function onPackageChange() { updateGraph(true); }
+/**
+ * Triggered when a specific package is selected.
+ * Responsibilities: Populate Add-ons/Services UI, then Update Graph.
+ */
+function onPackageChange() {
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    const pkgName = d3.select("#package-filter").property('value');
+
+    // 1. Clear previous details
+    clearPackageDetails();
+
+    if (region !== 'all' && audience !== 'all' && pkgName !== 'all') {
+        const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+        const packageInfo = packagingData.find(pkg => 
+            pkg.region === region && audienceDataKeys.includes(pkg.audience) && pkg.package_name === pkgName
+        );
+
+        if (packageInfo) {
+            populateAddOnsAndServices(packageInfo);
+        }
+    }
+    
+    // 2. Force Accordion Resize
+    // The content has grown, so we must tell the accordion to recalculate height
+    setTimeout(() => {
+        const content = document.querySelector('#filter-accordion .accordion-content');
+        if (content.parentElement.classList.contains('active')) {
+            content.style.maxHeight = content.scrollHeight + "px";
+        }
+    }, 50); // Small delay to allow DOM to render
+
+    updateGraph(true);
+}
+
+function clearPackageDetails() {
+    d3.select("#add-ons-checkboxes").html("");
+    d3.select("#package-services-list").html("");
+    d3.select("#add-ons-container").classed('hidden', true);
+    d3.select("#package-services-container").classed('hidden', true);
+}
+
+function populateAddOnsAndServices(packageInfo) {
+    const addOnsContainer = d3.select("#add-ons-container");
+    const addOnsCheckboxes = d3.select("#add-ons-checkboxes");
+    const servicesContainer = d3.select("#package-services-container");
+    const servicesList = d3.select("#package-services-list");
+
+    // Handle Add-Ons
+    if (packageInfo['available_add-ons'] && packageInfo['available_add-ons'].length > 0) {
+        packageInfo['available_add-ons'].forEach(addOn => {
+            const label = addOnsCheckboxes.append("label").attr("class", "flex items-center cursor-pointer py-1");
+            label.append("input")
+                .attr("type", "checkbox")
+                .attr("value", addOn)
+                .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
+                .on("change", () => updateGraph(true)); // Only update graph, don't re-draw UI
+            label.append("span").attr("class", "text-gray-700").text(addOn);
+        });
+        addOnsContainer.classed('hidden', false);
+    }
+
+    // Populate Services
+    if (packageInfo['available_services'] && packageInfo['available_services'].length > 0) {
+        packageInfo['available_services'].forEach(service => {
+            servicesList.append("div").attr("class", "flex items-center text-gray-700")
+                .html(`<i class="fas fa-check-circle text-green-500 mr-2"></i> ${service}`);
+        });
+        servicesContainer.classed('hidden', false);
+    }
+}
 
 function getActiveFilters() {
     const region = d3.select("#region-filter").property('value');
@@ -118,15 +197,6 @@ function getActiveFilters() {
     const activeConnectionTypes = new Set(d3.selectAll(".legend-checkbox:checked").nodes().map(el => el.value));
     
     let packageTools = null;
-    const addOnsContainer = d3.select("#add-ons-container");
-    const addOnsCheckboxes = d3.select("#add-ons-checkboxes");
-    const servicesContainer = d3.select("#package-services-container");
-    const servicesList = d3.select("#package-services-list");
-
-    addOnsCheckboxes.html("");
-    servicesList.html("");
-    addOnsContainer.classed('hidden', true);
-    servicesContainer.classed('hidden', true);
 
     if (region !== 'all' && audience !== 'all' && pkgName !== 'all') {
         const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
@@ -137,27 +207,9 @@ function getActiveFilters() {
         if (packageInfo) {
             packageTools = new Set(packageInfo.tools);
             
-            if (packageInfo['available_add-ons'] && packageInfo['available_add-ons'].length > 0) {
-                packageInfo['available_add-ons'].forEach(addOn => {
-                    const label = addOnsCheckboxes.append("label").attr("class", "flex items-center cursor-pointer py-1");
-                    label.append("input").attr("type", "checkbox").attr("value", addOn)
-                        .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
-                        .on("change", () => updateGraph(true));
-                    label.append("span").attr("class", "text-gray-700").text(addOn);
-                });
-                addOnsContainer.classed('hidden', false);
-            }
-            
+            // Read checked Add-Ons from the UI (do not re-draw them here!)
             const selectedAddOns = d3.selectAll("#add-ons-checkboxes input:checked").nodes().map(el => el.value);
             selectedAddOns.forEach(addOn => packageTools.add(addOn));
-
-            if (packageInfo['available_services'] && packageInfo['available_services'].length > 0) {
-                packageInfo['available_services'].forEach(service => {
-                    servicesList.append("div").attr("class", "flex items-center text-gray-700")
-                        .html(`<i class="fas fa-check-circle text-green-500 mr-2"></i> ${service}`);
-                });
-                servicesContainer.classed('hidden', false);
-            }
         }
     }
 
@@ -172,7 +224,7 @@ function getActiveFilters() {
 
 function populatePersonaFilter() {
     const personaFilter = d3.select("#persona-filter");
-    personaFilter.html('<option value="all">All Personas</option>');
+    personaFilter.html('<option value="all">All Personas</option>'); 
     const allPersonas = new Set();
     nodesData.forEach(node => {
         if (node.personas) node.personas.forEach(p => allPersonas.add(p));
@@ -216,8 +268,9 @@ function resetView() {
     d3.selectAll("#category-filters input").property("checked", true);
     d3.selectAll(".legend-checkbox").property("checked", true);
     allCategoriesChecked = true;
-    d3.select("#add-ons-container").classed('hidden', true);
-    d3.select("#package-services-container").classed('hidden', true);
+    
+    clearPackageDetails(); // Helper to hide add-ons/services
+
     updateGraph(false);
     resetZoom(); 
 }
