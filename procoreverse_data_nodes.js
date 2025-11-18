@@ -273,7 +273,7 @@ const nodesData = [
     "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
-    "id": "Project Maps",
+    "id": "Project Map",
     "group": "Platform & Core",
     "level": "project",
     "description": "Enhances project execution by visually showing your Procore items on a map, facilitating better planning, execution, and monitoring of construction projects.",
