@@ -1,5 +1,5 @@
 // --- procoreverse_data_tours.js ---
-// FIX: Corrected node ID mismatches (ERP Systems, Tasks)
+// FIX: Correct structure (Platform/Package) and Node IDs.
 
 const tours = {
   platform: {
@@ -46,18 +46,16 @@ const tours = {
   },
   // Package-specific tours
   package: {
-    // NAM - Project Execution Essentials
     "nam-exec-essentials-quality": {
       "name": "Field Quality Process",
       "steps": [
         { "nodeId": "Drawings", "info": "A superintendent walks the site and pins an issue to the Drawings." },
         { "nodeId": "Observations", "info": "An 'Observation' is created from the pin, noting the non-conforming work." },
-        { "nodeId": "Tasks", info: "The Observation automatically assigns a Task to the subcontractor responsible." },
-        { "nodeId": "Photos", "info": "The subcontractor fixes the work, attaches a photo as proof, and closes the Task." },
+        { "nodeId": "Punch List", info: "The item is added to the Punch List for the subcontractor to resolve." },
+        { "nodeId": "Photos", "info": "The subcontractor fixes the work, attaches a photo as proof, and closes the item." },
         { "nodeId": "Inspections", "info": "The superintendent verifies the fix during their next 'Inspection' walk." }
       ]
     },
-    // NAM - Project Management Essentials
     "nam-pm-essentials-change": {
       "name": "Change Event Management",
       "steps": [
@@ -68,7 +66,6 @@ const tours = {
         { "nodeId": "T&M Tickets", "info": "The superintendent tracks the extra work being done in the field using a T&M Ticket." }
       ]
     }
-    // Add more package-specific tours here...
   },
   // AI-generated tours (initially empty)
   ai: {}
