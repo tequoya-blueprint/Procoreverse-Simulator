@@ -1,11 +1,7 @@
 // --- app-tours.js ---
-// VERSION 7: Ensures Platform Tours are GLOBAL (always visible).
+// VERSION 10: Adds Accordion Resizing to allow workflow progression visibility.
 
-/**
- * Initializes event listeners for tour controls and the AI modal.
- */
 function initializeTourControls() {
-    // Tour selection dropdown listener
     d3.select("#tour-select").on("change", function() {
         const tourId = this.value;
         if (tourId === "none") {
@@ -18,36 +14,35 @@ function initializeTourControls() {
         }
     });
 
-    // Previous/Next Buttons
     d3.select("#tour-prev").on("click", () => {
-        if (app.currentStep > 0) { 
-            app.currentStep--; 
-            runTourStep(); 
-        }
+        if (app.currentStep > 0) { app.currentStep--; runTourStep(); }
     });
     d3.select("#tour-next").on("click", () => {
-        if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { 
-            app.currentStep++; 
-            runTourStep(); 
-        }
+        if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); }
     });
 
-    // AI Modal Interactions
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
-    aiModalOverlay.on("click", function(e) { 
-        if (e.target === this) aiModalOverlay.classed("visible", false); 
-    });
+    aiModalOverlay.on("click", function(e) { if (e.target === this) aiModalOverlay.classed("visible", false); });
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 }
 
 /**
- * Updates the dropdown list based on available tools.
- * - Platform Tours: ALWAYS shown.
- * - Package Tours: Shown ONLY if the package has the tools.
- * - AI Tours: ALWAYS shown.
+ * Helper to force the accordion to resize when buttons are added/removed.
+ * This fixes the issue where buttons get cut off.
  */
+function resizeTourAccordion() {
+    // Find the accordion content div that contains the tour container
+    const content = document.querySelector('#tour-container').closest('.accordion-content');
+    
+    // If the accordion is currently open (active), update its max-height
+    if (content && content.parentElement.classList.contains('active')) {
+        // Set to scrollHeight to accommodate new buttons
+        content.style.maxHeight = content.scrollHeight + "px";
+    }
+}
+
 function updateTourDropdown(packageTools) {
     const tourSelect = d3.select("#tour-select");
     const platformTours = d3.select("#platform-tours").html("");
@@ -61,7 +56,6 @@ function updateTourDropdown(packageTools) {
     // 1. Platform Workflows (GLOBAL - ALWAYS SHOW)
     if (tours.platform) {
         Object.entries(tours.platform).forEach(([tourId, tourData]) => {
-            // We show these regardless of package selection
             platformTours.append("option").attr("value", tourId).text(tourData.name);
             platformTourCount++;
         });
@@ -87,34 +81,31 @@ function updateTourDropdown(packageTools) {
     }
 
     // Visibility toggles for the OptGroups
-    d3.select("#platform-tours").style("display", ""); // Always show
+    d3.select("#platform-tours").style("display", ""); 
     d3.select("#package-tours").style("display", packageTourCount > 0 ? "" : "none");
     d3.select("#ai-tours").style("display", aiTourCount > 0 ? "" : "none");
 }
 
-/**
- * Previews a tour: dims graph, highlights nodes, shows "Start" button.
- */
 function previewTour(tourData) {
     app.interactionState = 'tour_preview'; 
     app.currentTour = tourData;
     
-    // *** CRITICAL FIX: Reset visual filters so tour nodes are visible ***
-    // This ensures workflow tours are not restricted by package selection visually.
+    // Reset visual filters so tour nodes are visible
     d3.select("#region-filter").property('value', 'all');
     d3.select("#audience-filter").property('value', 'all').property("disabled", true);
     d3.select("#package-filter").property('value', 'all').property("disabled", true);
     
-    // Trigger update to show all nodes before highlighting
+    // Helper to clear the add-ons panel visually
+    d3.select("#add-ons-container").classed('hidden', true);
+    d3.select("#package-services-container").classed('hidden', true);
+
     updateGraph(false); 
 
     const tourNodeIds = new Set(tourData.steps.map(s => s.nodeId));
     
-    // Fade out everything, then fade in ONLY tour nodes
     app.node.transition().duration(400)
         .style("opacity", n => tourNodeIds.has(n.id) ? 1 : 0.1);
         
-    // Highlight tour links
     const tourLinks = new Set();
     for (let i = 0; i < tourData.steps.length - 1; i++) {
         const step1 = tourData.steps[i].nodeId;
@@ -138,7 +129,7 @@ function previewTour(tourData) {
             return null;
         });
 
-    // Show Start Button in the control panel
+    // Show Start Button
     const tourControls = d3.select("#tour-controls");
     tourControls.html(`
         <button id="tour-start" class="btn-primary py-2 px-4 text-sm w-full">
@@ -146,15 +137,16 @@ function previewTour(tourData) {
         </button>
     `);
     tourControls.style("display", "flex");
+    
+    // --- FIX: Resize accordion to fit the new "Start" button ---
+    resizeTourAccordion();
+    
     d3.select("#tour-start").on("click", startTour);
     
     hideInfoPanel();
     d3.select('#graph-container').classed('selection-active', true);
 }
 
-/**
- * Launches the active tour.
- */
 function startTour() {
     app.interactionState = 'tour';
     app.currentStep = 0;
@@ -166,15 +158,15 @@ function startTour() {
         <button id="tour-next" class="btn-primary py-2 px-4 text-sm">Next <i class="fas fa-arrow-right ml-1"></i></button>
     `);
     
+    // --- FIX: Resize accordion to fit the new Prev/Next buttons ---
+    resizeTourAccordion();
+    
     d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
     d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
 
     runTourStep(); 
 }
 
-/**
- * Stops the tour and resets the view.
- */
 function stopTour() {
     if (app.interactionState === 'explore') return;
     app.interactionState = 'explore';
@@ -182,18 +174,17 @@ function stopTour() {
     app.currentStep = -1;
     d3.select("#tour-controls").style("display", "none").html(""); 
     d3.select("#tour-select").property('value', 'none');
+    
+    // --- FIX: Resize accordion to shrink back down ---
+    resizeTourAccordion();
+
     resetHighlight(); 
 }
 
-/**
- * Steps through the tour logic.
- */
 function runTourStep() {
     if (!app.currentTour) return;
     const step = app.currentTour.steps[app.currentStep];
     const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
-    
-    // Safety check: if node doesn't exist, warn and stop.
     if (!nodeData) {
         console.warn(`Tour step node "${step.nodeId}" not found.`);
         stopTour();
@@ -202,15 +193,12 @@ function runTourStep() {
 
     const tourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
     
-    // Ensure visibility again (in case user clicked something else)
     app.node.transition().duration(500).style("opacity", n => tourNodeIds.has(n.id) ? 1 : 0.1);
     app.node.classed("selected", n => n.id === nodeData.id);
 
-    // Reset links
     app.link.classed("pulsing", false).classed("highlighted", false)
         .transition().duration(500).style("stroke-opacity", 0.1).attr("marker-end", null);
 
-    // Highlight path from previous step
     if (app.currentStep > 0) {
         const prevStep = app.currentTour.steps[app.currentStep - 1];
         const stepLink = app.link.filter(l =>
@@ -222,7 +210,6 @@ function runTourStep() {
         }
     }
 
-    // Update Info Panel
     showInfoPanel(nodeData); 
     d3.select("#tour-info-box").style("display", "block");
     d3.select("#tour-info-text").text(step.info);
@@ -233,10 +220,8 @@ function runTourStep() {
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
 }
 
-/**
- * AI Generation Logic
- */
 async function generateAiWorkflow() {
+    // (AI Code remains unchanged)
     const button = d3.select("#ai-workflow-generate");
     const status = d3.select("#ai-modal-status");
     const userInput = d3.select("#ai-workflow-input").property("value");
