@@ -74,7 +74,7 @@
 
         <div id="accordion-container">
             
-            <div class="accordion-item active" id="tour-accordion">
+            <div class="accordion-item" id="tour-accordion">
                 <div class="accordion-header">
                     <span><i class="fas fa-route mr-3 text-lg"></i>Workflow Tours</span>
                     <i class="fas fa-chevron-down accordion-icon"></i>
@@ -108,10 +108,10 @@
                         <div class="space-y-3">
                             <select id="region-filter" class="input-style">
                                 <option value="all">All Regions</option>
-                                </select>
+                            </select>
                             <select id="audience-filter" class="input-style" disabled>
                                 <option value="all">All Audiences</option>
-                                </select>
+                            </select>
                             <select id="package-filter" class="input-style" disabled>
                                 <option value="all">All Packages</option>
                             </select>
@@ -131,7 +131,7 @@
                             <h4 class="text-sm font-semibold mb-2 text-gray-700">By Persona</h4>
                             <select id="persona-filter" class="input-style">
                                 <option value="all">All Personas</option>
-                                </select>
+                            </select>
                         </div>
                     </div>
                     
@@ -151,12 +151,14 @@
                         
                          <h4 class="text-sm font-semibold text-gray-700 mb-3 pt-3 border-t border-gray-200">Connection Legend</h4>
                          <div id="connection-legend" class="text-sm space-y-3 bg-gray-50 p-4 rounded-lg">
-                            </div>
+                         </div>
                     </div>
                 </div>
             </div>
 
-        </div> <div class="pt-5 mt-5 border-t border-gray-100">
+        </div>
+
+        <div class="pt-5 mt-5 border-t border-gray-100">
             <button id="reset-view" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition duration-150 ease-in-out shadow-md">
                 <i class="fas fa-sync-alt mr-2"></i> Reset View
             </button>
@@ -164,7 +166,9 @@
                 <i class="fas fa-question-circle mr-2"></i> Guided Tour
             </button>
         </div>
-    </div> <div id="info-panel" class="panel absolute top-6 right-6 w-96 z-10 custom-scrollbar" style="max-height: calc(100vh - 3rem); overflow-y: auto;">
+    </div> 
+
+    <div id="info-panel" class="panel absolute top-6 right-6 w-96 z-10 custom-scrollbar" style="max-height: calc(100vh - 3rem); overflow-y: auto;">
         <div class="p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
             <div class="flex items-start justify-between">
                 <h3 id="info-title" class="text-2xl font-bold flex items-center text-gray-800"></h3>
@@ -187,6 +191,7 @@
             <div class="mb-6 space-y-3">
                 <div id="info-link-container"></div>
                 <div id="case-study-link-container"></div>
+                <div id="whats-new-link-container"></div>
             </div>
 
             <h4 class="font-bold text-lg text-gray-800 mt-6 mb-4 pb-2 border-b border-gray-100">Data Flow & Connections</h4>
