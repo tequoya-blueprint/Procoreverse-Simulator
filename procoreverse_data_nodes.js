@@ -32,7 +32,8 @@ const nodesData = [
       "owner"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/budget-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/budget-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Financials"
      },
   {
     "id": "Change Events",
@@ -47,7 +48,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/change-events-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/change-events-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Financials"
   },
   {
     "id": "Change Orders",
@@ -61,7 +63,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/change-orders-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/change-orders-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Financials"
   },
   {
     "id": "Commitments",
@@ -74,7 +77,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/commitments-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/commitments-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Financials"
   },
   {
     "id": "Direct Costs",
@@ -86,7 +90,8 @@ const nodesData = [
       "pm"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/direct-costs-company/ | https://v2.support.procore.com/product-manuals/directory-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/direct-costs-company/ | https://v2.support.procore.com/product-manuals/directory-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Financials"
   },
   {
     "id": "Invoicing",
@@ -100,7 +105,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "https://www.procore.com/casestudies/allen-harrison-company",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/invoicing-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/invoicing-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Invoice+Management"
   },
   {
     "id": "Prime Contracts",
@@ -113,7 +119,8 @@ const nodesData = [
       "owner"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/prime-contracts-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/prime-contracts-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Financials"
   },
   {
     "id": "Procore Pay",
@@ -126,7 +133,8 @@ const nodesData = [
       "owner"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/payments-company/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/payments-company/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Pay"
   },
   {
     "id": "Project Status Snapshots",
@@ -139,7 +147,8 @@ const nodesData = [
       "owner"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/project-status-snapshots/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/project-status-snapshots/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Financials"
   },
 
   // --- [Group: Helix] ---
@@ -168,7 +177,8 @@ const nodesData = [
       "owner"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/insights/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/insights/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Insights"
   },
 
   // --- [Group: Platform & Core] ---
@@ -183,7 +193,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "https://www.procore.com/casestudies/bailey-harris-construction",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/models-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/models-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=BIM"
   },
   {
     "id": "Documents",
@@ -199,7 +210,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/document-management-project/ | https://v2.support.procore.com/product-manuals/documents-company/ | https://v2.support.procore.com/product-manuals/documents-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/document-management-project/ | https://v2.support.procore.com/product-manuals/documents-company/ | https://v2.support.procore.com/product-manuals/documents-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Coordination Issues",
@@ -212,7 +224,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/coordination-issues-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/coordination-issues-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Design+Coordination"
   },
   {
     "id": "Daily Log",
@@ -225,7 +238,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/daily-log-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/daily-log-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Directory",
@@ -241,7 +255,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/directory-company/ | https://v2.support.procore.com/product-manuals/directory-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/directory-company/ | https://v2.support.procore.com/product-manuals/directory-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Forms",
@@ -254,7 +269,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/forms-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/forms-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Maps",
@@ -269,7 +285,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/procore-maps/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/procore-maps/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Photos",
@@ -284,7 +301,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/photos-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/photos-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Projects",
@@ -297,7 +315,8 @@ const nodesData = [
       "owner"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/portfolio-company/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/portfolio-company/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Tasks",
@@ -306,7 +325,8 @@ const nodesData = [
     "description": "A llows you to track and manage action items throughout the lifespan of the project.",
     "personas": [],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/tasks-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/tasks-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Conversations",
@@ -315,7 +335,8 @@ const nodesData = [
     "description": "P rovides a convenient solution for messaging across projects within Procore's web and mobile applications.",
     "personas": [],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/conversations-company/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/conversations-company/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Assist",
@@ -335,6 +356,7 @@ const nodesData = [
     "personas": [],
     "caseStudyUrl": "",
     "supportDocUrl": ""
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Training+Center"
   },
   {
     "id": "Premier Support Bronze",
@@ -343,7 +365,8 @@ const nodesData = [
     "description": "TBD",
     "personas": [],
     "caseStudyUrl": "",
-    "supportDocUrl": ""
+    "supportDocUrl": "",
+    "whatsNewUrl": ""
   },
 {
     "id": "Workflows",
@@ -352,7 +375,8 @@ const nodesData = [
     "description": "Custom approval workflows for various tools (e.g., Submittals, Invoicing, RFIs).",
     "personas": [ "pm", "fm", "admin" ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/workflows-company/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/workflows-company/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   
   // --- [Group: Preconstruction] ---
@@ -367,7 +391,8 @@ const nodesData = [
       "fm"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/bid-board-company/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/bid-board-company/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Bidding",
@@ -380,7 +405,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "https://www.procore.com/casestudies/gilbane",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/bidding-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/bidding-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Bid+Management"
   },
   {
     "id": "Estimating",
@@ -393,7 +419,8 @@ const nodesData = [
       "estimator"
     ],
     "caseStudyUrl": "https://www.procore.com/casestudies/gardner-builders",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/estimating-project/ | https://v2.support.procore.com/product-manuals/cost-catalog-company/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/estimating-project/ | https://v2.support.procore.com/product-manuals/cost-catalog-company/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Estimating"
   },
   {
     "id": "Prequalifications",
@@ -405,7 +432,8 @@ const nodesData = [
       "fm"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/prequalifications-company/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/prequalifications-company/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Prequalification"
   },
   {
     "id": "Procore Construction Network",
@@ -419,7 +447,8 @@ const nodesData = [
       "owner"
     ],
     "caseStudyUrl": "https://www.procore.com/casestudies/peridot-mechanical",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/procore-construction-network/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/procore-construction-network/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
 
   // --- [Group: Project Execution] ---
@@ -436,7 +465,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/correspondence-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/correspondence-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Drawings",
@@ -452,7 +482,8 @@ const nodesData = [
       "fm"
     ],
     "caseStudyUrl": "https://www.procore.com/casestudies/asturian-group",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/drawings-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/drawings-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Emails",
@@ -466,7 +497,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/emails-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/emails-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Instructions",
@@ -480,7 +512,8 @@ const nodesData = [
       "super"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/instructions-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/instructions-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "Meetings",
@@ -495,7 +528,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/meetings-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/meetings-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
     "id": "RFIs",
@@ -510,7 +544,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https::/v2.support.procore.com/product-manuals/rfi-project/"
+    "supportDocUrl": "https::/v2.support.procore.com/product-manuals/rfi-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Management"
   },
   {
     "id": "Schedule",
@@ -524,7 +559,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "https://www.procore.com/casestudies/cyberco",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/schedule-company/ | https://v2.support.procore.com/product-manuals/schedule-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/schedule-company/ | https://v2.support.procore.com/product-manuals/schedule-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Management"
   },
   {
     "id": "Specifications",
@@ -538,7 +574,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/specifications-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/specifications-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Management"
   },
   {
     "id": "Submittals",
@@ -553,7 +590,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/submittals-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/submittals-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Management"
   },
   {
     "id": "Transmittals",
@@ -566,7 +604,8 @@ const nodesData = [
       "owner"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/transmittals-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/transmittals-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Management"
   },
 
   // --- [Group: Quality & Safety] ---
@@ -580,7 +619,8 @@ const nodesData = [
       "super"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/action-plans-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/action-plans-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Quality+%26+Safety"
   },
   {
     "id": "Incidents",
@@ -592,7 +632,8 @@ const nodesData = [
       "pm"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/incidents-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/incidents-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Quality+%26+Safety"
   },
   {
     "id": "Inspections",
@@ -605,7 +646,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/inspections-company/ | https://v2.support.procore.com/product-manuals/inspections-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/inspections-company/ | https://v2.support.procore.com/product-manuals/inspections-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Quality+%26+Safety"
   },
   {
     "id": "Observations",
@@ -620,7 +662,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/observations-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/observations-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Quality+%26+Safety"
   },
   {
     "id": "Punch List",
@@ -635,7 +678,8 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "https://www.procore.com/casestudies/ameresco",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/punch-list-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/punch-list-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Quality+%26+Safety"
   },
 
   // --- [Group: Resource Management] ---
@@ -649,7 +693,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/crews-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/crews-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Planning"
   },
   {
     "id": "Equipment",
@@ -661,7 +706,9 @@ const nodesData = [
       "fm"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/equipment-company/ | https://v2.support.procore.com/product-manuals/equipment-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/equipment-company/ | https://v2.support.procore.com/product-manuals/equipment-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Equipment",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Planning"
   },
   {
     "id": "MyTime",
@@ -673,7 +720,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/my-time-ios/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/my-time-ios/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Planning"
   },
   {
     "id": "Resource Planning",
@@ -685,7 +733,8 @@ const nodesData = [
       "super"
     ],
     "caseStudyUrl": "https://www.procore.com/casestudies/prime-build-Resource-planning",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/resource-planning-company/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/resource-planning-company/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Planning"
   },
   {
     "id": "Resource Tracking",
@@ -698,7 +747,8 @@ const nodesData = [
       "super"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timesheets-company/ | https://v2.support.procore.com/product-manuals/timesheets-project/ |"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timesheets-company/ | https://v2.support.procore.com/product-manuals/timesheets-project/ |",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Tracking"
   },
   {
     "id": "T&M Tickets",
@@ -712,7 +762,8 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/tm-tickets-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/tm-tickets-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Planning"
   },
   {
     "id": "Timesheets",
@@ -725,6 +776,7 @@ const nodesData = [
       "sub"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timecard-company/ | https://v2.support.procore.com/product-manuals/timesheets-company/ | https://v2.support.procore.com/product-manuals/timesheets-project/"
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timecard-company/ | https://v2.support.procore.com/product-manuals/timesheets-company/ | https://v2.support.procore.com/product-manuals/timesheets-project/",
+    "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Planning"
   }
 ];
