@@ -1,5 +1,5 @@
 // --- app-utils.js ---
-// VERSION 5: Final Robust Accordion Height Fix using Measure-Set-Reflow.
+// VERSION 6: Final Robust Accordion Height Fix with Padding Correction.
 
 /**
  * Shows the tooltip with information about a node.
@@ -58,12 +58,12 @@ function toggleAccordion(item) {
         
         // 1. Temporarily clear max-height so the browser calculates the full scrollHeight
         content.style.maxHeight = 'none'; 
-        const height = content.scrollHeight; 
+        const height = content.scrollHeight + 20; // FIX: Added 20px buffer for padding/margin
 
         // 2. Re-set max-height to 0 for transition start
         content.style.maxHeight = '0px'; 
         
-        // 3. Force browser reflow/re-render (crucial to start transition from 0px)
+        // 3. Force browser reflow/re-render (crucial)
         void content.offsetWidth; 
 
         // 4. Apply the true scroll height to expand fully
@@ -92,9 +92,9 @@ function openAccordionItemById(itemId) {
     const content = item.querySelector('.accordion-content');
     item.classList.add('active');
     
-    // Use robust opening method
+    // FIX: Use the robust expansion method for programmatic opening as well
     content.style.maxHeight = 'none';
-    const height = content.scrollHeight;
+    const height = content.scrollHeight + 20; // Added 20px buffer
     content.style.maxHeight = height + "px";
 }
 
