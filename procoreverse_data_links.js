@@ -1,7 +1,7 @@
-/** * Procoreverse Data Module (Part 2/3)
+/**
+ * Procoreverse Data Module (Part 2/3)
  * This file contains all the connection links from SECTION 2
  * and the legend data from SECTION 3.
- * (This block is now corrected for all typos)
  */
  
 // --- [SECTION 2] - All Connection Links ---
@@ -665,38 +665,39 @@ const linksData = [
   "target": "Bidding",
   "type": "pulls-data-from",
   "dataFlow": "Pulls drawings to include in Bid Packages."
-  },
-  {
-    "source": "Project Map",
-    "target": "Incidents",
-    "type": "pulls-data-from",
-    "dataFlow": "Displays active Incidents on the map based on location data."
-  },
-  {
-    "source": "Project Map",
-    "target": "Inspections",
-    "type": "pulls-data-from",
-    "dataFlow": "Displays Inspection status and locations on the map."
-  },
-  {
-    "source": "Project Map",
-    "target": "Observations",
-    "type": "pulls-data-from",
-    "dataFlow": "Displays Observation statuses and locations on the map."
-  },
-  {
-    "source": "Project Map",
-    "target": "Photos",
-    "type": "syncs", // <-- CHANGED to syncs
-    "dataFlow": "Pulls geolocated Photos for display; pinning/marking a location on the Map syncs metadata (e.g., location/pin status) back to the Photo item."
-  },
-  {
-    "source": "Project Map",
-    "target": "Punch List",
-    "type": "pulls-data-from",
-    "dataFlow": "Displays Punch List item locations and status on the map."
-  }
-  ];
+},
+// --- PROJECT MAP LINKS (MANUAL INSERTION) ---
+{
+  "source": "Project Map",
+  "target": "Incidents",
+  "type": "pulls-data-from",
+  "dataFlow": "Displays active Incidents on the map based on location data."
+},
+{
+  "source": "Project Map",
+  "target": "Inspections",
+  "type": "pulls-data-from",
+  "dataFlow": "Displays Inspection status and locations on the map."
+},
+{
+  "source": "Project Map",
+  "target": "Observations",
+  "type": "pulls-data-from",
+  "dataFlow": "Displays Observation statuses and locations on the map."
+},
+{
+  "source": "Project Map",
+  "target": "Photos",
+  "type": "syncs",
+  "dataFlow": "Pulls geolocated Photos for display; pinning/marking a location on the Map syncs metadata (e.g., location/pin status) back to the Photo item."
+},
+{
+  "source": "Project Map",
+  "target": "Punch List",
+  "type": "pulls-data-from",
+  "dataFlow": "Displays Punch List item locations and status on the map."
+}
+]; // <--- CLOSES linksData ARRAY
 
 // --- [SECTION 3] - Connection Type Legend ---
 const legendData = [
@@ -741,5 +742,5 @@ const legendData = [
     "label": "Feeds",
     "description": "Reporting data flow. The origin tool's data is consumed by a data intelligence or business intelligence platform for analysis.",
     "visual_style": "Solid line, one arrow, gray"
-  },
-];
+  }
+]; // <--- CLOSES legendData ARRAY
