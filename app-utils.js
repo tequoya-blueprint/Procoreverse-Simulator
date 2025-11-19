@@ -1,5 +1,5 @@
 // --- app-utils.js ---
-// VERSION 4: Final Robust Accordion Height Fix.
+// VERSION 5: Final Robust Accordion Height Fix using Measure-Set-Reflow.
 
 /**
  * Shows the tooltip with information about a node.
@@ -46,29 +46,44 @@ function toggleLeftPanel() {
 }
 
 /**
- * Toggles the state of an accordion item.
+ * Toggles the state of an accordion item (Main Logic).
  */
 function toggleAccordion(item) {
     const content = item.querySelector('.accordion-content');
     const isActive = item.classList.contains('active');
 
     if (!isActive) {
+        // OPENING SEQUENCE
         item.classList.add('active');
-        // FIX: Temporarily set max-height to none to get true scrollHeight, then set to value
-        content.style.maxHeight = 'none';
-        content.style.maxHeight = content.scrollHeight + "px"; 
+        
+        // 1. Temporarily clear max-height so the browser calculates the full scrollHeight
+        content.style.maxHeight = 'none'; 
+        const height = content.scrollHeight; 
+
+        // 2. Re-set max-height to 0 for transition start
+        content.style.maxHeight = '0px'; 
+        
+        // 3. Force browser reflow/re-render (crucial to start transition from 0px)
+        void content.offsetWidth; 
+
+        // 4. Apply the true scroll height to expand fully
+        content.style.maxHeight = height + "px"; 
+
     } else {
-        // Read the height before setting it to 0 for the transition
+        // CLOSING SEQUENCE
+        // 1. Set current height to a fixed pixel value
         content.style.maxHeight = content.scrollHeight + "px"; 
+        
+        // 2. Use a delay to allow CSS transition to grab the height before setting to 0
         setTimeout(() => {
             content.style.maxHeight = 0;
             item.classList.remove('active');
-        }, 10); // Small delay to ensure CSS registers the height change for the close transition
+        }, 10);
     }
 }
 
 /**
- * Opens a specific accordion item by its ID.
+ * Opens a specific accordion item by its ID (Used for Onboarding).
  */
 function openAccordionItemById(itemId) {
     const item = document.getElementById(itemId);
@@ -76,9 +91,11 @@ function openAccordionItemById(itemId) {
 
     const content = item.querySelector('.accordion-content');
     item.classList.add('active');
-    // FIX: Use the robust expansion method for programmatic opening as well
+    
+    // Use robust opening method
     content.style.maxHeight = 'none';
-    content.style.maxHeight = content.scrollHeight + "px";
+    const height = content.scrollHeight;
+    content.style.maxHeight = height + "px";
 }
 
 // --- Onboarding (Interface Tour) Logic ---
