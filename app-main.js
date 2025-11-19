@@ -98,6 +98,8 @@ function initializeSimulation() {
 }
 
 // --- Marker & Legend Setup ---
+// Inside app-main.js, replace the entire setupMarkers function:
+
 function setupMarkers() {
     const defs = app.svg.select("defs");
 
@@ -107,12 +109,14 @@ function setupMarkers() {
         "feeds": "#4A4A4A", "syncs": "var(--procore-metal)"
     };
 
-    // CRASH FIX: Check if legendData is available before using forEach
+    // CRASH FIX: Check if legendData is available before trying to iterate
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
+            // FIX: Ensure visual_style property exists before accessing 'includes'
+            const style = type.visual_style || '';
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
 
-            if (type.visual_style.includes("one arrow")) {
+            if (style.includes("one arrow")) {
                 defs.append("marker")
                     .attr("id", `arrow-${type.type_id}`)
                     .attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto")
@@ -124,7 +128,6 @@ function setupMarkers() {
     defs.append("marker").attr("id", "arrow-highlighted").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto")
         .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "var(--procore-orange)");
 }
-
 function populateLegend() {
     const legendContainer = d3.select("#connection-legend");
     legendContainer.html(""); 
