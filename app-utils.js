@@ -1,5 +1,5 @@
 // --- app-utils.js ---
-// VERSION 6: Final Robust Accordion Height Fix with Padding Correction.
+// VERSION 7: Removes height calculation from JS. Sets fixed height.
 
 /**
  * Shows the tooltip with information about a node.
@@ -49,36 +49,13 @@ function toggleLeftPanel() {
  * Toggles the state of an accordion item (Main Logic).
  */
 function toggleAccordion(item) {
-    const content = item.querySelector('.accordion-content');
+    // FIX: Remove all JS height calculation. Let CSS handle fixed maxHeight.
     const isActive = item.classList.contains('active');
 
     if (!isActive) {
-        // OPENING SEQUENCE
         item.classList.add('active');
-        
-        // 1. Temporarily clear max-height so the browser calculates the full scrollHeight
-        content.style.maxHeight = 'none'; 
-        const height = content.scrollHeight + 20; // FIX: Added 20px buffer for padding/margin
-
-        // 2. Re-set max-height to 0 for transition start
-        content.style.maxHeight = '0px'; 
-        
-        // 3. Force browser reflow/re-render (crucial)
-        void content.offsetWidth; 
-
-        // 4. Apply the true scroll height to expand fully
-        content.style.maxHeight = height + "px"; 
-
     } else {
-        // CLOSING SEQUENCE
-        // 1. Set current height to a fixed pixel value
-        content.style.maxHeight = content.scrollHeight + "px"; 
-        
-        // 2. Use a delay to allow CSS transition to grab the height before setting to 0
-        setTimeout(() => {
-            content.style.maxHeight = 0;
-            item.classList.remove('active');
-        }, 10);
+        item.classList.remove('active');
     }
 }
 
@@ -88,14 +65,9 @@ function toggleAccordion(item) {
 function openAccordionItemById(itemId) {
     const item = document.getElementById(itemId);
     if (!item || item.classList.contains('active')) return;
-
-    const content = item.querySelector('.accordion-content');
-    item.classList.add('active');
     
-    // FIX: Use the robust expansion method for programmatic opening as well
-    content.style.maxHeight = 'none';
-    const height = content.scrollHeight + 20; // Added 20px buffer
-    content.style.maxHeight = height + "px";
+    // FIX: Just add the class and let CSS handle the expansion
+    item.classList.add('active');
 }
 
 // --- Onboarding (Interface Tour) Logic ---
