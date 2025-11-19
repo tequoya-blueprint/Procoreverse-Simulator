@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 10: Final logic. Includes safeguards for missing data files (CRASH FIX).
+// VERSION 11: Final logic. Includes explicit safety checks for legendData structure.
 
 // --- Global App State ---
 const app = {
@@ -32,13 +32,12 @@ function setupCategories() {
     const rootStyles = getComputedStyle(document.documentElement);
     const procoreColors = { 
         orange: rootStyles.getPropertyValue('--procore-orange').trim(), 
-        lumber: rootStyles.getPropertyValue('--procore-lumber').trim(), 
         earth: rootStyles.getPropertyValue('--procore-earth').trim(), 
         metal: rootStyles.getPropertyValue('--procore-metal').trim() 
     };
 
     const colorMap = {
-        "Preconstruction": procoreColors.lumber,
+        "Preconstruction": "#CEC4A1", 
         "Financial Management": procoreColors.earth,
         "Quality & Safety": "#5B8D7E", 
         "Platform & Core": "#757575",
@@ -46,8 +45,7 @@ function setupCategories() {
         "Helix": "#000000", 
         "Project Execution": procoreColors.orange,
         "Resource Management": procoreColors.metal,
-        "Emails": "#c94b4b",
-        "Project Map": procoreColors.orange // Project Map is an execution tool
+        "Emails": "#c94b4b" 
     };
     
     app.categories = {}; 
@@ -109,9 +107,11 @@ function setupMarkers() {
 
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
+            // FIX: Check if type and visual_style exist before access
+            const style = type.visual_style || '';
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
 
-            if (type.visual_style.includes("one arrow")) {
+            if (type.type_id && style.includes("one arrow")) {
                 defs.append("marker")
                     .attr("id", `arrow-${type.type_id}`)
                     .attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto")
@@ -146,7 +146,7 @@ function populateLegend() {
             
             item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id)
                 .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 mt-0.5 focus:ring-orange-500 legend-checkbox")
-                .on("change", () => updateGraph(true));
+                .on("change", () => updateGraph(true)); 
 
             item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
             item.append("div").attr("class", "ml-2").html(`
@@ -173,7 +173,7 @@ function setFoci() {
         "Project Management": { x: 0.25, y: 0.3 }, "Quality & Safety": { x: 0.25, y: 0.7 }, "Workforce Management": { x: 0.75, y: 0.7 },
         "Construction Intelligence": { x: 0.5, y: 0.85 }, "External Integrations": { x: 0.9, y: 0.5 },
         "Helix": { x: 0.1, y: 0.5 }, "Project Execution": { x: 0.25, y: 0.3 }, "Resource Management": { x: 0.75, y: 0.7 }, "Emails": { x: 0.1, y: 0.1 },
-        "Project Map": { x: 0.25, y: 0.5 } // FIX: Ensure Project Map positioning is set
+        "Project Map": { x: 0.25, y: 0.5 } // Added Project Map positioning
     };
 
     Object.keys(app.categories).forEach(key => {
@@ -207,10 +207,12 @@ function ticked() {
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
 
+    // CRASH FIX: Ensure getActiveFilters exists before calling it
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set() };
 
-    // CRASH FIX: Ensure nodesData exists
+    // CRASH FIX: Ensure nodesData and linksData exist before filtering
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
+    const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
 
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
@@ -224,9 +226,6 @@ function updateGraph(isFilterChange = true) {
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     
-    // CRASH FIX: Ensure linksData exists before filtering
-    const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
-
     const filteredLinks = allLinks.filter(d => 
         nodeIds.has(d.source.id || d.source) && 
         nodeIds.has(d.target.id || d.target) &&
@@ -293,6 +292,7 @@ function updateGraph(isFilterChange = true) {
     app.simulation.force("link").links(filteredLinks);
     app.simulation.alpha(1).restart();
     
+    // CRASH FIX: Check if updateTourDropdown exists before calling
     if(typeof updateTourDropdown === 'function') {
         updateTourDropdown(filters.packageTools); 
     }
@@ -312,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCategories();
     initializeSimulation(); 
     
+    // CRASH FIX: Check if functions exist before calling
     if(typeof initializeControls === 'function') initializeControls(); 
     if(typeof initializeInfoPanel === 'function') initializeInfoPanel(); 
     if(typeof initializeTourControls === 'function') initializeTourControls(); 
