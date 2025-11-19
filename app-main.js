@@ -174,7 +174,7 @@ function setFoci() {
         "Platform & Core": { x: 0.5, y: 0.5 }, "Financial Management": { x: 0.75, y: 0.3 }, "Preconstruction": { x: 0.5, y: 0.15 },
         "Project Management": { x: 0.25, y: 0.3 }, "Quality & Safety": { x: 0.25, y: 0.7 }, "Workforce Management": { x: 0.75, y: 0.7 },
         "Construction Intelligence": { x: 0.5, y: 0.85 }, "External Integrations": { x: 0.9, y: 0.5 },
-        "Helix": { x: 0.1, y: 0.5 }, "Project Execution": { x: 0.25, y: 0.3 }, "Resource Management": { x: 0.75, y: 0.7 }, "Emails": { x: 0.1, y: 0.1 }
+        "Helix": { x: 0.1, y: 0.5 }, "Project Execution": { x: 0.25, y: 0.3 }, "Resource Management": { x: 0.75, y: 0.7 }, "Emails": { x: 0.1, y: 0.1 }, "Project Map": { x: 0.25, y: 0.5 }
     };
 
     Object.keys(app.categories).forEach(key => {
