@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION 11: Final verified logic. Ensures tours are visible and functional.
+// VERSION 11: Fixes accordion sizing loop to prevent overlap.
 
 function initializeTourControls() {
     d3.select("#tour-select").on("change", function() {
@@ -28,21 +28,31 @@ function initializeTourControls() {
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 }
 
+/**
+ * Helper to force the accordion to resize when buttons are added/removed.
+ */
+function resizeTourAccordion() {
+    const content = document.querySelector('#tour-container').closest('.accordion-content');
+    if (content && content.parentElement.classList.contains('active')) {
+        // Use setTimeout(0) to force browser to render the new buttons BEFORE calculating height.
+        setTimeout(() => {
+            content.style.maxHeight = content.scrollHeight + 20 + "px"; // +20 for safety buffer
+        }, 0);
+    }
+}
+
 function updateTourDropdown(packageTools) {
     const tourSelect = d3.select("#tour-select");
     const platformTours = d3.select("#platform-tours").html("");
     const packageTours = d3.select("#package-tours").html("");
     const aiTours = d3.select("#ai-tours").html("");
 
-    let platformTourCount = 0;
     let packageTourCount = 0;
-    let aiTourCount = 0;
 
-    // 1. Platform Workflows (GLOBAL - ALWAYS SHOW)
+    // 1. Platform Tours (GLOBAL - ALWAYS SHOW)
     if (tours.platform) {
         Object.entries(tours.platform).forEach(([tourId, tourData]) => {
             platformTours.append("option").attr("value", tourId).text(tourData.name);
-            platformTourCount++;
         });
     }
 
@@ -61,13 +71,12 @@ function updateTourDropdown(packageTools) {
     if (tours.ai) {
         Object.entries(tours.ai).forEach(([tourId, tourData]) => {
             aiTours.append("option").attr("value", tourId).text(tourData.name);
-            aiTourCount++;
         });
     }
 
     d3.select("#platform-tours").style("display", ""); 
     d3.select("#package-tours").style("display", packageTourCount > 0 ? "" : "none");
-    d3.select("#ai-tours").style("display", aiTourCount > 0 ? "" : "none");
+    d3.select("#ai-tours").style("display", packageTourCount > 0 ? "" : "none"); // Show AI tours if any package tours are active
 }
 
 function previewTour(tourData) {
@@ -111,6 +120,7 @@ function previewTour(tourData) {
             return null;
         });
 
+    // Show Start Button
     const tourControls = d3.select("#tour-controls");
     tourControls.html(`
         <button id="tour-start" class="btn-primary py-2 px-4 text-sm w-full">
@@ -119,7 +129,7 @@ function previewTour(tourData) {
     `);
     tourControls.style("display", "flex");
     
-    if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
+    resizeTourAccordion();
     
     d3.select("#tour-start").on("click", startTour);
     
@@ -138,7 +148,7 @@ function startTour() {
         <button id="tour-next" class="btn-primary py-2 px-4 text-sm">Next <i class="fas fa-arrow-right ml-1"></i></button>
     `);
     
-    if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
+    resizeTourAccordion();
     
     d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
     d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
@@ -153,9 +163,7 @@ function stopTour() {
     app.currentStep = -1;
     d3.select("#tour-controls").style("display", "none").html(""); 
     d3.select("#tour-select").property('value', 'none');
-    
-    if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
-
+    resizeTourAccordion();
     resetHighlight(); 
 }
 
@@ -174,7 +182,6 @@ function runTourStep() {
     app.node.transition().duration(500).style("opacity", n => tourNodeIds.has(n.id) ? 1 : 0.1);
     app.node.classed("selected", n => n.id === nodeData.id);
 
-    // Reset links before highlighting the current path
     app.link.classed("pulsing", false).classed("highlighted", false)
         .transition().duration(500).style("stroke-opacity", 0.1).attr("marker-end", null);
 
@@ -185,9 +192,7 @@ function runTourStep() {
             (l.source.id === step.nodeId && l.target.id === prevStep.nodeId)
         );
         if (!stepLink.empty()) {
-            // FIX: Apply pulsing class to make the line move
-            stepLink.classed("pulsing", true) 
-                .transition().duration(500).style("stroke-opacity", 1).attr("marker-end", l => `url(#arrow-highlighted)`);
+            stepLink.classed("pulsing", true).transition().duration(500).style("stroke-opacity", 1).attr("marker-end", l => `url(#arrow-highlighted)`);
         }
     }
 
@@ -202,7 +207,6 @@ function runTourStep() {
 }
 
 async function generateAiWorkflow() {
-    // ... (AI Generation logic remains correct)
     const button = d3.select("#ai-workflow-generate");
     const status = d3.select("#ai-modal-status");
     const userInput = d3.select("#ai-workflow-input").property("value");
