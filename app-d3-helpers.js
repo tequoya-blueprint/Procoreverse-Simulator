@@ -24,6 +24,7 @@ function drag(simulation) {
     
     function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0);
+        // Node stays sticky
     }
     
     return d3.drag()
@@ -35,6 +36,7 @@ function drag(simulation) {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
+    // Protect Tour views
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview') return;
 
     if (app.selectedNode === d) {
@@ -50,6 +52,7 @@ function nodeClicked(event, d) {
 }
 
 function nodeMouseOver(event, d) {
+    // FIX: Do not highlight if already in a locked state
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected') return;
     
     if (typeof showTooltip === 'function') showTooltip(event, d);
@@ -60,7 +63,7 @@ function nodeMouseOver(event, d) {
 }
 
 function nodeMouseOut() {
-    // FIX: Do not reset if we are in any persistent state (tour, preview, selected)
+    // FIX: Do not reset if we are in any persistent state
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected') return;
     
     if (typeof hideTooltip === 'function') hideTooltip();
@@ -146,7 +149,7 @@ function resetHighlight(hidePanel = true) {
         app.link.transition().duration(400)
             .style("stroke-opacity", 0.6) 
             .attr("marker-end", d => {
-                // Restore default arrows (FIXES ISSUE 3: ARROWS VISIBLE ON UNCONNECTED NODES)
+                // Restore default arrows (FIXES ARROW VISIBILITY BUG)
                 if (typeof legendData !== 'undefined') {
                      const legend = legendData.find(l => l.type_id === d.type);
                      if (legend && legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
