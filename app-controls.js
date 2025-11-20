@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION 12: Fixes Add-on selection loop, Panel resizing, and Region labels.
+// VERSION 11: Final filter logic. Array parsing corrected.
 
 // --- DATA MAPPING CONSTANTS ---
 const audienceDataToKeyMap = {
@@ -15,7 +15,7 @@ const audienceKeyToLabelMap = {
 };
 
 const audienceKeyToDataValuesMap = {
-    "GC": ["Contractor", "General Contractor", "GC"],
+    "GC": ["Contractor", "GC", "General Contractor"],
     "SC": ["SC", "Specialty Contractor"],
     "O": ["Owners", "Owner", "Owner Developer *Coming Soon"]
 };
@@ -24,24 +24,22 @@ function initializeControls() {
     // --- Accordion Setup ---
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {
-            toggleAccordion(header.parentElement); 
+            if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); 
         });
     });
 
-    // --- Filter Dropdowns ---
     populateRegionFilter();
-    populatePersonaFilter();
+    populatePersonaFilter(); 
     
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange);
-    d3.select("#persona-filter").on("change", () => updateGraph(true));
+    d3.select("#persona-filter").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
     
-    // --- Category Filters ---
     populateCategoryFilters(); 
     d3.select("#toggle-categories").on("click", toggleAllCategories);
+    d3.select("#toggle-legend").on("click", toggleAllConnections); // FIX: Toggle Legend listener
 
-    // --- Search ---
     d3.select("#search-input").on("input", handleSearchInput);
     d3.select("body").on("click", (e) => {
         if (e.target && !document.getElementById('search-container').contains(e.target)) {
@@ -55,18 +53,20 @@ function initializeControls() {
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 }
 
-/**
- * Populate Regions. Uses "NAMER" exactly as in data.
- */
+let allConnectionsChecked = true;
+function toggleAllConnections() {
+    allConnectionsChecked = !allConnectionsChecked;
+    d3.selectAll(".legend-checkbox").property("checked", allConnectionsChecked);
+    if (typeof updateGraph === 'function') updateGraph(true);
+}
+
 function populateRegionFilter() {
     const regionFilter = d3.select("#region-filter");
     const regions = [...new Set(packagingData.map(pkg => pkg.region))];
     
     regions.sort().forEach(region => {
         let label = region; 
-        if (region === "EUR") label = "EMEA"; // Only remap EUR
-        // NAMER stays NAMER
-        
+        if (region === "EUR") label = "EMEA";
         regionFilter.append("option").attr("value", region).text(label);
     });
 }
@@ -76,12 +76,10 @@ function onRegionChange() {
     const audienceFilter = d3.select("#audience-filter");
     const packageFilter = d3.select("#package-filter");
     
-    // Reset downstream
     audienceFilter.property("value", "all").property("disabled", region === "all");
     packageFilter.property("value", "all").property("disabled", true).html('<option value="all">All Packages</option>');
     audienceFilter.html('<option value="all">All Audiences</option>'); 
     
-    // Clear Add-ons immediately
     clearPackageDetails();
 
     if (region !== "all") {
@@ -94,7 +92,7 @@ function onRegionChange() {
              audienceFilter.append("option").attr("value", audKey).text(audienceKeyToLabelMap[audKey]);
         });
     }
-    updateGraph(true);
+    if (typeof updateGraph === 'function') updateGraph(true);
 }
 
 function onAudienceChange() {
@@ -105,7 +103,7 @@ function onAudienceChange() {
     packageFilter.html('<option value="all">All Packages</option>');
     packageFilter.property("disabled", true);
     
-    clearPackageDetails(); // Clear Add-ons
+    clearPackageDetails(); 
 
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
 
@@ -120,17 +118,9 @@ function onAudienceChange() {
             packageFilter.property("disabled", false);
         }
     }
-    updateGraph(true);
+    if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-/**
- * Triggered when a specific package is selected.
- * 1. Clears old details.
- * 2. Finds package data.
- * 3. DRAWS the Add-on checkboxes (Only happens here!)
- * 4. Resizes the accordion.
- * 5. Updates the graph.
- */
 function onPackageChange() {
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
@@ -149,8 +139,8 @@ function onPackageChange() {
         }
     }
     
-    refreshAccordionHeight(); // Expand the panel to fit new content
-    updateGraph(true);
+    refreshAccordionHeight(); 
+    if (typeof updateGraph === 'function') updateGraph(true);
 }
 
 function populateAddOnsAndServices(packageInfo) {
@@ -159,21 +149,17 @@ function populateAddOnsAndServices(packageInfo) {
     const servicesContainer = d3.select("#package-services-container");
     const servicesList = d3.select("#package-services-list");
 
-    // Draw Add-Ons
-    if (packageInfo['available_add-ons'] && packageInfo['available_add-ons'].length > 0) {
-        packageInfo['available_add-ons'].forEach(addOn => {
+    if (packageInfo['available_add-ons'] && packageInfo['available-add-ons'].length > 0) {
+        packageInfo['available-add-ons'].forEach(addOn => {
             const label = addOnsCheckboxes.append("label").attr("class", "flex items-center cursor-pointer py-1");
-            label.append("input")
-                .attr("type", "checkbox")
-                .attr("value", addOn)
+            label.append("input").attr("type", "checkbox").attr("value", addOn)
                 .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
-                .on("change", () => updateGraph(true)); // Listener just updates graph
+                .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
             label.append("span").attr("class", "text-gray-700").text(addOn);
         });
         addOnsContainer.classed('hidden', false);
     }
 
-    // Draw Services
     if (packageInfo['available_services'] && packageInfo['available_services'].length > 0) {
         packageInfo['available_services'].forEach(service => {
             servicesList.append("div").attr("class", "flex items-center text-gray-700")
@@ -188,26 +174,24 @@ function clearPackageDetails() {
     d3.select("#package-services-list").html("");
     d3.select("#add-ons-container").classed('hidden', true);
     d3.select("#package-services-container").classed('hidden', true);
-    refreshAccordionHeight(); // Shrink panel back
+    if(typeof refreshAccordionHeight === 'function') refreshAccordionHeight(); 
 }
 
 function refreshAccordionHeight() {
-    // Find the content div and force it to update max-height
     const content = document.querySelector('#packaging-container').closest('.accordion-content');
     if (content && content.parentElement.classList.contains('active')) {
-        // Reset to auto to get full height, then set pixel value for transition if needed, 
-        // but simply setting a high max-height works for expansion.
         content.style.maxHeight = content.scrollHeight + "px";
     }
 }
+
 
 function getActiveFilters() {
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const pkgName = d3.select("#package-filter").property('value');
     
-    const activeCategories = new Set(d3.selectAll("#category-filters input:checked").nodes().map(el => el.value));
-    const activeConnectionTypes = new Set(d3.selectAll(".legend-checkbox:checked").nodes().map(el => el.value));
+    const activeCategories = d3.selectAll("#category-filters input:checked").nodes().map(el => el.value);
+    const activeConnectionTypes = d3.selectAll(".legend-checkbox:checked").nodes().map(el => el.value);
     
     let packageTools = null;
 
@@ -220,28 +204,29 @@ function getActiveFilters() {
         if (packageInfo) {
             packageTools = new Set(packageInfo.tools);
             
-            // READ the checked add-ons (Do NOT re-draw them)
             const selectedAddOns = d3.selectAll("#add-ons-checkboxes input:checked").nodes().map(el => el.value);
             selectedAddOns.forEach(addOn => packageTools.add(addOn));
         }
     }
 
     return {
-        categories: activeCategories,
+        categories: new Set(activeCategories),
         persona: d3.select("#persona-filter").property('value'),
         audience: audience,
         packageTools: packageTools, 
-        connectionTypes: activeConnectionTypes
+        connectionTypes: new Set(activeConnectionTypes)
     };
 }
 
 function populatePersonaFilter() {
     const personaFilter = d3.select("#persona-filter");
-    personaFilter.html('<option value="all">All Personas</option>'); 
+    personaFilter.html('<option value="all">All Personas</option>');
     const allPersonas = new Set();
-    nodesData.forEach(node => {
-        if (node.personas) node.personas.forEach(p => allPersonas.add(p));
-    });
+    if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
+        nodesData.forEach(node => {
+            if (node.personas) node.personas.forEach(p => allPersonas.add(p));
+        });
+    }
 
     [...allPersonas].sort().forEach(p => {
         const personaMap = {
@@ -252,28 +237,8 @@ function populatePersonaFilter() {
     });
 }
 
-function populateCategoryFilters() {
-    const filtersContainer = d3.select("#category-filters");
-    filtersContainer.html(""); 
-    Object.keys(app.categories).sort().forEach(cat => {
-        const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
-        label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat)
-            .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
-            .on("change", () => updateGraph(true));
-        label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
-        label.append("span").attr("class", "text-gray-700").text(cat);
-    });
-}
-
-let allCategoriesChecked = true;
-function toggleAllCategories() {
-    allCategoriesChecked = !allCategoriesChecked;
-    d3.selectAll("#category-filters input").property("checked", allCategoriesChecked);
-    updateGraph(true);
-}
-
 function resetView() {
-    stopTour(); 
+    if (typeof stopTour === 'function') stopTour(); 
     
     d3.select("#region-filter").property('value', 'all');
     d3.select("#audience-filter").property('value', 'all').property("disabled", true).html('<option value="all">All Audiences</option>');
@@ -285,8 +250,8 @@ function resetView() {
 
     clearPackageDetails(); 
 
-    updateGraph(false);
-    resetZoom(); 
+    if (typeof updateGraph === 'function') updateGraph(false);
+    if (typeof resetZoom === 'function') resetZoom(); 
 }
 
 function handleSearchInput() {
@@ -311,7 +276,7 @@ function handleSearchInput() {
 }
 
 function selectNodeFromSearch(d) {
-    if (app.interactionState === 'tour') stopTour();
+    if (typeof stopTour === 'function') stopTour();
     const isVisible = app.simulation.nodes().some(n => n.id === d.id);
     if (!isVisible) {
         showToast(`"${d.id}" is hidden by filters. Resetting view.`, 3000);
@@ -319,7 +284,9 @@ function selectNodeFromSearch(d) {
     }
     setTimeout(() => {
         const nodeData = app.simulation.nodes().find(n => n.id === d.id);
-        if (nodeData) nodeClicked(new Event('click'), nodeData);
+        if (nodeData) {
+            if (typeof nodeClicked === 'function') nodeClicked(new Event('click'), nodeData);
+        }
     }, isVisible ? 0 : 600); 
     d3.select("#search-input").property("value", "");
     d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
