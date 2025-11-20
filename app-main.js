@@ -32,20 +32,25 @@ function setupCategories() {
     const rootStyles = getComputedStyle(document.documentElement);
     const procoreColors = { 
         orange: rootStyles.getPropertyValue('--procore-orange').trim(), 
+        lumber: rootStyles.getPropertyValue('--procore-lumber').trim(), 
         earth: rootStyles.getPropertyValue('--procore-earth').trim(), 
         metal: rootStyles.getPropertyValue('--procore-metal').trim() 
     };
 
     const colorMap = {
-        "Preconstruction": "#CEC4A1", 
+        "Preconstruction": procoreColors.lumber,
+        "Project Management": procoreColors.orange,
         "Financial Management": procoreColors.earth,
+        "Workforce Management": "#3a8d8c", 
         "Quality & Safety": "#5B8D7E", 
         "Platform & Core": "#757575",
+        "Construction Intelligence": "#4A4A4A",
         "External Integrations": "#B0B0B0",
         "Helix": "#000000", 
         "Project Execution": procoreColors.orange,
         "Resource Management": procoreColors.metal,
-        "Emails": "#c94b4b" 
+        "Emails": "#c94b4b",
+        "Project Map": procoreColors.orange // Project Map is an execution tool
     };
     
     app.categories = {}; 
@@ -207,18 +212,14 @@ function ticked() {
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
 
-    // CRASH FIX: Ensure getActiveFilters exists before calling it
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set() };
 
-    // CRASH FIX: Ensure nodesData and linksData exist before filtering
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
 
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        
-        // Filter by Package (Tools) - Only if a package is explicitly selected
         const inPackage = !filters.packageTools || filters.packageTools.has(d.id);
         
         return inCategory && inPersona && inPackage;
@@ -244,13 +245,14 @@ function updateGraph(isFilterChange = true) {
                     .on("click", nodeClicked); 
                 
                 nodeGroup.append("path")
-                    .attr("d", d => generateHexagonPath(d.level === 'Company' ? app.nodeSizeCompany : app.baseNodeSize)) 
+                    // FIX: Node size driven by level designation (lowercase check)
+                    .attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)) 
                     .attr("fill", d => app.categories[d.group].color)
                     .style("color", d => app.categories[d.group].color);
                 
                 nodeGroup.append("text")
                     .text(d => d.id)
-                    .attr("dy", d => (d.level === 'Company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
+                    .attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
                 
                 nodeGroup.style("opacity", 0).transition().duration(500).style("opacity", 1);
                 return nodeGroup;
@@ -292,42 +294,9 @@ function updateGraph(isFilterChange = true) {
     app.simulation.force("link").links(filteredLinks);
     app.simulation.alpha(1).restart();
     
-    // CRASH FIX: Check if updateTourDropdown exists before calling
     if(typeof updateTourDropdown === 'function') {
         updateTourDropdown(filters.packageTools); 
     }
     resetHighlight(); 
 }
-
-// --- Window & Initial Load ---
-window.addEventListener('resize', () => {
-    setFoci();
-    if(app.simulation) {
-        app.simulation.alpha(0.5).restart();
-    }
-});
-
-// --- Main Initialization Function ---
-document.addEventListener('DOMContentLoaded', () => {
-    setupCategories();
-    initializeSimulation(); 
-    
-    // CRASH FIX: Check if functions exist before calling
-    if(typeof initializeControls === 'function') initializeControls(); 
-    if(typeof initializeInfoPanel === 'function') initializeInfoPanel(); 
-    if(typeof initializeTourControls === 'function') initializeTourControls(); 
-    
-    populateLegend();
-    updateGraph(false); 
-
-    setTimeout(() => {
-        const loadingOverlay = document.getElementById('loading-overlay');
-        if (loadingOverlay) loadingOverlay.classList.add('hidden');
-    }, 1500);
-
-    const helpButton = d3.select("#help-button");
-    if (helpButton.node() && !localStorage.getItem('procoreverseV2_Visited')) {
-        helpButton.classed('initial-pulse', true);
-        localStorage.setItem('procoreverseV2_Visited', 'true');
-    }
 });
