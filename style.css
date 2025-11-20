@@ -239,17 +239,18 @@ body {
     color: var(--procore-orange);
 }
 .accordion-content {
-    /* FIX: Set a large static height for open state, and 0 for closed state */
+    /* Base state: Collapsed */
     max-height: 0;
     overflow-y: hidden;
-    overflow-x: visible; /* Allows for tooltips/etc */
+    overflow-x: visible; 
+    padding-bottom: 0; /* Ensures correct starting height */
     transition: max-height 0.5s ease-in-out, padding-bottom 0.5s ease-in-out;
 }
 .accordion-item.active .accordion-content {
-    /* Use a huge, fixed value to ensure ALL content (including dynamically added buttons/addons) is visible */
-    max-height: 1000px; /* FIXED HEIGHT */
+    /* FIX: Set a large, fixed height to ensure ALL dynamic content is visible */
+    max-height: 1000px; 
     padding-bottom: 1rem;
-    overflow-y: visible; /* Allow content to push beyond fixed height for parent scrollbar */
+    overflow-y: visible; /* Allow content to push the container down */
 }
 .accordion-icon {
     transition: transform 0.3s ease;
