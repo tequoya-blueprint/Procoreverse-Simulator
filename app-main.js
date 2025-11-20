@@ -50,7 +50,7 @@ function setupCategories() {
         "Project Execution": procoreColors.orange,
         "Resource Management": procoreColors.metal,
         "Emails": "#c94b4b",
-        "Project Map": procoreColors.orange // Project Map is an execution tool
+        "Project Map": procoreColors.orange 
     };
     
     app.categories = {}; 
@@ -245,7 +245,7 @@ function updateGraph(isFilterChange = true) {
                     .on("click", nodeClicked); 
                 
                 nodeGroup.append("path")
-                    // FIX: Node size driven by level designation (lowercase check)
+                    // FIX: Node size driven by lowercase 'company' level designation
                     .attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)) 
                     .attr("fill", d => app.categories[d.group].color)
                     .style("color", d => app.categories[d.group].color);
