@@ -1,9 +1,6 @@
 // --- app-utils.js ---
-// VERSION 7: Removes height calculation from JS. Sets fixed height.
+// VERSION 8: Final Stable Accordion Logic (Relies on CSS for fixed height).
 
-/**
- * Shows the tooltip with information about a node.
- */
 function showTooltip(e, d) {
     const tooltip = d3.select("#tooltip");
     tooltip.html(`
@@ -15,25 +12,16 @@ function showTooltip(e, d) {
     .classed("visible", true);
 }
 
-/**
- * Hides the tooltip.
- */
 function hideTooltip() {
     d3.select("#tooltip").classed("visible", false);
 }
 
-/**
- * Shows a toast notification message.
- */
 function showToast(message, duration = 3000) {
     const t = d3.select("#toast-notification");
     t.text(message).classed("show", true);
     setTimeout(() => t.classed("show", false), duration);
 }
 
-/**
- * Toggles the state of the main controls (left) panel.
- */
 function toggleLeftPanel() {
     const leftPanel = d3.select("#controls");
     const leftPanelToggle = d3.select("#left-panel-toggle");
@@ -49,13 +37,14 @@ function toggleLeftPanel() {
  * Toggles the state of an accordion item (Main Logic).
  */
 function toggleAccordion(item) {
-    // FIX: Remove all JS height calculation. Let CSS handle fixed maxHeight.
     const isActive = item.classList.contains('active');
 
     if (!isActive) {
         item.classList.add('active');
+        // Let CSS handle the large max-height
     } else {
         item.classList.remove('active');
+        // Let CSS handle the max-height: 0
     }
 }
 
@@ -66,7 +55,7 @@ function openAccordionItemById(itemId) {
     const item = document.getElementById(itemId);
     if (!item || item.classList.contains('active')) return;
     
-    // FIX: Just add the class and let CSS handle the expansion
+    // Just add the class, CSS handles the rest
     item.classList.add('active');
 }
 
