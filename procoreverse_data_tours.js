@@ -4,12 +4,11 @@
 const tours = {
   platform: {
     pco: {
-      name: "RFI to Change Order",
+      name: "Drawing Revision & Change Management",
       steps: [
         { nodeId: "Drawings", info: "A discrepancy is found on the Drawings, and an RFI is created from a markup." },
         { nodeId: "RFIs", info: "The RFI is sent to the design team, who confirms a change in scope is required." },
         { nodeId: "Change Events", info: "A Change Event is created from the RFI to start tracking the potential cost and schedule impact." },
-        { nodeId: "Bidding", info: "Quotes are requested from subcontractors (via Bidding) to price the change." },
         { nodeId: "Change Orders", info: "A formal Prime Change Order (PCO) is generated, bundling all costs, and sent to the Owner for approval." },
         { nodeId: "Budget", info: "Once approved, the Change Order automatically updates the project Budget in real-time." }
       ]
@@ -19,7 +18,6 @@ const tours = {
       steps: [
         { nodeId: "Commitments", info: "A subcontractor is invited to bill against their Commitment (Subcontract)." },
         { nodeId: "Invoicing", info: "The subcontractor submits their invoice (pay application) against the Commitment's Schedule of Values." },
-        { nodeId: "Workflows", info: "The invoice is automatically routed via predefined Workflows to the Project Manager for review." },
         { nodeId: "ERP Systems", info: "Once approved, the invoice and payment status are synced to the external ERP/Accounting system." },
         { nodeId: "Procore Pay", info: "Alternatively, the approved invoice can be queued for payment disbursement using Procore Pay." }
       ]
@@ -28,16 +26,14 @@ const tours = {
       name: "Submittal Review Process",
       steps: [
         { nodeId: "Specifications", info: "The project specifications define the required submittals for each trade." },
-        { nodeId: "Submittals", info: "The GC creates submittal packages from the specs and assigns them to the subcontractors." },
-        { nodeId: "Workflows", info: "The sub's response is routed via Workflows to the design team for review and approval." },
+        { nodeId: "Submittals", info: "The GC creates submittal packages from the specs and assigns them to the subcontractors. The sub's response is routed via Workflows to the design team for review and approval." },
         { nodeId: "Drawings", info: "The 'Approved' submittal is linked to its location on the Drawings for easy field access." }
       ]
     },
     safety_incident: {
       name: "Safety Incident Reporting",
       steps: [
-        { nodeId: "Daily Log", info: "A safety incident occurs on site and is immediately noted in the Daily Log." },
-        { nodeId: "Incidents", info: "A detailed Incident report is created, documenting the event, personnel, and conditions." },
+        { nodeId: "Incidents", info: "A safety incident occurs on site and is immediately noted in the Daily Log and a detailed Incident report is created, documenting the event, personnel, and conditions." },
         { nodeId: "Photos", info: "Photos of the incident scene are attached to the Incident report for documentation." },
         { nodeId: "Observations", info: "A Safety Observation is created from the Incident to track the required corrective actions." },
         { nodeId: "Analytics", info: "Incident data is aggregated in Analytics to identify safety trends and risks across projects." }
