@@ -1,5 +1,5 @@
 // --- app-d3-helpers.js ---
-// VERSION 6: Final fix for Mouse Persistence, Tour Stability, and Arrow Visibility.
+// VERSION 7: Fixes Close Button functionality by overriding state protection.
 
 function generateHexagonPath(size) {
     const points = Array.from({length: 6}, (_, i) => {
@@ -36,7 +36,6 @@ function drag(simulation) {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // Protect Tour views
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview') return;
 
     if (app.selectedNode === d) {
@@ -52,7 +51,7 @@ function nodeClicked(event, d) {
 }
 
 function nodeMouseOver(event, d) {
-    // FIX: Do not highlight if already in a locked state
+    // Do not highlight if already in a locked state
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected') return;
     
     if (typeof showTooltip === 'function') showTooltip(event, d);
@@ -63,7 +62,7 @@ function nodeMouseOver(event, d) {
 }
 
 function nodeMouseOut() {
-    // FIX: Do not reset if we are in any persistent state
+    // Do not reset if we are in any persistent state (tour, preview, selected)
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected') return;
     
     if (typeof hideTooltip === 'function') hideTooltip();
@@ -96,9 +95,7 @@ function applyHighlight(d) {
     app.node.transition().duration(300)
         .style("opacity", n => connectedNodeIds.has(n.id) ? 1 : opacity);
     
-    app.link
-        .classed("pulsing", l => connectedLinks.has(l)) // <<<--- ADDED PULSING CLASS BACK
-        .transition().duration(300)
+    app.link.transition().duration(300)
         .style("stroke-opacity", l => connectedLinks.has(l) ? 1 : opacity * 0.5)
         .attr("marker-end", l => {
             if (!connectedLinks.has(l)) return null;
@@ -135,8 +132,11 @@ function highlightConnection(element, d) {
  * Resets all highlights and selections.
  */
 function resetHighlight(hidePanel = true) {
-    // Protect Tour views and Selected State
-    if (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected') return; 
+    // FIX: Only block the reset if it's a mouse event (hidePanel=false) AND we are in a locked state.
+    // If hidePanel is TRUE (the close button was clicked), we proceed with the reset.
+    if (!hidePanel && (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected')) {
+        return; 
+    }
 
     app.interactionState = 'explore';
     app.selectedNode = null;
@@ -151,7 +151,6 @@ function resetHighlight(hidePanel = true) {
         app.link.transition().duration(400)
             .style("stroke-opacity", 0.6) 
             .attr("marker-end", d => {
-                // Restore default arrows (FIXES ARROW VISIBILITY BUG)
                 if (typeof legendData !== 'undefined') {
                      const legend = legendData.find(l => l.type_id === d.type);
                      if (legend && legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
