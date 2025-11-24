@@ -65,17 +65,20 @@ function populateConnectionList(d) {
     if (connections.length > 0) {
         connections.forEach(l => {
             const otherNode = l.source.id === d.id ? l.target : l.source;
-            const direction = l.source.id === d.id ? 'out' : 'in';
+            const direction = l.source.id === d.id ? 'out' : 'in'; // 'out' if d is Source, 'in' if d is Target
             const connType = legendData.find(t => t.type_id === l.type);
 
             let arrowIcon = '';
             if (connType) {
                 if (connType.visual_style.includes("two arrows")) {
-                    arrowIcon = '<i class="fas fa-exchange-alt text-orange-500 mx-3"></i>';
+                    // Bi-directional icon
+                    arrowIcon = '<i class="fas fa-exchange-alt text-orange-500 mx-3"></i>'; 
                 } else if (direction === 'out') {
-                    arrowIcon = '<i class="fas fa-long-arrow-alt-right text-orange-500 mx-3"></i>';
+                    // Outbound/Push icon for one-way flows
+                    arrowIcon = '<i class="fas fa-sign-out-alt text-red-500 mx-3"></i>'; 
                 } else {
-                    arrowIcon = '<i class="fas fa-long-arrow-alt-left text-orange-500 mx-3"></i>';
+                    // Inbound/Pull icon for one-way flows
+                    arrowIcon = '<i class="fas fa-sign-in-alt text-green-500 mx-3"></i>'; 
                 }
             }
 
@@ -85,12 +88,14 @@ function populateConnectionList(d) {
                 .on("mouseenter", function() { highlightConnection(this, d); }) 
                 .on("mouseleave", () => resetHighlight(false)); 
 
+            // Display: Always show (Other Node) Icon (Selected Node)
             li.append("div")
                 .attr("class", "flex items-center font-semibold text-gray-800 pointer-events-none group-hover:text-black transition")
-                .html(direction === 'out' ?
-                    `<span>${d.id}</span>${arrowIcon}<span>${otherNode.id}</span>` :
-                    `<span>${otherNode.id}</span>${arrowIcon}<span>${d.id}</span>`
-                );
+                .html(`
+                    <span>${otherNode.id}</span>
+                    ${arrowIcon}
+                    <span>${d.id}</span>
+                `);
             
             if (l.dataFlow) {
                 li.append("div")
