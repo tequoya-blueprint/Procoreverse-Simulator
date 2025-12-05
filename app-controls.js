@@ -1,11 +1,10 @@
 // --- app-controls.js ---
-// VERSION 10: Final logic. Array parsing corrected.
+// VERSION 13: Final Fix. Adds key-safety for Add-Ons (handles underscores vs hyphens).
 
 // --- DATA MAPPING CONSTANTS ---
-// These maps translate between the UI (Dropdowns) and your Data File.
 const audienceDataToKeyMap = {
     "Contractor": "GC", "General Contractor": "GC", "GC": "GC",
-    "SC": "Specialty Contractor", "SC": "SC",
+    "SC": "SC", "Specialty Contractor": "SC",
     "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O"
 };
 
@@ -55,8 +54,13 @@ function initializeControls() {
 }
 
 function toggleAllConnections() {
-    let allConnectionsChecked = true;
-    allConnectionsChecked = !allConnectionsChecked;
+    let allConnectionsChecked = true; // Local scope variable to toggle state
+    // Check current state of first box to decide toggle direction
+    const firstBox = d3.select(".legend-checkbox").node();
+    if (firstBox) {
+        allConnectionsChecked = !firstBox.checked;
+    }
+   
     d3.selectAll(".legend-checkbox").property("checked", allConnectionsChecked);
     if (typeof updateGraph === 'function') updateGraph(true);
 }
@@ -68,6 +72,7 @@ function populateRegionFilter() {
     regions.sort().forEach(region => {
         let label = region;
         if (region === "EUR") label = "EMEA";
+        if (region === "NAMER") label = "NAM";
         regionFilter.append("option").attr("value", region).text(label);
     });
 }
@@ -150,8 +155,12 @@ function populateAddOnsAndServices(packageInfo) {
     const servicesContainer = d3.select("#package-services-container");
     const servicesList = d3.select("#package-services-list");
 
-    if (packageInfo['available-add-ons'] && packageInfo['available-add-ons'].length > 0) {
-        packageInfo['available-add-ons'].forEach(addOn => {
+    // FIX: Check for both underscore and hyphen naming conventions to ensure safety
+    const addOns = packageInfo['available_add_ons'] || packageInfo['available-add-ons'] || [];
+    const services = packageInfo['available_services'] || packageInfo['available-services'] || [];
+
+    if (addOns.length > 0) {
+        addOns.forEach(addOn => {
             const label = addOnsCheckboxes.append("label").attr("class", "flex items-center cursor-pointer py-1");
             label.append("input").attr("type", "checkbox").attr("value", addOn)
                 .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
@@ -161,8 +170,8 @@ function populateAddOnsAndServices(packageInfo) {
         addOnsContainer.classed('hidden', false);
     }
 
-    if (packageInfo['available_services'] && packageInfo['available_services'].length > 0) {
-        packageInfo['available_services'].forEach(service => {
+    if (services.length > 0) {
+        services.forEach(service => {
             servicesList.append("div").attr("class", "flex items-center text-gray-700")
                 .html(`<i class="fas fa-check-circle text-green-500 mr-2"></i> ${service}`);
         });
