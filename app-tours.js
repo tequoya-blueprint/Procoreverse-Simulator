@@ -1,13 +1,32 @@
 // --- app-tours.js ---
-// VERSION 11: Fixes accordion sizing loop to prevent overlap.
+// VERSION 13: Fixed AI Integration (JSON Sanitization + Node Awareness)
+
+// Flatten tours for easy access
+const flatTours = { ...tours.platform, ...tours.packages, ...tours.ai };
 
 function initializeTourControls() {
+    // Populate dropdowns
+    const platformGroup = d3.select("#platform-tours");
+    const packageGroup = d3.select("#package-tours");
+    
+    // Sort and append Platform tours
+    Object.entries(tours.platform).forEach(([id, tour]) => {
+        platformGroup.append("option").value(id).text(tour.name);
+    });
+
+    // Sort and append Package tours (hidden initially, shown by filters)
+    Object.entries(tours.packages).forEach(([id, tour]) => {
+        packageGroup.append("option").value(id).text(tour.name);
+    });
+
+    // Event Listeners
     d3.select("#tour-select").on("change", function() {
         const tourId = this.value;
         if (tourId === "none") {
             stopTour();
         } else {
-            const tourData = flatTours[tourId];
+            // Check both standard and AI tours
+            const tourData = flatTours[tourId] || tours.ai[tourId];
             if (tourData) {
                 previewTour(tourData);
             }
@@ -17,213 +36,77 @@ function initializeTourControls() {
     d3.select("#tour-prev").on("click", () => {
         if (app.currentStep > 0) { app.currentStep--; runTourStep(); }
     });
+    
     d3.select("#tour-next").on("click", () => {
         if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); }
     });
 
+    // AI Modal Controls
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
-    aiModalOverlay.on("click", function(e) { if (e.target === this) aiModalOverlay.classed("visible", false); });
+    
+    // Close modal on outside click
+    aiModalOverlay.on("click", function(e) { 
+        if (e.target === this) aiModalOverlay.classed("visible", false); 
+    });
+    
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 }
 
-/**
- * Helper to force the accordion to resize when buttons are added/removed.
- */
-function resizeTourAccordion() {
-    const content = document.querySelector('#tour-container').closest('.accordion-content');
-    if (content && content.parentElement.classList.contains('active')) {
-        // Use setTimeout(0) to force browser to render the new buttons BEFORE calculating height.
-        setTimeout(() => {
-            content.style.maxHeight = content.scrollHeight + 20 + "px"; // +20 for safety buffer
-        }, 0);
-    }
-}
-
-function updateTourDropdown(packageTools) {
-    const tourSelect = d3.select("#tour-select");
-    const platformTours = d3.select("#platform-tours").html("");
-    const packageTours = d3.select("#package-tours").html("");
-    const aiTours = d3.select("#ai-tours").html("");
-
-    let packageTourCount = 0;
-
-    // 1. Platform Tours (GLOBAL - ALWAYS SHOW)
-    if (tours.platform) {
-        Object.entries(tours.platform).forEach(([tourId, tourData]) => {
-            platformTours.append("option").attr("value", tourId).text(tourData.name);
-        });
-    }
-
-    // 2. Package Workflows (Only if package selected and tools exist)
-    if (packageTools && tours.package) {
-        Object.entries(tours.package).forEach(([tourId, tourData]) => {
-            const allNodesInPackage = tourData.steps.every(step => packageTools.has(step.nodeId));
-            if (allNodesInPackage) {
-                packageTours.append("option").attr("value", tourId).text(tourData.name);
-                packageTourCount++;
-            }
-        });
+function updateTourDropdown(visiblePackageTools) {
+    const packageGroup = d3.select("#package-tours");
+    if (!visiblePackageTools) {
+        packageGroup.style("display", "none");
+        return;
     }
     
-    // 3. AI Tours (Always Visible)
-    if (tours.ai) {
-        Object.entries(tours.ai).forEach(([tourId, tourData]) => {
-            aiTours.append("option").attr("value", tourId).text(tourData.name);
-        });
-    }
-
-    d3.select("#platform-tours").style("display", ""); 
-    d3.select("#package-tours").style("display", packageTourCount > 0 ? "" : "none");
-    d3.select("#ai-tours").style("display", packageTourCount > 0 ? "" : "none"); // Show AI tours if any package tours are active
+    // Logic to show tours relevant to the selected package could go here
+    // For now, we simply unhide the group if a package is selected
+    packageGroup.style("display", "block");
 }
 
-function previewTour(tourData) {
-    app.interactionState = 'tour_preview'; 
-    app.currentTour = tourData;
-    
-    // Reset visual filters so tour nodes are visible
-    d3.select("#region-filter").property('value', 'all');
-    d3.select("#audience-filter").property('value', 'all').property("disabled", true);
-    d3.select("#package-filter").property('value', 'all').property("disabled", true);
-    d3.select("#add-ons-container").classed('hidden', true);
-    d3.select("#package-services-container").classed('hidden', true);
+// --- AI GENERATION LOGIC ---
 
-    updateGraph(false); 
+async function generateAiWorkflow() {
+    const input = d3.select("#ai-workflow-input").property("value").trim();
+    const status = d3.select("#ai-modal-status");
+    const generateBtn = d3.select("#ai-workflow-generate");
 
-    const tourNodeIds = new Set(tourData.steps.map(s => s.nodeId));
-    
-    app.node.transition().duration(400)
-        .style("opacity", n => tourNodeIds.has(n.id) ? 1 : 0.1);
-        
-    const tourLinks = new Set();
-    for (let i = 0; i < tourData.steps.length - 1; i++) {
-        const step1 = tourData.steps[i].nodeId;
-        const step2 = tourData.steps[i+1].nodeId;
-        app.simulation.force("link").links().forEach(l => {
-            if ((l.source.id === step1 && l.target.id === step2) || (l.source.id === step2 && l.target.id === step1)) {
-                tourLinks.add(l);
-            }
-        });
-    }
-
-    app.link.classed("highlighted", l => tourLinks.has(l));
-    app.link.classed("pulsing", false); 
-    app.link.transition().duration(400)
-        .style("stroke-opacity", l => tourLinks.has(l) ? 1 : 0.05)
-        .attr("marker-end", l => {
-            const legendType = legendData.find(type => type.type_id === l.type);
-            if (tourLinks.has(l) && legendType && legendType.visual_style.includes("one arrow")) {
-                 return `url(#arrow-highlighted)`;
-            }
-            return null;
-        });
-
-    // Show Start Button
-    const tourControls = d3.select("#tour-controls");
-    tourControls.html(`
-        <button id="tour-start" class="btn-primary py-2 px-4 text-sm w-full">
-            <i class="fas fa-play mr-2"></i> Start Tour: ${tourData.name}
-        </button>
-    `);
-    tourControls.style("display", "flex");
-    
-    resizeTourAccordion();
-    
-    d3.select("#tour-start").on("click", startTour);
-    
-    if(typeof hideInfoPanel === 'function') hideInfoPanel();
-    d3.select('#graph-container').classed('selection-active', true);
-}
-
-function startTour() {
-    app.interactionState = 'tour';
-    app.currentStep = 0;
-    
-    const tourControls = d3.select("#tour-controls");
-    tourControls.html(`
-        <button id="tour-prev" class="btn-primary py-2 px-4 text-sm"><i class="fas fa-arrow-left mr-1"></i> Prev</button>
-        <span id="tour-step" class="text-sm font-semibold text-gray-600"></span>
-        <button id="tour-next" class="btn-primary py-2 px-4 text-sm">Next <i class="fas fa-arrow-right ml-1"></i></button>
-    `);
-    
-    resizeTourAccordion();
-    
-    d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
-    d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
-
-    runTourStep(); 
-}
-
-function stopTour() {
-    if (app.interactionState === 'explore') return;
-    app.interactionState = 'explore';
-    app.currentTour = null;
-    app.currentStep = -1;
-    d3.select("#tour-controls").style("display", "none").html(""); 
-    d3.select("#tour-select").property('value', 'none');
-    resizeTourAccordion();
-    resetHighlight(); 
-}
-
-function runTourStep() {
-    if (!app.currentTour) return;
-    const step = app.currentTour.steps[app.currentStep];
-    const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
-    if (!nodeData) {
-        console.warn(`Tour step node "${step.nodeId}" not found.`);
-        stopTour();
+    if (!input) {
+        status.text("Please describe a workflow first.").classed("text-red-500", true);
         return;
     }
 
-    const tourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
+    status.text("Analyzing Procore platform...").classed("text-red-500", false).classed("text-indigo-600", true);
+    generateBtn.property("disabled", true).classed("opacity-50", true);
+
+    // 1. Gather Valid Node IDs to prevent hallucination
+    const validNodes = nodesData.map(n => n.id).join(", ");
+
+    // 2. Construct the Prompt
+    const systemPrompt = `You are a Procore Platform Architect. 
+    Create a linear step-by-step workflow tour based on the user's request.
     
-    app.node.transition().duration(500).style("opacity", n => tourNodeIds.has(n.id) ? 1 : 0.1);
-    app.node.classed("selected", n => n.id === nodeData.id);
-
-    app.link.classed("pulsing", false).classed("highlighted", false)
-        .transition().duration(500).style("stroke-opacity", 0.1).attr("marker-end", null);
-
-    if (app.currentStep > 0) {
-        const prevStep = app.currentTour.steps[app.currentStep - 1];
-        const stepLink = app.link.filter(l =>
-            (l.source.id === prevStep.nodeId && l.target.id === step.nodeId) ||
-            (l.source.id === step.nodeId && l.target.id === prevStep.nodeId)
-        );
-        if (!stepLink.empty()) {
-            stepLink.classed("pulsing", true).transition().duration(500).style("stroke-opacity", 1).attr("marker-end", l => `url(#arrow-highlighted)`);
-        }
-    }
-
-    if (typeof showInfoPanel === 'function') showInfoPanel(nodeData); 
-    d3.select("#tour-info-box").style("display", "block");
-    d3.select("#tour-info-text").text(step.info);
-    if (typeof centerViewOnNode === 'function') centerViewOnNode(nodeData); 
+    CRITICAL RULES:
+    1. You may ONLY use these exact Tool Names (Node IDs): [${validNodes}].
+    2. Do not invent tools. If a step implies an external tool, use 'ERP Systems' or 'Documents'.
+    3. Return ONLY valid JSON. No Markdown formatting. No backticks.
     
-    d3.select("#tour-step").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
-    d3.select("#tour-prev").property("disabled", app.currentStep === 0);
-    d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
-}
+    JSON Structure:
+    {
+      "name": "Short Descriptive Title",
+      "steps": [
+        { "nodeId": "Exact Tool Name", "info": "Description of action taken here." }
+      ]
+    }`;
 
-async function generateAiWorkflow() {
-    const button = d3.select("#ai-workflow-generate");
-    const status = d3.select("#ai-modal-status");
-    const userInput = d3.select("#ai-workflow-input").property("value");
+    const userPrompt = `User Request: "${input}"`;
 
-    if (!userInput.trim()) { status.text("Please describe a workflow."); return; }
-
-    button.property("disabled", true).html(`<i class="fas fa-spinner fa-spin mr-2"></i>Generating...`);
-    status.html(`Analyzing... <span class="inline-block align-middle h-4 w-1 bg-gray-600 ml-1 border-r-2 border-gray-600 blinking-cursor"></span>`);
-    
-    const availableTools = nodesData.map(n => n.id).join(", ");
-    const systemPrompt = `You are a Procore Platform expert. Generate a guided workflow tour based on the user's request. The tour must be a sequence of steps using ONLY the Procore tools listed. Output MUST be a valid JSON object.`;
-    const userQuery = `Generate a workflow for: "${userInput}". Available tools: ${availableTools}.`;
-    
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${app.apiKey}`;
 
     const payload = {
-        contents: [{ parts: [{ text: userQuery }] }],
+        contents: [{ parts: [{ text: userPrompt }] }],
         system_instruction: { parts: [{ text: systemPrompt }] },
         generationConfig: { responseMimeType: "application/json" }
     };
@@ -234,29 +117,156 @@ async function generateAiWorkflow() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+
         const result = await response.json();
-        const newTour = JSON.parse(result.candidates[0].content.parts[0].text);
+        let rawText = result.candidates[0].content.parts[0].text;
+
+        // 3. CLEAN THE JSON (Remove Markdown fences if present)
+        rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+
+        const newTour = JSON.parse(rawText);
 
         if (newTour && newTour.steps && newTour.steps.length > 0) {
+            // Success! Register the tour.
             const tourId = `ai_tour_${Date.now()}`;
             newTour.name = `✨ ${newTour.name}`;
+            
+            // Add to AI tours object and flat list
+            if (!tours.ai) tours.ai = {};
             tours.ai[tourId] = newTour; 
             flatTours[tourId] = newTour; 
 
+            // Update UI
             d3.select("#ai-tours").append("option").attr("value", tourId).text(newTour.name);
             d3.select("#tour-select").property("value", tourId);
-            previewTour(newTour);
             
+            // Close modal and Start
             d3.select("#ai-modal-overlay").classed("visible", false);
             d3.select("#ai-workflow-input").property("value", "");
             status.text("");
+            
+            previewTour(newTour);
+
         } else {
             throw new Error("AI returned invalid tour structure.");
         }
+
     } catch (error) {
         console.error("AI Workflow generation failed:", error);
-        status.text("Sorry, I couldn't create a tour for that. Please try again.");
+        status.text("Error generating tour. Please try again.").classed("text-red-500", true);
+    } finally {
+        generateBtn.property("disabled", false).classed("opacity-50", false);
     }
-    button.property("disabled", false).text("Generate Tour");
+}
+
+// --- TOUR EXECUTION LOGIC ---
+
+function previewTour(tourData) {
+    stopTour(); // Clear any existing state
+    app.currentTour = tourData;
+    app.currentStep = -1; // Ready to start
+    app.interactionState = 'tour_preview';
+    
+    // Highlight all nodes involved in the tour
+    const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
+    
+    app.node.transition().duration(500)
+        .style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
+        
+    app.link.transition().duration(500)
+        .style("stroke-opacity", 0.05);
+
+    // Show Tour Control Panel
+    const controls = d3.select("#tour-controls");
+    controls.style("display", "flex")
+            .html(`
+                <div class="text-sm font-semibold text-gray-700">
+                    ${tourData.name} <span class="font-normal text-gray-500">(${tourData.steps.length} steps)</span>
+                </div>
+                <button id="start-tour-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded shadow-md transition">
+                    Start Tour <i class="fas fa-play ml-1"></i>
+                </button>
+            `);
+
+    d3.select("#start-tour-btn").on("click", startTour);
+    
+    // Ensure Accordion is expanded
+    resizeTourAccordion();
+}
+
+function startTour() {
+    app.interactionState = 'tour';
+    app.currentStep = 0;
+    
+    // Update controls to Next/Prev
+    const controls = d3.select("#tour-controls");
+    controls.html(`
+        <button id="tour-prev" class="text-gray-500 hover:text-gray-700 px-3 py-1 disabled:opacity-30"><i class="fas fa-chevron-left"></i></button>
+        <span id="tour-step-indicator" class="text-xs font-semibold text-gray-600">1 / ${app.currentTour.steps.length}</span>
+        <button id="tour-next" class="text-gray-500 hover:text-gray-700 px-3 py-1 disabled:opacity-30"><i class="fas fa-chevron-right"></i></button>
+    `);
+    
+    // Re-bind listeners for the new buttons
+    d3.select("#tour-prev").on("click", () => {
+        if (app.currentStep > 0) { app.currentStep--; runTourStep(); }
+    });
+    d3.select("#tour-next").on("click", () => {
+        if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); }
+    });
+
+    runTourStep();
+}
+
+function runTourStep() {
+    const step = app.currentTour.steps[app.currentStep];
+    const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
+    
+    // Update Controls Text
+    d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
+    d3.select("#tour-prev").property("disabled", app.currentStep === 0);
+    d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
+
+    if (nodeData) {
+        // Trigger the selection logic from app-d3-helpers
+        // We simulate a click but manually handle the Info Panel content
+        
+        // 1. Center View
+        if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
+
+        // 2. Highlight Logic (Manual override to keep non-active steps dim)
+        app.node.transition().duration(300).style("opacity", d => d.id === step.nodeId ? 1 : 0.1);
+        
+        // 3. Show Custom Tour Info in Panel
+        if(typeof showInfoPanel === 'function') showInfoPanel(nodeData); // Load standard data first
+        
+        // 4. Override specific elements for the Tour context
+        const tourBox = d3.select("#tour-info-box");
+        tourBox.style("display", "block");
+        d3.select("#tour-info-text").text(step.info);
+        
+        // Scroll top
+        d3.select("#info-panel").node().scrollTop = 0;
+    }
+}
+
+function stopTour() {
+    app.currentTour = null;
+    app.currentStep = -1;
+    app.interactionState = 'explore';
+    
+    d3.select("#tour-controls").style("display", "none");
+    d3.select("#tour-info-box").style("display", "none");
+    d3.select("#tour-select").property("value", "none");
+    
+    if(typeof resetHighlight === 'function') resetHighlight();
+    if(typeof resetZoom === 'function') resetZoom();
+}
+
+function resizeTourAccordion() {
+    const content = document.querySelector('#tour-container').closest('.accordion-content');
+    if (content && content.parentElement.classList.contains('active')) {
+        content.style.maxHeight = content.scrollHeight + "px";
+    }
 }
