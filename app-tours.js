@@ -2,7 +2,6 @@
 // VERSION 13: Fixed AI Integration (JSON Sanitization + Node Awareness)
 
 // Flatten tours for easy access
-const flatTours = { ...tours.platform, ...tours.packages, ...tours.ai };
 
 function initializeTourControls() {
     // Populate dropdowns
