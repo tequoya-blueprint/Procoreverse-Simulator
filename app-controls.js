@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION 14: Final Fix. exhaustive check for Add-On property names.
+// VERSION 15: Fixes Add-Ons data key mismatch ("available_add-ons").
 
 // --- DATA MAPPING CONSTANTS ---
 const audienceDataToKeyMap = {
@@ -154,8 +154,9 @@ function populateAddOnsAndServices(packageInfo) {
     const servicesContainer = d3.select("#package-services-container");
     const servicesList = d3.select("#package-services-list");
 
-    // FIX: Check ALL possible naming variations for Add-Ons and Services
-    const addOns = packageInfo['available_add_ons'] ||
+    // FIX: Included "available_add-ons" which is the specific key used in the data file.
+    const addOns = packageInfo['available_add-ons'] || 
+                   packageInfo['available_add_ons'] ||
                    packageInfo['available-add-ons'] ||
                    packageInfo['available_addons'] ||
                    packageInfo['available-addons'] ||
@@ -200,7 +201,6 @@ function refreshAccordionHeight() {
         content.style.maxHeight = content.scrollHeight + "px";
     }
 }
-
 
 function getActiveFilters() {
     const region = d3.select("#region-filter").property('value');
