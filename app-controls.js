@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION 13: Final Fix. Adds key-safety for Add-Ons (handles underscores vs hyphens).
+// VERSION 14: Final Fix. exhaustive check for Add-On property names.
 
 // --- DATA MAPPING CONSTANTS ---
 const audienceDataToKeyMap = {
@@ -54,8 +54,7 @@ function initializeControls() {
 }
 
 function toggleAllConnections() {
-    let allConnectionsChecked = true; // Local scope variable to toggle state
-    // Check current state of first box to decide toggle direction
+    let allConnectionsChecked = true;
     const firstBox = d3.select(".legend-checkbox").node();
     if (firstBox) {
         allConnectionsChecked = !firstBox.checked;
@@ -155,11 +154,19 @@ function populateAddOnsAndServices(packageInfo) {
     const servicesContainer = d3.select("#package-services-container");
     const servicesList = d3.select("#package-services-list");
 
-    // FIX: Check for both underscore and hyphen naming conventions to ensure safety
-    const addOns = packageInfo['available_add_ons'] || packageInfo['available-add-ons'] || [];
-    const services = packageInfo['available_services'] || packageInfo['available-services'] || [];
+    // FIX: Check ALL possible naming variations for Add-Ons and Services
+    const addOns = packageInfo['available_add_ons'] ||
+                   packageInfo['available-add-ons'] ||
+                   packageInfo['available_addons'] ||
+                   packageInfo['available-addons'] ||
+                   packageInfo['add_ons'] ||
+                   [];
 
-    if (addOns.length > 0) {
+    const services = packageInfo['available_services'] ||
+                     packageInfo['available-services'] ||
+                     [];
+
+    if (addOns && addOns.length > 0) {
         addOns.forEach(addOn => {
             const label = addOnsCheckboxes.append("label").attr("class", "flex items-center cursor-pointer py-1");
             label.append("input").attr("type", "checkbox").attr("value", addOn)
@@ -170,7 +177,7 @@ function populateAddOnsAndServices(packageInfo) {
         addOnsContainer.classed('hidden', false);
     }
 
-    if (services.length > 0) {
+    if (services && services.length > 0) {
         services.forEach(service => {
             servicesList.append("div").attr("class", "flex items-center text-gray-700")
                 .html(`<i class="fas fa-check-circle text-green-500 mr-2"></i> ${service}`);
