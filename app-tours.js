@@ -9,13 +9,15 @@ function initializeTourControls() {
     const packageGroup = d3.select("#package-tours");
     
     // Sort and append Platform tours
+    // FIX: Changed .value(id) to .attr("value", id)
     Object.entries(tours.platform).forEach(([id, tour]) => {
-        platformGroup.append("option").value(id).text(tour.name);
+        platformGroup.append("option").attr("value", id).text(tour.name);
     });
 
     // Sort and append Package tours (hidden initially, shown by filters)
+    // FIX: Changed .value(id) to .attr("value", id)
     Object.entries(tours.packages).forEach(([id, tour]) => {
-        packageGroup.append("option").value(id).text(tour.name);
+        packageGroup.append("option").attr("value", id).text(tour.name);
     });
 
     // Event Listeners
@@ -25,7 +27,9 @@ function initializeTourControls() {
             stopTour();
         } else {
             // Check both standard and AI tours
-            const tourData = flatTours[tourId] || tours.ai[tourId];
+            // Ensure we look in flatTours (Global) or fallback to tours.ai
+            const tourData = (typeof flatTours !== 'undefined' ? flatTours[tourId] : null) || (tours.ai ? tours.ai[tourId] : null);
+            
             if (tourData) {
                 previewTour(tourData);
             }
@@ -52,7 +56,6 @@ function initializeTourControls() {
     
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 }
-
 function updateTourDropdown(visiblePackageTools) {
     const packageGroup = d3.select("#package-tours");
     if (!visiblePackageTools) {
