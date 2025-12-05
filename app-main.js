@@ -24,7 +24,7 @@ const app = {
     selectedNode: null,
     currentTour: null,
     currentStep: -1,
-    apiKey: "AIzaSyCkAIR6TdQfs5q515M7AROv1LDq1qEhwKc" 
+    apiKey: "AIzaSyCZx6YBE0qwuRd0Jl8HJQ580MUFbANtygA" 
 };
 
 // --- Color & Category Definitions ---
