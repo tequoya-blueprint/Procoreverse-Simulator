@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION 16: Fixes AI Tour Highlighting & Connection Visibility
+// VERSION 17: Fixes AI Tour Highlighting & Connection Visibility
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -74,6 +74,7 @@ function previewTour(tourData) {
         .style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
         
     // 3. Highlight Connecting Links (THE FIX)
+    // We strictly check if the link exists in the current data and connects two tour nodes.
     app.link.transition().duration(500)
         .style("stroke-opacity", l => {
             const sourceId = l.source.id || l.source;
@@ -86,6 +87,16 @@ function previewTour(tourData) {
             const targetId = l.target.id || l.target;
             // Color active links Orange
             return (nodeIds.has(sourceId) && nodeIds.has(targetId)) ? "var(--procore-orange)" : "#a0a0a0";
+        })
+        .attr("marker-end", l => {
+             const sourceId = l.source.id || l.source;
+             const targetId = l.target.id || l.target;
+             // Ensure arrow is highlighted too
+             if (nodeIds.has(sourceId) && nodeIds.has(targetId)) return `url(#arrow-highlighted)`;
+             
+             // Reset to default arrow if not highlighted
+             const legend = legendData.find(leg => leg.type_id === l.type);
+             return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
         });
 
     // 4. Show Controls
@@ -202,7 +213,7 @@ async function generateAiWorkflow() {
       ]
     }`;
 
-    // Use Gemini 2.0 Flash as verified
+    // Using the verified Gemini 2.0 Flash model
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${app.apiKey}`;
 
     const payload = {
