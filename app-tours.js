@@ -8,17 +8,20 @@ function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
     const packageGroup = d3.select("#package-tours");
     
-    // Sort and append Platform tours
-    // FIX: Changed .value(id) to .attr("value", id)
-    Object.entries(tours.platform).forEach(([id, tour]) => {
-        platformGroup.append("option").attr("value", id).text(tour.name);
-    });
+    // 1. SAFETY CHECK: Only try to load Platform tours if they exist
+    if (tours.platform) {
+        Object.entries(tours.platform).forEach(([id, tour]) => {
+            platformGroup.append("option").attr("value", id).text(tour.name);
+        });
+    }
 
-    // Sort and append Package tours (hidden initially, shown by filters)
-    // FIX: Changed .value(id) to .attr("value", id)
-    Object.entries(tours.packages).forEach(([id, tour]) => {
-        packageGroup.append("option").attr("value", id).text(tour.name);
-    });
+    // 2. SAFETY CHECK: Only try to load Package tours if they exist
+    // (This was causing your crash because tours.packages was undefined)
+    if (tours.packages) {
+        Object.entries(tours.packages).forEach(([id, tour]) => {
+            packageGroup.append("option").attr("value", id).text(tour.name);
+        });
+    }
 
     // Event Listeners
     d3.select("#tour-select").on("change", function() {
