@@ -143,7 +143,7 @@ async function getAiExplanation(node, connections) {
     Connections:
     ${connectionsText}`;
     
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${app.apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${app.apiKey}`;
     try {
         const response = await fetch(apiUrl, {
             method: 'POST',
