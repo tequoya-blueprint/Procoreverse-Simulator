@@ -108,7 +108,7 @@ async function generateAiWorkflow() {
 
     const userPrompt = `User Request: "${input}"`;
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${app.apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${app.apiKey}`;
     const payload = {
         contents: [{ parts: [{ text: userPrompt }] }],
         system_instruction: { parts: [{ text: systemPrompt }] },
