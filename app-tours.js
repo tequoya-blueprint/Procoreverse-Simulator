@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION 22: Consistent UI + End-of-Tour Save Option
+// VERSION 23: UI Layout Fix (Stacked Preview) + Save Persistence
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -111,7 +111,6 @@ function saveCurrentTour() {
         alert("Workflow Saved!");
     }
 
-    // Update ALL Save buttons in the UI
     d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
 }
 
@@ -152,23 +151,26 @@ function previewTour(tourData) {
         isSaved = Object.values(tours.ai).some(t => t.name === tourData.name);
     }
 
-    // UPDATED CONTROLS: Save Button matches Start Button dimensions
+    // UPDATED CONTROLS: Vertical Layout (Column) to prevent crowding
     const controls = d3.select("#tour-controls");
-    controls.style("display", "flex")
+    controls.style("display", "block") // Use block/flow to allow stacking
             .html(`
-                <div class="flex flex-col flex-grow">
-                    <div class="text-sm font-semibold text-gray-700 truncate" style="max-width: 180px;">
-                        ${tourData.name}
+                <div class="flex flex-col gap-3">
+                    <div class="w-full">
+                        <div class="text-sm font-bold text-gray-800 leading-snug break-words">
+                            ${tourData.name}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">${tourData.steps.length} steps</div>
                     </div>
-                    <div class="text-xs text-gray-500">${tourData.steps.length} steps</div>
-                </div>
-                <div class="flex items-center space-x-2 flex-shrink-0">
-                    <button class="save-tour-btn bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-200 text-xs font-bold py-2 px-4 rounded shadow-sm transition flex items-center h-full" title="Save to Browser">
-                        <i class="fas fa-save mr-2"></i> Save
-                    </button>
-                    <button id="start-tour-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded shadow-md transition h-full flex items-center">
-                        Start <i class="fas fa-play ml-2"></i>
-                    </button>
+                    
+                    <div class="flex items-center gap-2 w-full">
+                        <button class="save-tour-btn flex-1 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-200 text-xs font-bold py-2 px-2 rounded shadow-sm transition flex items-center justify-center" title="Save to Browser">
+                            <i class="fas fa-save mr-2"></i> Save
+                        </button>
+                        <button id="start-tour-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-2 rounded shadow-md transition flex items-center justify-center">
+                            Start <i class="fas fa-play ml-2"></i>
+                        </button>
+                    </div>
                 </div>
             `);
 
@@ -186,8 +188,10 @@ function startTour() {
     app.interactionState = 'tour';
     app.currentStep = 0;
     
-    // UPDATED CONTROLS: Includes a hidden "End Save" button
-    d3.select("#tour-controls").html(`
+    // UPDATED CONTROLS: Running State
+    d3.select("#tour-controls")
+      .style("display", "flex") // Revert to Flex for row layout during playback
+      .html(`
         <button id="tour-prev" class="text-gray-500 hover:text-gray-700 px-3 py-1 disabled:opacity-30"><i class="fas fa-chevron-left"></i></button>
         <span id="tour-step-indicator" class="text-xs font-semibold text-gray-600">1 / ${app.currentTour.steps.length}</span>
         <button id="tour-next" class="text-gray-500 hover:text-gray-700 px-3 py-1 disabled:opacity-30"><i class="fas fa-chevron-right"></i></button>
@@ -204,7 +208,6 @@ function startTour() {
         if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); }
     });
     
-    // Check if already saved to set initial state of the hidden button
     let isSaved = false;
     if (tours.ai) isSaved = Object.values(tours.ai).some(t => t.name === app.currentTour.name);
     if (isSaved) {
@@ -224,11 +227,9 @@ function runTourStep() {
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
 
-    // NEW: Logic to Show/Hide Save Button at End of Tour
     const isLastStep = (app.currentStep === app.currentTour.steps.length - 1);
     const saveBtn = d3.select("#tour-controls .save-tour-btn");
     
-    // If last step, show the button (remove 'hidden' class, set to 'flex')
     if (isLastStep) {
         saveBtn.classed("hidden", false).classed("flex", true);
     } else {
@@ -345,8 +346,8 @@ async function generateAiWorkflow() {
       ]
     }`;
 
-    // Use verified gemini-2.0-flash
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${app.apiKey}`;
+    // Using Verified Lite Model
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite-preview-02-05:generateContent?key=${app.apiKey}`;
 
     const payload = {
         contents: [{ parts: [{ text: `User Request: "${input}"` }] }],
@@ -374,7 +375,7 @@ async function generateAiWorkflow() {
             newTour.name = `✨ ${newTour.name}`;
             newTour.id = tourId; 
 
-            // Preview Only (Save is optional)
+            // Close modal and preview
             d3.select("#ai-modal-overlay").classed("visible", false);
             d3.select("#ai-workflow-input").property("value", "");
             status.text("");
