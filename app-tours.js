@@ -1,11 +1,11 @@
 // --- app-tours.js ---
-// VERSION 18: Dynamic "Step-by-Step" Flow Visualization
+// VERSION 19: Adds "Save Tour" Persistence (LocalStorage)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
     const packageGroup = d3.select("#package-tours");
     
-    // Safety Checks for Data
+    // 1. Load Standard Data
     if (typeof tours !== 'undefined' && tours.platform) {
         Object.entries(tours.platform).forEach(([id, tour]) => {
             platformGroup.append("option").attr("value", id).text(tour.name);
@@ -18,12 +18,16 @@ function initializeTourControls() {
         });
     }
 
-    // Dropdown Logic
+    // 2. Load Saved AI Tours from LocalStorage (NEW)
+    loadSavedTours();
+
+    // 3. Dropdown Logic
     d3.select("#tour-select").on("change", function() {
         const tourId = this.value;
         if (tourId === "none") {
             stopTour();
         } else {
+            // Priority: Global Flat -> AI -> Platform/Packages
             let tourData = null;
             if (typeof flatTours !== 'undefined' && flatTours[tourId]) {
                 tourData = flatTours[tourId];
@@ -56,22 +60,81 @@ function initializeTourControls() {
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 }
 
-// --- TOUR PREVIEW (The "All Highlights" View) ---
+// --- PERSISTENCE LOGIC (NEW) ---
+
+function loadSavedTours() {
+    const saved = localStorage.getItem('procoreverse_saved_tours');
+    if (saved) {
+        try {
+            const parsedTours = JSON.parse(saved);
+            const aiGroup = d3.select("#ai-tours");
+            
+            // Ensure tours.ai exists
+            if (!tours.ai) tours.ai = {};
+
+            Object.entries(parsedTours).forEach(([id, tour]) => {
+                // Add to global state
+                tours.ai[id] = tour;
+                // Add to UI
+                aiGroup.append("option").attr("value", id).text(tour.name);
+            });
+        } catch (e) {
+            console.error("Failed to load saved tours:", e);
+        }
+    }
+}
+
+function saveCurrentTour() {
+    if (!app.currentTour) return;
+
+    // Get existing
+    let saved = {};
+    const existing = localStorage.getItem('procoreverse_saved_tours');
+    if (existing) {
+        try { saved = JSON.parse(existing); } catch(e) {}
+    }
+
+    // Add current (Key is likely ai_tour_timestamp)
+    // We generate a ID if one isn't clearly attached, but generateAiWorkflow adds one.
+    // If it's a standard tour, we shouldn't save it as "AI", but for this feature assuming AI context:
+    let tourId = Object.keys(tours.ai || {}).find(key => tours.ai[key] === app.currentTour);
+    
+    if (!tourId) {
+        // Fallback ID generation if missing
+        tourId = `ai_tour_${Date.now()}`;
+    }
+
+    saved[tourId] = app.currentTour;
+    
+    // Save back to storage
+    localStorage.setItem('procoreverse_saved_tours', JSON.stringify(saved));
+    
+    // Visual Feedback
+    if(typeof showToast === 'function') {
+        showToast("Workflow Saved! It will appear in the list next time you visit.");
+    } else {
+        alert("Workflow Saved!");
+    }
+
+    // Disable button to show state
+    d3.select("#save-tour-btn").property("disabled", true).text("Saved");
+}
+
+// --- TOUR PREVIEW ---
 
 function previewTour(tourData) {
-    stopTour(); // Clear previous state
+    stopTour(); 
     app.currentTour = tourData;
     app.currentStep = -1; 
     app.interactionState = 'tour_preview';
     
-    // 1. Identify ALL Nodes in the Tour
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     
-    // 2. Highlight ALL Nodes (Overview)
+    // Highlight Nodes (Overview)
     app.node.transition().duration(500)
         .style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
         
-    // 3. Highlight ALL Connecting Links (Overview)
+    // Highlight Connecting Links
     app.link.transition().duration(500)
         .style("stroke-opacity", l => {
             const sourceId = l.source.id || l.source;
@@ -87,24 +150,36 @@ function previewTour(tourData) {
              const sourceId = l.source.id || l.source;
              const targetId = l.target.id || l.target;
              if (nodeIds.has(sourceId) && nodeIds.has(targetId)) return `url(#arrow-highlighted)`;
-             
              const legend = legendData.find(leg => leg.type_id === l.type);
              return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
         });
 
-    // 4. Show Controls
+    // Show Controls with SAVE Button (NEW)
     const controls = d3.select("#tour-controls");
     controls.style("display", "flex")
             .html(`
-                <div class="text-sm font-semibold text-gray-700">
-                    ${tourData.name} <span class="font-normal text-gray-500">(${tourData.steps.length} steps)</span>
+                <div class="flex flex-col">
+                    <div class="text-sm font-semibold text-gray-700">
+                        ${tourData.name}
+                    </div>
+                    <div class="text-xs text-gray-500">${tourData.steps.length} steps</div>
                 </div>
-                <button id="start-tour-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded shadow-md transition">
-                    Start Tour <i class="fas fa-play ml-1"></i>
-                </button>
+                <div class="flex items-center space-x-2">
+                    <button id="save-tour-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-bold py-2 px-3 rounded shadow-sm transition" title="Save to Browser">
+                        <i class="fas fa-save"></i>
+                    </button>
+                    <button id="start-tour-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded shadow-md transition">
+                        Start <i class="fas fa-play ml-1"></i>
+                    </button>
+                </div>
             `);
 
     d3.select("#start-tour-btn").on("click", startTour);
+    d3.select("#save-tour-btn").on("click", saveCurrentTour);
+    
+    // If it's already saved/standard, disable save button? 
+    // For now, allow re-saving to keep logic simple.
+    
     resizeTourAccordion();
 }
 
@@ -128,13 +203,10 @@ function startTour() {
     runTourStep();
 }
 
-// --- TOUR STEP EXECUTION (The "Focused" View) ---
-
 function runTourStep() {
     const step = app.currentTour.steps[app.currentStep];
     const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
     
-    // Update Controls
     d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
@@ -142,9 +214,7 @@ function runTourStep() {
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
 
-        // --- NEW FOCUS LOGIC ---
-
-        // 1. Identify Active Nodes (Current + Previous)
+        // --- FOCUS LOGIC ---
         const activeNodeIds = new Set();
         activeNodeIds.add(step.nodeId);
         
@@ -154,7 +224,6 @@ function runTourStep() {
             activeNodeIds.add(prevNodeId);
         }
 
-        // 2. Highlight Nodes (Active = 100%, Others = 15% Ghost)
         const tourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
         
         app.node.transition().duration(300).style("opacity", d => {
@@ -163,18 +232,16 @@ function runTourStep() {
             return 0.05;                                    // Hidden Background
         });
 
-        // 3. Highlight ONLY the Active Connection
         app.link.transition().duration(300)
             .style("stroke-opacity", l => {
                 const sourceId = l.source.id || l.source;
                 const targetId = l.target.id || l.target;
                 
-                // Check if this link connects Current and Previous
                 const isActiveLink = prevNodeId && 
                     ((sourceId === prevNodeId && targetId === step.nodeId) || 
                      (sourceId === step.nodeId && targetId === prevNodeId));
                      
-                return isActiveLink ? 1 : 0.02; // Hide all other links
+                return isActiveLink ? 1 : 0.02;
             })
             .attr("stroke", l => {
                 const sourceId = l.source.id || l.source;
@@ -194,14 +261,9 @@ function runTourStep() {
                      (sourceId === step.nodeId && targetId === prevNodeId));
 
                  if (isActiveLink) return `url(#arrow-highlighted)`;
-                 
-                 // Hide markers for non-active links to reduce clutter
                  return null; 
             });
 
-        // --- END FOCUS LOGIC ---
-        
-        // Show Info
         if(typeof showInfoPanel === 'function') showInfoPanel(nodeData); 
         
         const tourBox = d3.select("#tour-info-box");
