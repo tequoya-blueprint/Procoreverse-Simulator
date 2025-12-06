@@ -544,7 +544,7 @@ const nodesData = [
       "design"
     ],
     "caseStudyUrl": "",
-    "supportDocUrl": "https::/v2.support.procore.com/product-manuals/rfi-project/",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/rfi-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Management"
   },
   {
