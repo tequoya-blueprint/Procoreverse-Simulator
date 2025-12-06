@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION 17: Fixes AI Tour Highlighting & Connection Visibility
+// VERSION 18: Dynamic "Step-by-Step" Flow Visualization
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -24,14 +24,12 @@ function initializeTourControls() {
         if (tourId === "none") {
             stopTour();
         } else {
-            // Look in global flatTours if available, or fallback to tours object
             let tourData = null;
             if (typeof flatTours !== 'undefined' && flatTours[tourId]) {
                 tourData = flatTours[tourId];
             } else if (typeof tours !== 'undefined' && tours.ai && tours.ai[tourId]) {
                 tourData = tours.ai[tourId];
             } else if (typeof tours !== 'undefined') {
-                 // Fallback search
                  if (tours.platform && tours.platform[tourId]) tourData = tours.platform[tourId];
                  if (tours.packages && tours.packages[tourId]) tourData = tours.packages[tourId];
             }
@@ -58,7 +56,7 @@ function initializeTourControls() {
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 }
 
-// --- TOUR PREVIEW & EXECUTION ---
+// --- TOUR PREVIEW (The "All Highlights" View) ---
 
 function previewTour(tourData) {
     stopTour(); // Clear previous state
@@ -66,35 +64,30 @@ function previewTour(tourData) {
     app.currentStep = -1; 
     app.interactionState = 'tour_preview';
     
-    // 1. Identify Nodes in the Tour
+    // 1. Identify ALL Nodes in the Tour
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     
-    // 2. Highlight Nodes
+    // 2. Highlight ALL Nodes (Overview)
     app.node.transition().duration(500)
         .style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
         
-    // 3. Highlight Connecting Links (THE FIX)
-    // We strictly check if the link exists in the current data and connects two tour nodes.
+    // 3. Highlight ALL Connecting Links (Overview)
     app.link.transition().duration(500)
         .style("stroke-opacity", l => {
             const sourceId = l.source.id || l.source;
             const targetId = l.target.id || l.target;
-            // Only show link if BOTH ends are part of the tour
             return (nodeIds.has(sourceId) && nodeIds.has(targetId)) ? 1 : 0.05;
         })
         .attr("stroke", l => {
             const sourceId = l.source.id || l.source;
             const targetId = l.target.id || l.target;
-            // Color active links Orange
             return (nodeIds.has(sourceId) && nodeIds.has(targetId)) ? "var(--procore-orange)" : "#a0a0a0";
         })
         .attr("marker-end", l => {
              const sourceId = l.source.id || l.source;
              const targetId = l.target.id || l.target;
-             // Ensure arrow is highlighted too
              if (nodeIds.has(sourceId) && nodeIds.has(targetId)) return `url(#arrow-highlighted)`;
              
-             // Reset to default arrow if not highlighted
              const legend = legendData.find(leg => leg.type_id === l.type);
              return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
         });
@@ -135,10 +128,13 @@ function startTour() {
     runTourStep();
 }
 
+// --- TOUR STEP EXECUTION (The "Focused" View) ---
+
 function runTourStep() {
     const step = app.currentTour.steps[app.currentStep];
     const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
     
+    // Update Controls
     d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
@@ -146,9 +142,64 @@ function runTourStep() {
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
 
-        // Keep path highlighted
-        const nodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
-        app.node.transition().duration(300).style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
+        // --- NEW FOCUS LOGIC ---
+
+        // 1. Identify Active Nodes (Current + Previous)
+        const activeNodeIds = new Set();
+        activeNodeIds.add(step.nodeId);
+        
+        let prevNodeId = null;
+        if (app.currentStep > 0) {
+            prevNodeId = app.currentTour.steps[app.currentStep - 1].nodeId;
+            activeNodeIds.add(prevNodeId);
+        }
+
+        // 2. Highlight Nodes (Active = 100%, Others = 15% Ghost)
+        const tourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
+        
+        app.node.transition().duration(300).style("opacity", d => {
+            if (activeNodeIds.has(d.id)) return 1;          // Active Focus
+            if (tourNodeIds.has(d.id)) return 0.15;         // Ghost Trail
+            return 0.05;                                    // Hidden Background
+        });
+
+        // 3. Highlight ONLY the Active Connection
+        app.link.transition().duration(300)
+            .style("stroke-opacity", l => {
+                const sourceId = l.source.id || l.source;
+                const targetId = l.target.id || l.target;
+                
+                // Check if this link connects Current and Previous
+                const isActiveLink = prevNodeId && 
+                    ((sourceId === prevNodeId && targetId === step.nodeId) || 
+                     (sourceId === step.nodeId && targetId === prevNodeId));
+                     
+                return isActiveLink ? 1 : 0.02; // Hide all other links
+            })
+            .attr("stroke", l => {
+                const sourceId = l.source.id || l.source;
+                const targetId = l.target.id || l.target;
+                
+                const isActiveLink = prevNodeId && 
+                    ((sourceId === prevNodeId && targetId === step.nodeId) || 
+                     (sourceId === step.nodeId && targetId === prevNodeId));
+
+                return isActiveLink ? "var(--procore-orange)" : "#a0a0a0";
+            })
+            .attr("marker-end", l => {
+                const sourceId = l.source.id || l.source;
+                const targetId = l.target.id || l.target;
+                const isActiveLink = prevNodeId && 
+                    ((sourceId === prevNodeId && targetId === step.nodeId) || 
+                     (sourceId === step.nodeId && targetId === prevNodeId));
+
+                 if (isActiveLink) return `url(#arrow-highlighted)`;
+                 
+                 // Hide markers for non-active links to reduce clutter
+                 return null; 
+            });
+
+        // --- END FOCUS LOGIC ---
         
         // Show Info
         if(typeof showInfoPanel === 'function') showInfoPanel(nodeData); 
@@ -213,7 +264,6 @@ async function generateAiWorkflow() {
       ]
     }`;
 
-    // Using the verified Gemini 2.0 Flash model
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${app.apiKey}`;
 
     const payload = {
