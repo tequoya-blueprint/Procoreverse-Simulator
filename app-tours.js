@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION 24: Fixes Overlap Issue (Robust Resize Logic)
+// VERSION 25: Added "Few-Shot" Training Examples to AI Prompt
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -117,7 +117,7 @@ function saveCurrentTour() {
 // --- TOUR PREVIEW ---
 
 function previewTour(tourData) {
-    stopTour(false); // Pass false to skip reset (we want to transition)
+    stopTour(false); 
     
     app.currentTour = tourData;
     app.currentStep = -1; 
@@ -181,7 +181,6 @@ function previewTour(tourData) {
         d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     }
     
-    // FIX: Force resize to accommodate the new stack
     resizeTourAccordion();
 }
 
@@ -217,8 +216,6 @@ function startTour() {
     }
 
     runTourStep();
-    
-    // FIX: Resize again in case buttons changed height
     resizeTourAccordion();
 }
 
@@ -309,22 +306,13 @@ function stopTour(fullReset = true) {
         if(typeof resetHighlight === 'function') resetHighlight();
         if(typeof resetZoom === 'function') resetZoom();
     }
-    
-    // FIX: Always resize accordion when stopping/changing
     resizeTourAccordion();
 }
 
-/**
- * Robust Accordion Resizing (The Fix for Overlap)
- */
 function resizeTourAccordion() {
     const content = document.querySelector('#tour-container').closest('.accordion-content');
-    
-    // Only act if the accordion is open
     if (content && content.parentElement.classList.contains('active')) {
-        // Wait for next frame to ensure DOM is painted (buttons, wrapped text)
         requestAnimationFrame(() => {
-             // Add 30px buffer to prevent any edge clipping/overlapping
              content.style.maxHeight = (content.scrollHeight + 30) + "px";
         });
     }
@@ -347,6 +335,18 @@ async function generateAiWorkflow() {
 
     const validNodes = nodesData.map(n => n.id).join(", ");
     
+    // --- UPDATED SYSTEM PROMPT WITH EXAMPLES ---
+    const exampleWorkflow = JSON.stringify({
+        name: "Change Management Flow",
+        steps: [
+            { nodeId: "Drawings", info: "A discrepancy is identified on the Drawings in the field." },
+            { nodeId: "RFIs", info: "An RFI is created to request clarification from the Design Team." },
+            { nodeId: "Change Events", info: "The RFI results in a cost, creating a Change Event." },
+            { nodeId: "Change Orders", info: "A Prime Change Order is generated for Owner approval." },
+            { nodeId: "Budget", info: "The approved Change Order updates the Budget." }
+        ]
+    });
+
     const systemPrompt = `You are a Procore Platform Architect. 
     Create a linear step-by-step workflow tour based on the user's request.
     
@@ -354,6 +354,11 @@ async function generateAiWorkflow() {
     1. You may ONLY use these exact Tool Names (Node IDs): [${validNodes}].
     2. Do not invent tools. If a step implies an external tool, use 'ERP Systems' or 'Documents'.
     3. Return ONLY valid JSON. No Markdown.
+    
+    GUIDANCE & STYLE:
+    - Mimic the logical flow of this example: ${exampleWorkflow}
+    - Ensure steps follow the flow of data (e.g. Field -> Financials -> Analytics).
+    - Keep descriptions concise (under 20 words).
     
     JSON Structure:
     {
