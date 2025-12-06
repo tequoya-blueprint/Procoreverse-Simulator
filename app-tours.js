@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION 23: UI Layout Fix (Stacked Preview) + Save Persistence
+// VERSION 24: Fixes Overlap Issue (Robust Resize Logic)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -117,7 +117,8 @@ function saveCurrentTour() {
 // --- TOUR PREVIEW ---
 
 function previewTour(tourData) {
-    stopTour(); 
+    stopTour(false); // Pass false to skip reset (we want to transition)
+    
     app.currentTour = tourData;
     app.currentStep = -1; 
     app.interactionState = 'tour_preview';
@@ -151,11 +152,10 @@ function previewTour(tourData) {
         isSaved = Object.values(tours.ai).some(t => t.name === tourData.name);
     }
 
-    // UPDATED CONTROLS: Vertical Layout (Column) to prevent crowding
     const controls = d3.select("#tour-controls");
-    controls.style("display", "block") // Use block/flow to allow stacking
+    controls.style("display", "block") 
             .html(`
-                <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-3 pb-2">
                     <div class="w-full">
                         <div class="text-sm font-bold text-gray-800 leading-snug break-words">
                             ${tourData.name}
@@ -181,6 +181,7 @@ function previewTour(tourData) {
         d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     }
     
+    // FIX: Force resize to accommodate the new stack
     resizeTourAccordion();
 }
 
@@ -188,9 +189,8 @@ function startTour() {
     app.interactionState = 'tour';
     app.currentStep = 0;
     
-    // UPDATED CONTROLS: Running State
     d3.select("#tour-controls")
-      .style("display", "flex") // Revert to Flex for row layout during playback
+      .style("display", "flex") 
       .html(`
         <button id="tour-prev" class="text-gray-500 hover:text-gray-700 px-3 py-1 disabled:opacity-30"><i class="fas fa-chevron-left"></i></button>
         <span id="tour-step-indicator" class="text-xs font-semibold text-gray-600">1 / ${app.currentTour.steps.length}</span>
@@ -217,6 +217,9 @@ function startTour() {
     }
 
     runTourStep();
+    
+    // FIX: Resize again in case buttons changed height
+    resizeTourAccordion();
 }
 
 function runTourStep() {
@@ -295,21 +298,35 @@ function runTourStep() {
     }
 }
 
-function stopTour() {
-    app.currentTour = null;
-    app.currentStep = -1;
-    app.interactionState = 'explore';
-    d3.select("#tour-controls").style("display", "none");
-    d3.select("#tour-info-box").style("display", "none");
-    d3.select("#tour-select").property("value", "none");
-    if(typeof resetHighlight === 'function') resetHighlight();
-    if(typeof resetZoom === 'function') resetZoom();
+function stopTour(fullReset = true) {
+    if (fullReset) {
+        app.currentTour = null;
+        app.currentStep = -1;
+        app.interactionState = 'explore';
+        d3.select("#tour-controls").style("display", "none");
+        d3.select("#tour-info-box").style("display", "none");
+        d3.select("#tour-select").property("value", "none");
+        if(typeof resetHighlight === 'function') resetHighlight();
+        if(typeof resetZoom === 'function') resetZoom();
+    }
+    
+    // FIX: Always resize accordion when stopping/changing
+    resizeTourAccordion();
 }
 
+/**
+ * Robust Accordion Resizing (The Fix for Overlap)
+ */
 function resizeTourAccordion() {
     const content = document.querySelector('#tour-container').closest('.accordion-content');
+    
+    // Only act if the accordion is open
     if (content && content.parentElement.classList.contains('active')) {
-        content.style.maxHeight = content.scrollHeight + "px";
+        // Wait for next frame to ensure DOM is painted (buttons, wrapped text)
+        requestAnimationFrame(() => {
+             // Add 30px buffer to prevent any edge clipping/overlapping
+             content.style.maxHeight = (content.scrollHeight + 30) + "px";
+        });
     }
 }
 
@@ -375,7 +392,7 @@ async function generateAiWorkflow() {
             newTour.name = `✨ ${newTour.name}`;
             newTour.id = tourId; 
 
-            // Close modal and preview
+            // Preview Only
             d3.select("#ai-modal-overlay").classed("visible", false);
             d3.select("#ai-workflow-input").property("value", "");
             status.text("");
