@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION 20: Stable Model + Save Persistence
+// VERSION 21: "Preview First" Logic + Fixed Save Button
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -82,25 +82,42 @@ function loadSavedTours() {
 function saveCurrentTour() {
     if (!app.currentTour) return;
 
+    // 1. Generate ID if missing (it's new)
+    let tourId = app.currentTour.id;
+    if (!tourId) {
+        tourId = `ai_tour_${Date.now()}`;
+        app.currentTour.id = tourId;
+    }
+
+    // 2. Add to Global State
+    if (!tours.ai) tours.ai = {};
+    tours.ai[tourId] = app.currentTour;
+
+    // 3. Save to LocalStorage
     let saved = {};
     const existing = localStorage.getItem('procoreverse_saved_tours');
     if (existing) {
         try { saved = JSON.parse(existing); } catch(e) {}
     }
-
-    let tourId = Object.keys(tours.ai || {}).find(key => tours.ai[key] === app.currentTour);
-    if (!tourId) tourId = `ai_tour_${Date.now()}`;
-
     saved[tourId] = app.currentTour;
     localStorage.setItem('procoreverse_saved_tours', JSON.stringify(saved));
     
+    // 4. Add to Dropdown (UI Update)
+    const aiGroup = d3.select("#ai-tours");
+    // Check if option already exists to avoid duplicates
+    if (aiGroup.select(`option[value="${tourId}"]`).empty()) {
+        aiGroup.append("option").attr("value", tourId).text(app.currentTour.name);
+    }
+    d3.select("#tour-select").property("value", tourId);
+
+    // 5. Feedback
     if(typeof showToast === 'function') {
         showToast("Workflow Saved!");
     } else {
         alert("Workflow Saved!");
     }
 
-    d3.select("#save-tour-btn").property("disabled", true).text("Saved");
+    d3.select("#save-tour-btn").property("disabled", true).html('<i class="fas fa-check"></i>');
 }
 
 // --- TOUR PREVIEW ---
@@ -113,11 +130,11 @@ function previewTour(tourData) {
     
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     
-    // Highlight Nodes (Overview)
+    // Highlight Nodes
     app.node.transition().duration(500)
         .style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
         
-    // Highlight Connecting Links
+    // Highlight Links
     app.link.transition().duration(500)
         .style("stroke-opacity", l => {
             const sourceId = l.source.id || l.source;
@@ -137,7 +154,14 @@ function previewTour(tourData) {
              return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
         });
 
-    // Show Controls with SAVE Button
+    // CHECK IF SAVED
+    let isSaved = false;
+    if (tours.ai) {
+        // If we find a matching tour in our saved list
+        isSaved = Object.values(tours.ai).some(t => t.name === tourData.name);
+    }
+
+    // Show Controls
     const controls = d3.select("#tour-controls");
     controls.style("display", "flex")
             .html(`
@@ -159,6 +183,11 @@ function previewTour(tourData) {
 
     d3.select("#start-tour-btn").on("click", startTour);
     d3.select("#save-tour-btn").on("click", saveCurrentTour);
+    
+    if (isSaved) {
+        d3.select("#save-tour-btn").property("disabled", true).html('<i class="fas fa-check"></i>');
+    }
+    
     resizeTourAccordion();
 }
 
@@ -193,7 +222,6 @@ function runTourStep() {
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
 
-        // --- FOCUS LOGIC ---
         const activeNodeIds = new Set();
         activeNodeIds.add(step.nodeId);
         
@@ -236,6 +264,7 @@ function runTourStep() {
                 const isActiveLink = prevNodeId && 
                     ((sourceId === prevNodeId && targetId === step.nodeId) || 
                      (sourceId === step.nodeId && targetId === prevNodeId));
+
                  if (isActiveLink) return `url(#arrow-highlighted)`;
                  return null; 
             });
@@ -300,9 +329,9 @@ async function generateAiWorkflow() {
       ]
     }`;
 
-    // FIX: Switched to 'gemini-flash-latest' for production stability
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${app.apiKey}`;
-    
+    // Use verified gemini-2.0-flash
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${app.apiKey}`;
+
     const payload = {
         contents: [{ parts: [{ text: `User Request: "${input}"` }] }],
         system_instruction: { parts: [{ text: systemPrompt }] },
@@ -327,13 +356,9 @@ async function generateAiWorkflow() {
         if (newTour && newTour.steps && newTour.steps.length > 0) {
             const tourId = `ai_tour_${Date.now()}`;
             newTour.name = `✨ ${newTour.name}`;
-            
-            if (!tours.ai) tours.ai = {};
-            tours.ai[tourId] = newTour; 
+            newTour.id = tourId; // Attach ID for saving later
 
-            d3.select("#ai-tours").append("option").attr("value", tourId).text(newTour.name);
-            d3.select("#tour-select").property("value", tourId);
-            
+            // CHANGE: Just Preview. DO NOT Add to list yet.
             d3.select("#ai-modal-overlay").classed("visible", false);
             d3.select("#ai-workflow-input").property("value", "");
             status.text("");
