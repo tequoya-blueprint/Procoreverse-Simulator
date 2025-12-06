@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION 19: Adds "Save Tour" Persistence (LocalStorage)
+// VERSION 20: Stable Model + Save Persistence
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -18,7 +18,7 @@ function initializeTourControls() {
         });
     }
 
-    // 2. Load Saved AI Tours from LocalStorage (NEW)
+    // 2. Load Saved AI Tours
     loadSavedTours();
 
     // 3. Dropdown Logic
@@ -27,7 +27,6 @@ function initializeTourControls() {
         if (tourId === "none") {
             stopTour();
         } else {
-            // Priority: Global Flat -> AI -> Platform/Packages
             let tourData = null;
             if (typeof flatTours !== 'undefined' && flatTours[tourId]) {
                 tourData = flatTours[tourId];
@@ -60,7 +59,7 @@ function initializeTourControls() {
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 }
 
-// --- PERSISTENCE LOGIC (NEW) ---
+// --- PERSISTENCE LOGIC ---
 
 function loadSavedTours() {
     const saved = localStorage.getItem('procoreverse_saved_tours');
@@ -68,14 +67,10 @@ function loadSavedTours() {
         try {
             const parsedTours = JSON.parse(saved);
             const aiGroup = d3.select("#ai-tours");
-            
-            // Ensure tours.ai exists
             if (!tours.ai) tours.ai = {};
 
             Object.entries(parsedTours).forEach(([id, tour]) => {
-                // Add to global state
                 tours.ai[id] = tour;
-                // Add to UI
                 aiGroup.append("option").attr("value", id).text(tour.name);
             });
         } catch (e) {
@@ -87,36 +82,24 @@ function loadSavedTours() {
 function saveCurrentTour() {
     if (!app.currentTour) return;
 
-    // Get existing
     let saved = {};
     const existing = localStorage.getItem('procoreverse_saved_tours');
     if (existing) {
         try { saved = JSON.parse(existing); } catch(e) {}
     }
 
-    // Add current (Key is likely ai_tour_timestamp)
-    // We generate a ID if one isn't clearly attached, but generateAiWorkflow adds one.
-    // If it's a standard tour, we shouldn't save it as "AI", but for this feature assuming AI context:
     let tourId = Object.keys(tours.ai || {}).find(key => tours.ai[key] === app.currentTour);
-    
-    if (!tourId) {
-        // Fallback ID generation if missing
-        tourId = `ai_tour_${Date.now()}`;
-    }
+    if (!tourId) tourId = `ai_tour_${Date.now()}`;
 
     saved[tourId] = app.currentTour;
-    
-    // Save back to storage
     localStorage.setItem('procoreverse_saved_tours', JSON.stringify(saved));
     
-    // Visual Feedback
     if(typeof showToast === 'function') {
-        showToast("Workflow Saved! It will appear in the list next time you visit.");
+        showToast("Workflow Saved!");
     } else {
         alert("Workflow Saved!");
     }
 
-    // Disable button to show state
     d3.select("#save-tour-btn").property("disabled", true).text("Saved");
 }
 
@@ -154,7 +137,7 @@ function previewTour(tourData) {
              return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
         });
 
-    // Show Controls with SAVE Button (NEW)
+    // Show Controls with SAVE Button
     const controls = d3.select("#tour-controls");
     controls.style("display", "flex")
             .html(`
@@ -176,10 +159,6 @@ function previewTour(tourData) {
 
     d3.select("#start-tour-btn").on("click", startTour);
     d3.select("#save-tour-btn").on("click", saveCurrentTour);
-    
-    // If it's already saved/standard, disable save button? 
-    // For now, allow re-saving to keep logic simple.
-    
     resizeTourAccordion();
 }
 
@@ -227,9 +206,9 @@ function runTourStep() {
         const tourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
         
         app.node.transition().duration(300).style("opacity", d => {
-            if (activeNodeIds.has(d.id)) return 1;          // Active Focus
-            if (tourNodeIds.has(d.id)) return 0.15;         // Ghost Trail
-            return 0.05;                                    // Hidden Background
+            if (activeNodeIds.has(d.id)) return 1;
+            if (tourNodeIds.has(d.id)) return 0.15;
+            return 0.05;
         });
 
         app.link.transition().duration(300)
@@ -246,11 +225,9 @@ function runTourStep() {
             .attr("stroke", l => {
                 const sourceId = l.source.id || l.source;
                 const targetId = l.target.id || l.target;
-                
                 const isActiveLink = prevNodeId && 
                     ((sourceId === prevNodeId && targetId === step.nodeId) || 
                      (sourceId === step.nodeId && targetId === prevNodeId));
-
                 return isActiveLink ? "var(--procore-orange)" : "#a0a0a0";
             })
             .attr("marker-end", l => {
@@ -259,7 +236,6 @@ function runTourStep() {
                 const isActiveLink = prevNodeId && 
                     ((sourceId === prevNodeId && targetId === step.nodeId) || 
                      (sourceId === step.nodeId && targetId === prevNodeId));
-
                  if (isActiveLink) return `url(#arrow-highlighted)`;
                  return null; 
             });
@@ -277,11 +253,9 @@ function stopTour() {
     app.currentTour = null;
     app.currentStep = -1;
     app.interactionState = 'explore';
-    
     d3.select("#tour-controls").style("display", "none");
     d3.select("#tour-info-box").style("display", "none");
     d3.select("#tour-select").property("value", "none");
-    
     if(typeof resetHighlight === 'function') resetHighlight();
     if(typeof resetZoom === 'function') resetZoom();
 }
@@ -326,7 +300,8 @@ async function generateAiWorkflow() {
       ]
     }`;
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${app.apiKey}`;
+    // FIX: Switched to 'gemini-flash-latest' for production stability
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${app.apiKey}`;
 
     const payload = {
         contents: [{ parts: [{ text: `User Request: "${input}"` }] }],
@@ -356,11 +331,9 @@ async function generateAiWorkflow() {
             if (!tours.ai) tours.ai = {};
             tours.ai[tourId] = newTour; 
 
-            // Add to UI
             d3.select("#ai-tours").append("option").attr("value", tourId).text(newTour.name);
             d3.select("#tour-select").property("value", tourId);
             
-            // Start
             d3.select("#ai-modal-overlay").classed("visible", false);
             d3.select("#ai-workflow-input").property("value", "");
             status.text("");
