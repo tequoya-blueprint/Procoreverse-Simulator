@@ -301,8 +301,7 @@ async function generateAiWorkflow() {
     }`;
 
     // FIX: Switched to 'gemini-flash-latest' for production stability
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${app.apiKey}`;
-
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${app.apiKey}`;
     const payload = {
         contents: [{ parts: [{ text: `User Request: "${input}"` }] }],
         system_instruction: { parts: [{ text: systemPrompt }] },
