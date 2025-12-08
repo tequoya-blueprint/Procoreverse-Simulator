@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 12: Final logic. Includes explicit safety checks and Hex Size Fix.
+// VERSION 27: Adds Hover Tooltip for Procore Connect Badges
 
 // --- Global App State ---
 const app = {
@@ -24,7 +24,7 @@ const app = {
     selectedNode: null,
     currentTour: null,
     currentStep: -1,
-    apiKey: "AIzaSyD1h8NYf9olhNzl1Z4k8E8UK3VdEGom0nQ" 
+    apiKey: "AIzaSyCZx6YBE0qwuRd0Jl8HJQ580MUFbANtygA" 
 };
 
 // --- Color & Category Definitions ---
@@ -46,7 +46,7 @@ function setupCategories() {
         "Platform & Core": "#757575",
         "Construction Intelligence": "#4A4A4A",
         "External Integrations": "#B0B0B0",
-        "Helix": "#000000", 
+        "Helix": procoreColors.metal, 
         "Project Execution": procoreColors.orange,
         "Resource Management": procoreColors.metal,
         "Emails": "#c94b4b",
@@ -254,6 +254,50 @@ function updateGraph(isFilterChange = true) {
                 nodeGroup.append("text")
                     .text(d => d.id)
                     .attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
+
+                // --- PROCORE CONNECT BADGE & HOVER LOGIC ---
+                if (d.id === "Drawings" || d.id === "RFIs") {
+                    const badgeGroup = nodeGroup.append("g")
+                        .attr("transform", `translate(16, -18)`)
+                        .style("cursor", "help"); // Changed cursor to indicate interactivity
+                    
+                    badgeGroup.append("circle")
+                        .attr("r", 7)
+                        .attr("fill", "white")
+                        .attr("stroke", "#2563EB")
+                        .attr("stroke-width", 1.5);
+                        
+                    badgeGroup.append("text")
+                        .attr("class", "fas")
+                        .text("\uf0c1")
+                        .attr("text-anchor", "middle")
+                        .attr("dy", 3) 
+                        .attr("fill", "#2563EB")
+                        .attr("font-size", "9px")
+                        .style("font-family", "'Font Awesome 6 Free'");
+
+                    // HOVER EVENT: Show custom tooltip
+                    badgeGroup.on("mouseover", function(event) {
+                        event.stopPropagation(); // Prevent main node tooltip
+                        const tooltip = d3.select("#tooltip");
+                        tooltip.html(`
+                            <div class="font-bold text-sm mb-1" style="color: #2563EB;">
+                                <i class="fas fa-link mr-1"></i> Procore Connect
+                            </div>
+                            <div class="text-xs text-gray-200" style="max-width: 180px;">
+                                Syncs items across different accounts (e.g., General Contractor to Owner).
+                            </div>
+                        `)
+                        .style("left", (event.pageX + 15) + "px")
+                        .style("top", (event.pageY - 10) + "px")
+                        .classed("visible", true);
+                    })
+                    .on("mouseout", function(event) {
+                        event.stopPropagation();
+                        d3.select("#tooltip").classed("visible", false);
+                    });
+                }
+                // ---------------------------------------------
                 
                 nodeGroup.style("opacity", 0).transition().duration(500).style("opacity", 1);
                 return nodeGroup;
