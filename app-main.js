@@ -236,6 +236,7 @@ function updateGraph(isFilterChange = true) {
     ).map(d => ({...d})); 
 
     // --- D3 Data Join: Nodes ---
+  // --- D3 Data Join: Nodes ---
     app.node = app.node.data(filteredNodes, d => d.id)
         .join(
             enter => {
@@ -244,7 +245,8 @@ function updateGraph(isFilterChange = true) {
                     .call(drag(app.simulation)) 
                     .on("mouseenter", nodeMouseOver) 
                     .on("mouseleave", nodeMouseOut) 
-                    .on("click", nodeClicked); 
+                    .on("click", nodeClicked)
+                    .on("dblclick", nodeDoubleClicked); // NEW: Listen for Double Click
                 
                 nodeGroup.append("path")
                     .attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)) 
