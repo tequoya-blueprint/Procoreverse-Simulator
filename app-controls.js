@@ -1,51 +1,26 @@
 // --- app-controls.js ---
-// VERSION FINAL: Corrected Embedded Scoping Logic & Missing Functions
+// VERSION: Services Scoping based on Hours
 
 const TEAM_CONFIG = {
     admin: {
-        showTours: true,
-        showAiBuilder: true,
-        showManualBuilder: true, 
-        showScoping: true, 
-        showFilters: true,
-        showLegend: true,
-        defaultOpen: 'filter-accordion' 
+        showTours: true, showAiBuilder: true, showManualBuilder: true, 
+        showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' 
     },
     enablement: {
-        showTours: true,
-        showAiBuilder: true,
-        showManualBuilder: true,
-        showScoping: false, 
-        showFilters: true,
-        showLegend: true,
-        defaultOpen: 'tour-accordion'
+        showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: false, 
+        showFilters: true, showLegend: true, defaultOpen: 'tour-accordion'
     },
     sales: {
-        showTours: false,
-        showAiBuilder: false,
-        showManualBuilder: false,
-        showScoping: false,
-        showFilters: true,
-        showLegend: true,
-        defaultOpen: 'filter-accordion'
+        showTours: false, showAiBuilder: false, showManualBuilder: false, showScoping: false,
+        showFilters: true, showLegend: true, defaultOpen: 'filter-accordion'
     },
     product: {
-        showTours: true,
-        showAiBuilder: true,
-        showManualBuilder: true, 
-        showScoping: false,
-        showFilters: true,
-        showLegend: true,
-        defaultOpen: 'tour-accordion'
+        showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: false,
+        showFilters: true, showLegend: true, defaultOpen: 'tour-accordion'
     },
     services: {
-        showTours: true,
-        showAiBuilder: false, 
-        showManualBuilder: true, 
-        showScoping: true, // Services sees the Embedded Scoping Panel
-        showFilters: true,
-        showLegend: true,
-        defaultOpen: 'filter-accordion'
+        showTours: true, showAiBuilder: false, showManualBuilder: true, 
+        showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion'
     }
 };
 
@@ -62,9 +37,7 @@ const audienceDataToKeyMap = {
 };
 
 const audienceKeyToLabelMap = {
-    "GC": "General Contractor",
-    "SC": "Specialty Contractor",
-    "O": "Owner"
+    "GC": "General Contractor", "SC": "Specialty Contractor", "O": "Owner"
 };
 
 const audienceKeyToDataValuesMap = {
@@ -122,48 +95,78 @@ function initializeControls() {
     // --- SCOPING CALCULATOR LISTENERS ---
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
+    const sliderChange = document.getElementById('slider-change');
 
     if(sliderMaturity) {
         sliderMaturity.addEventListener('input', calculateScoping);
         sliderData.addEventListener('input', calculateScoping);
+        sliderChange.addEventListener('input', calculateScoping);
     }
 }
 
-// --- SCOPING CALCULATION ---
+// --- SCOPING CALCULATION (UPDATED) ---
 function calculateScoping() {
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
+    const sliderChange = document.getElementById('slider-change');
     
-    if (!sliderMaturity || !sliderData) return;
+    if (!sliderMaturity || !sliderData || !sliderChange) return;
 
     const mat = parseFloat(sliderMaturity.value);
     const data = parseFloat(sliderData.value);
+    const change = parseFloat(sliderChange.value);
 
     // Update Text Labels
     document.getElementById('val-maturity').innerText = mat + "x";
     document.getElementById('val-data').innerText = data + "x";
+    document.getElementById('val-change').innerText = change + "x";
 
-    // 1. Determine Tool Count
-    let toolCount = 0;
-    const activeFilters = (typeof getActiveFilters === 'function') ? getActiveFilters() : null;
+    // 1. Get Selected Package Service Hours
+    let baseHours = 0;
+    let addOnCount = 0;
     
-    if (activeFilters && activeFilters.packageTools) {
-        toolCount = activeFilters.packageTools.size;
-    } 
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    const pkgName = d3.select("#package-filter").property('value');
 
-    document.getElementById('base-tools-count').innerText = toolCount;
+    if (region !== 'all' && audience !== 'all' && pkgName !== 'all') {
+        const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+        const pkg = packagingData.find(p =>
+            p.region === region && audienceDataKeys.includes(p.audience) && p.package_name === pkgName
+        );
 
-    if (toolCount === 0) {
+        if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
+            // Regex to find "25 hrs" or "64 hrs"
+            const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
+            if (match) {
+                baseHours = parseInt(match[1], 10);
+            }
+        }
+        
+        // Count checked Add-ons
+        addOnCount = d3.selectAll("#add-ons-checkboxes input:checked").size();
+    }
+
+    // UPDATE UI LABEL
+    const baseLabel = document.getElementById('base-tools-count');
+    if (baseHours > 0) {
+        // Update the label to show Hours instead of Tool Count
+        baseLabel.parentElement.innerHTML = `Base Scope: <span id="base-tools-count" class="font-bold text-gray-700">${baseHours} Hrs</span> + ${addOnCount} Add-ons`;
+    } else {
+        baseLabel.innerText = "0 Hrs";
+    }
+
+    if (baseHours === 0) {
         document.getElementById('calc-weeks').innerText = "0";
         return;
     }
 
     // 2. The Formula
-    // Base heuristic: 1.2 weeks per tool implementation
-    const baseWeeks = toolCount * 1.2;
+    // Conversion: 3 Hours of Services = ~1 Week of Implementation Duration
+    const baseWeeks = (baseHours / 3) + (addOnCount * 2); 
     
-    // Apply Multipliers
-    const combinedMultiplier = (mat + data) / 2;
+    // Apply Multipliers (Average of 3 factors)
+    const combinedMultiplier = (mat + data + change) / 3; 
     const finalWeeks = Math.round(baseWeeks * combinedMultiplier);
 
     document.getElementById('calc-weeks').innerText = finalWeeks;
@@ -185,7 +188,6 @@ function applyTeamView(team) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
-    // Embed Logic: Toggle the container, not a modal
     const scopingContainer = d3.select("#scoping-ui-container");
     scopingContainer.classed("hidden", !config.showScoping);
 
@@ -209,7 +211,6 @@ function toggleAllConnections() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-// Fixed: This was missing in previous version
 let allCategoriesChecked = true;
 function toggleAllCategories() {
     allCategoriesChecked = !allCategoriesChecked;
@@ -286,7 +287,6 @@ function onPackageChange() {
     refreshAccordionHeight();
     if (typeof updateGraph === 'function') updateGraph(true);
     
-    // Trigger Scoping Calc
     calculateScoping();
 }
 
