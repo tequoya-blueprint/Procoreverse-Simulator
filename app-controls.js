@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: Services Scoping based on Hours
+// VERSION: Safe Scoping Logic (Prevents Crash on Missing Sliders)
 
 const TEAM_CONFIG = {
     admin: {
@@ -92,34 +92,32 @@ function initializeControls() {
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 
-    // --- SCOPING CALCULATOR LISTENERS ---
+    // --- SCOPING CALCULATOR LISTENERS (SAFE MODE) ---
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
 
-    if(sliderMaturity) {
-        sliderMaturity.addEventListener('input', calculateScoping);
-        sliderData.addEventListener('input', calculateScoping);
-        sliderChange.addEventListener('input', calculateScoping);
-    }
+    // FIX: Check each individually before adding listener
+    if (sliderMaturity) sliderMaturity.addEventListener('input', calculateScoping);
+    if (sliderData) sliderData.addEventListener('input', calculateScoping);
+    if (sliderChange) sliderChange.addEventListener('input', calculateScoping);
 }
 
-// --- SCOPING CALCULATION (UPDATED) ---
+// --- SCOPING CALCULATION ---
 function calculateScoping() {
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
     
-    if (!sliderMaturity || !sliderData || !sliderChange) return;
+    // Default values if an element is missing
+    const mat = sliderMaturity ? parseFloat(sliderMaturity.value) : 1.0;
+    const data = sliderData ? parseFloat(sliderData.value) : 1.0;
+    const change = sliderChange ? parseFloat(sliderChange.value) : 1.0;
 
-    const mat = parseFloat(sliderMaturity.value);
-    const data = parseFloat(sliderData.value);
-    const change = parseFloat(sliderChange.value);
-
-    // Update Text Labels
-    document.getElementById('val-maturity').innerText = mat + "x";
-    document.getElementById('val-data').innerText = data + "x";
-    document.getElementById('val-change').innerText = change + "x";
+    // Update Text Labels (Safety Checked)
+    if(document.getElementById('val-maturity')) document.getElementById('val-maturity').innerText = mat + "x";
+    if(document.getElementById('val-data')) document.getElementById('val-data').innerText = data + "x";
+    if(document.getElementById('val-change')) document.getElementById('val-change').innerText = change + "x";
 
     // 1. Get Selected Package Service Hours
     let baseHours = 0;
@@ -136,40 +134,33 @@ function calculateScoping() {
         );
 
         if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
-            // Regex to find "25 hrs" or "64 hrs"
             const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
-            if (match) {
-                baseHours = parseInt(match[1], 10);
-            }
+            if (match) baseHours = parseInt(match[1], 10);
         }
         
-        // Count checked Add-ons
         addOnCount = d3.selectAll("#add-ons-checkboxes input:checked").size();
     }
 
-    // UPDATE UI LABEL
     const baseLabel = document.getElementById('base-tools-count');
-    if (baseHours > 0) {
-        // Update the label to show Hours instead of Tool Count
-        baseLabel.parentElement.innerHTML = `Base Scope: <span id="base-tools-count" class="font-bold text-gray-700">${baseHours} Hrs</span> + ${addOnCount} Add-ons`;
-    } else {
-        baseLabel.innerText = "0 Hrs";
+    if (baseLabel) {
+        if (baseHours > 0) {
+            baseLabel.parentElement.innerHTML = `Base Scope: <span id="base-tools-count" class="font-bold text-gray-700">${baseHours} Hrs</span> + ${addOnCount} Add-ons`;
+        } else {
+            baseLabel.innerText = "0 Hrs";
+        }
     }
 
     if (baseHours === 0) {
-        document.getElementById('calc-weeks').innerText = "0";
+        if(document.getElementById('calc-weeks')) document.getElementById('calc-weeks').innerText = "0";
         return;
     }
 
     // 2. The Formula
-    // Conversion: 3 Hours of Services = ~1 Week of Implementation Duration
     const baseWeeks = (baseHours / 3) + (addOnCount * 2); 
-    
-    // Apply Multipliers (Average of 3 factors)
     const combinedMultiplier = (mat + data + change) / 3; 
     const finalWeeks = Math.round(baseWeeks * combinedMultiplier);
 
-    document.getElementById('calc-weeks').innerText = finalWeeks;
+    if(document.getElementById('calc-weeks')) document.getElementById('calc-weeks').innerText = finalWeeks;
 }
 
 // --- TEAM VIEW LOGIC ---
