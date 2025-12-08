@@ -1,13 +1,12 @@
 // --- app-controls.js ---
-// VERSION FINAL: Fixed missing toggleAllCategories + All Features (Scoping, Team Views)
+// VERSION FINAL: Corrected Embedded Scoping Logic & Missing Functions
 
-// --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
     admin: {
         showTours: true,
         showAiBuilder: true,
         showManualBuilder: true, 
-        showScoping: true, // Admin gets everything
+        showScoping: true, 
         showFilters: true,
         showLegend: true,
         defaultOpen: 'filter-accordion' 
@@ -16,7 +15,7 @@ const TEAM_CONFIG = {
         showTours: true,
         showAiBuilder: true,
         showManualBuilder: true,
-        showScoping: false, // Enablement builds content
+        showScoping: false, 
         showFilters: true,
         showLegend: true,
         defaultOpen: 'tour-accordion'
@@ -43,10 +42,10 @@ const TEAM_CONFIG = {
         showTours: true,
         showAiBuilder: false, 
         showManualBuilder: true, 
-        showScoping: true, // Services gets Scoping
+        showScoping: true, // Services sees the Embedded Scoping Panel
         showFilters: true,
         showLegend: true,
-        defaultOpen: 'view-options-accordion'
+        defaultOpen: 'filter-accordion'
     }
 };
 
@@ -74,8 +73,8 @@ const audienceKeyToDataValuesMap = {
     "O": ["Owners", "Owner", "Owner Developer *Coming Soon"]
 };
 
+// --- INITIALIZATION ---
 function initializeControls() {
-    // --- Accordion Setup ---
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {
             if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement);
@@ -120,53 +119,57 @@ function initializeControls() {
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 
-    // --- SCOPING MODAL LOGIC ---
-    const scopingModal = d3.select("#scoping-modal-overlay");
-    d3.select("#scoping-modal-close").on("click", () => scopingModal.classed("hidden", true));
-    
-    // Scoping Button Injection
-    const container = d3.select("#tour-container");
-    container.append("button")
-        .attr("id", "scoping-btn")
-        .attr("class", "w-full mt-2 btn-indigo bg-gray-800 hover:bg-gray-900 text-white border border-gray-700")
-        .style("display", "none") 
-        .html('<i class="fas fa-calculator mr-2"></i> Scoping Calculator')
-        .on("click", () => scopingModal.classed("hidden", false));
-
-    // Scoping Sliders Logic
+    // --- SCOPING CALCULATOR LISTENERS ---
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
-    const sliderChange = document.getElementById('slider-change');
-
-    function updateScopingCalc() {
-        const mat = parseFloat(sliderMaturity.value);
-        const data = parseFloat(sliderData.value);
-        const change = parseFloat(sliderChange.value);
-
-        document.getElementById('val-maturity').innerText = mat + "x";
-        document.getElementById('val-data').innerText = data + "x";
-        document.getElementById('val-change').innerText = change + "x";
-
-        const multiplier = ((mat + data) / 2) * change;
-        const finalMult = Math.round(multiplier * 10) / 10;
-
-        document.getElementById('total-multiplier').innerText = finalMult.toFixed(1) + "x";
-        document.getElementById('calc-weeks').innerText = Math.round(12 * finalMult);
-    }
 
     if(sliderMaturity) {
-        sliderMaturity.addEventListener('input', updateScopingCalc);
-        sliderData.addEventListener('input', updateScopingCalc);
-        sliderChange.addEventListener('input', updateScopingCalc);
+        sliderMaturity.addEventListener('input', calculateScoping);
+        sliderData.addEventListener('input', calculateScoping);
     }
-    
-    d3.select("#scoping-apply-btn").on("click", () => {
-        scopingModal.classed("hidden", true);
-        if(typeof showToast === 'function') showToast("Scoping parameters applied to timeline.");
-    });
 }
 
-// --- Apply the Rules ---
+// --- SCOPING CALCULATION ---
+function calculateScoping() {
+    const sliderMaturity = document.getElementById('slider-maturity');
+    const sliderData = document.getElementById('slider-data');
+    
+    if (!sliderMaturity || !sliderData) return;
+
+    const mat = parseFloat(sliderMaturity.value);
+    const data = parseFloat(sliderData.value);
+
+    // Update Text Labels
+    document.getElementById('val-maturity').innerText = mat + "x";
+    document.getElementById('val-data').innerText = data + "x";
+
+    // 1. Determine Tool Count
+    let toolCount = 0;
+    const activeFilters = (typeof getActiveFilters === 'function') ? getActiveFilters() : null;
+    
+    if (activeFilters && activeFilters.packageTools) {
+        toolCount = activeFilters.packageTools.size;
+    } 
+
+    document.getElementById('base-tools-count').innerText = toolCount;
+
+    if (toolCount === 0) {
+        document.getElementById('calc-weeks').innerText = "0";
+        return;
+    }
+
+    // 2. The Formula
+    // Base heuristic: 1.2 weeks per tool implementation
+    const baseWeeks = toolCount * 1.2;
+    
+    // Apply Multipliers
+    const combinedMultiplier = (mat + data) / 2;
+    const finalWeeks = Math.round(baseWeeks * combinedMultiplier);
+
+    document.getElementById('calc-weeks').innerText = finalWeeks;
+}
+
+// --- TEAM VIEW LOGIC ---
 function applyTeamView(team) {
     const config = TEAM_CONFIG[team];
     if (!config) return;
@@ -182,10 +185,9 @@ function applyTeamView(team) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
-    const scopingBtn = d3.select("#scoping-btn");
-    if (!scopingBtn.empty()) {
-        scopingBtn.style("display", config.showScoping ? "block" : "none");
-    }
+    // Embed Logic: Toggle the container, not a modal
+    const scopingContainer = d3.select("#scoping-ui-container");
+    scopingContainer.classed("hidden", !config.showScoping);
 
     document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
     
@@ -207,7 +209,7 @@ function toggleAllConnections() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-// RESTORED: This was the missing function causing the error
+// Fixed: This was missing in previous version
 let allCategoriesChecked = true;
 function toggleAllCategories() {
     allCategoriesChecked = !allCategoriesChecked;
@@ -283,6 +285,9 @@ function onPackageChange() {
     }
     refreshAccordionHeight();
     if (typeof updateGraph === 'function') updateGraph(true);
+    
+    // Trigger Scoping Calc
+    calculateScoping();
 }
 
 function populateAddOnsAndServices(packageInfo) {
@@ -303,7 +308,10 @@ function populateAddOnsAndServices(packageInfo) {
             const label = addOnsCheckboxes.append("label").attr("class", "flex items-center cursor-pointer py-1");
             label.append("input").attr("type", "checkbox").attr("value", addOn)
                 .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
-                .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
+                .on("change", () => {
+                    if (typeof updateGraph === 'function') updateGraph(true);
+                    calculateScoping();
+                });
             label.append("span").attr("class", "text-gray-700").text(addOn);
         });
         addOnsContainer.classed('hidden', false);
@@ -323,6 +331,8 @@ function clearPackageDetails() {
     d3.select("#add-ons-container").classed('hidden', true);
     d3.select("#package-services-container").classed('hidden', true);
     if(typeof refreshAccordionHeight === 'function') refreshAccordionHeight();
+    
+    calculateScoping();
 }
 
 function refreshAccordionHeight() {
