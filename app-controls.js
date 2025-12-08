@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: Added "Enablement" View
+// VERSION FINAL: Fixed missing toggleAllCategories + All Features (Scoping, Team Views)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -7,23 +7,25 @@ const TEAM_CONFIG = {
         showTours: true,
         showAiBuilder: true,
         showManualBuilder: true, 
+        showScoping: true, // Admin gets everything
         showFilters: true,
         showLegend: true,
         defaultOpen: 'filter-accordion' 
     },
-    // ENABLEMENT: The "Creator" View. Needs tools to build demos/training.
     enablement: {
         showTours: true,
-        showAiBuilder: true,      // Enabled: Great for brainstorming new pitches
-        showManualBuilder: true,  // Enabled: Critical for building "Golden Demo" scripts
+        showAiBuilder: true,
+        showManualBuilder: true,
+        showScoping: false, // Enablement builds content
         showFilters: true,
         showLegend: true,
-        defaultOpen: 'tour-accordion' // Focus on the Processes first
+        defaultOpen: 'tour-accordion'
     },
     sales: {
-        showTours: false,         // Sales usually just needs the "What connects to what?"
+        showTours: false,
         showAiBuilder: false,
         showManualBuilder: false,
+        showScoping: false,
         showFilters: true,
         showLegend: true,
         defaultOpen: 'filter-accordion'
@@ -32,14 +34,16 @@ const TEAM_CONFIG = {
         showTours: true,
         showAiBuilder: true,
         showManualBuilder: true, 
+        showScoping: false,
         showFilters: true,
         showLegend: true,
         defaultOpen: 'tour-accordion'
     },
     services: {
         showTours: true,
-        showAiBuilder: false,     // Services focuses on "Real" SOPs, less on AI generation
+        showAiBuilder: false, 
         showManualBuilder: true, 
+        showScoping: true, // Services gets Scoping
         showFilters: true,
         showLegend: true,
         defaultOpen: 'view-options-accordion'
@@ -115,28 +119,74 @@ function initializeControls() {
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
+
+    // --- SCOPING MODAL LOGIC ---
+    const scopingModal = d3.select("#scoping-modal-overlay");
+    d3.select("#scoping-modal-close").on("click", () => scopingModal.classed("hidden", true));
+    
+    // Scoping Button Injection
+    const container = d3.select("#tour-container");
+    container.append("button")
+        .attr("id", "scoping-btn")
+        .attr("class", "w-full mt-2 btn-indigo bg-gray-800 hover:bg-gray-900 text-white border border-gray-700")
+        .style("display", "none") 
+        .html('<i class="fas fa-calculator mr-2"></i> Scoping Calculator')
+        .on("click", () => scopingModal.classed("hidden", false));
+
+    // Scoping Sliders Logic
+    const sliderMaturity = document.getElementById('slider-maturity');
+    const sliderData = document.getElementById('slider-data');
+    const sliderChange = document.getElementById('slider-change');
+
+    function updateScopingCalc() {
+        const mat = parseFloat(sliderMaturity.value);
+        const data = parseFloat(sliderData.value);
+        const change = parseFloat(sliderChange.value);
+
+        document.getElementById('val-maturity').innerText = mat + "x";
+        document.getElementById('val-data').innerText = data + "x";
+        document.getElementById('val-change').innerText = change + "x";
+
+        const multiplier = ((mat + data) / 2) * change;
+        const finalMult = Math.round(multiplier * 10) / 10;
+
+        document.getElementById('total-multiplier').innerText = finalMult.toFixed(1) + "x";
+        document.getElementById('calc-weeks').innerText = Math.round(12 * finalMult);
+    }
+
+    if(sliderMaturity) {
+        sliderMaturity.addEventListener('input', updateScopingCalc);
+        sliderData.addEventListener('input', updateScopingCalc);
+        sliderChange.addEventListener('input', updateScopingCalc);
+    }
+    
+    d3.select("#scoping-apply-btn").on("click", () => {
+        scopingModal.classed("hidden", true);
+        if(typeof showToast === 'function') showToast("Scoping parameters applied to timeline.");
+    });
 }
 
-// --- NEW FUNCTION: Apply the Rules ---
+// --- Apply the Rules ---
 function applyTeamView(team) {
     const config = TEAM_CONFIG[team];
     if (!config) return;
 
-    // 1. Process Maps (Accordion)
     const tourAccordion = d3.select("#tour-accordion");
     tourAccordion.style("display", config.showTours ? "block" : "none");
     
-    // 2. AI Builder Button
     d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
     d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none"); 
     
-    // 3. Manual Builder Button
     const manualBtn = d3.select("#manual-workflow-builder-btn");
     if (!manualBtn.empty()) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
-    // 4. Set Default Open Accordion
+    const scopingBtn = d3.select("#scoping-btn");
+    if (!scopingBtn.empty()) {
+        scopingBtn.style("display", config.showScoping ? "block" : "none");
+    }
+
     document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
     
     const target = document.getElementById(config.defaultOpen);
@@ -147,11 +197,21 @@ function applyTeamView(team) {
     }
 }
 
+// --- HELPER FUNCTIONS ---
+
 function toggleAllConnections() {
     let allConnectionsChecked = true;
     const firstBox = d3.select(".legend-checkbox").node();
     if (firstBox) allConnectionsChecked = !firstBox.checked;
     d3.selectAll(".legend-checkbox").property("checked", allConnectionsChecked);
+    if (typeof updateGraph === 'function') updateGraph(true);
+}
+
+// RESTORED: This was the missing function causing the error
+let allCategoriesChecked = true;
+function toggleAllCategories() {
+    allCategoriesChecked = !allCategoriesChecked;
+    d3.selectAll("#category-filters input").property("checked", allCategoriesChecked);
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
@@ -340,9 +400,7 @@ function resetView() {
     d3.select("#package-filter").property('value', 'all').property('disabled', true).html('<option value="all">All Packages</option>');
     d3.selectAll("#category-filters input").property("checked", true);
     d3.selectAll(".legend-checkbox").property("checked", true);
-    // Reset toggle button states
-    let allCategoriesChecked = true;
-    let allConnectionsChecked = true;
+    allCategoriesChecked = true;
     clearPackageDetails();
     if (typeof updateGraph === 'function') updateGraph(false);
     if (typeof resetZoom === 'function') resetZoom();
