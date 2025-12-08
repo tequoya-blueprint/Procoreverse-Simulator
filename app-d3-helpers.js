@@ -1,5 +1,5 @@
 // --- app-d3-helpers.js ---
-// VERSION 7: Fixes Close Button functionality by overriding state protection.
+// VERSION 9: Adds Double-Click Support for Manual Builder
 
 function generateHexagonPath(size) {
     const points = Array.from({length: 6}, (_, i) => {
@@ -24,7 +24,6 @@ function drag(simulation) {
     
     function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0);
-        // Node stays sticky
     }
     
     return d3.drag()
@@ -36,8 +35,18 @@ function drag(simulation) {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
+    // 1. BLOCKED STATES
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview') return;
 
+    // 2. MANUAL BUILDER MODE (Select/Add)
+    if (app.interactionState === 'manual_building') {
+        if (typeof handleManualNodeClick === 'function') {
+            handleManualNodeClick(d);
+        }
+        return; 
+    }
+
+    // 3. STANDARD SELECTION
     if (app.selectedNode === d) {
         resetHighlight();
     } else {
@@ -50,9 +59,22 @@ function nodeClicked(event, d) {
     }
 }
 
+// --- NEW FUNCTION: Double Click to Deselect/Remove ---
+function nodeDoubleClicked(event, d) {
+    event.stopPropagation(); // Prevent Zoom
+    
+    if (app.interactionState === 'manual_building') {
+        if (typeof handleManualNodeDoubleClick === 'function') {
+            handleManualNodeDoubleClick(d);
+        }
+    }
+}
+
 function nodeMouseOver(event, d) {
-    // Do not highlight if already in a locked state
-    if (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected') return;
+    if (app.interactionState === 'tour' || 
+        app.interactionState === 'tour_preview' || 
+        app.interactionState === 'selected' || 
+        app.interactionState === 'manual_building') return; 
     
     if (typeof showTooltip === 'function') showTooltip(event, d);
     
@@ -62,8 +84,10 @@ function nodeMouseOver(event, d) {
 }
 
 function nodeMouseOut() {
-    // Do not reset if we are in any persistent state (tour, preview, selected)
-    if (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected') return;
+    if (app.interactionState === 'tour' || 
+        app.interactionState === 'tour_preview' || 
+        app.interactionState === 'selected' || 
+        app.interactionState === 'manual_building') return;
     
     if (typeof hideTooltip === 'function') hideTooltip();
     
@@ -71,8 +95,6 @@ function nodeMouseOut() {
         resetHighlight();
     }
 }
-
-// --- Highlighting Logic ---
 
 function applyHighlight(d) {
     if (!app.simulation) return;
@@ -90,8 +112,6 @@ function applyHighlight(d) {
 
     const opacity = 0.1; 
     
-    app.node.classed("selected", n => app.interactionState === 'selected' && n.id === d.id);
-    
     app.node.transition().duration(300)
         .style("opacity", n => connectedNodeIds.has(n.id) ? 1 : opacity);
     
@@ -103,38 +123,8 @@ function applyHighlight(d) {
         });
 }
 
-function highlightConnection(element, d) {
-    if (!app.simulation) return;
-
-    const { otherNodeId, type } = element.dataset;
-
-    const specificLink = app.simulation.force("link").links().find(l => 
-        (l.source.id === d.id && l.target.id === otherNodeId && l.type === type) ||
-        (l.target.id === d.id && l.source.id === otherNodeId && l.type === type)
-    );
-
-    const connectedNodeIds = new Set([d.id, otherNodeId]);
-    const opacity = 0.1;
-
-    app.node.transition().duration(300)
-        .style("opacity", n => connectedNodeIds.has(n.id) ? 1 : opacity);
-    
-    app.link.transition().duration(300)
-        .style("stroke-opacity", l => l === specificLink ? 1 : opacity * 0.5)
-        .classed("highlighted", l => l === specificLink)
-        .attr("marker-end", l => {
-            if (l !== specificLink) return null;
-            return `url(#arrow-highlighted)`;
-        });
-}
-
-/**
- * Resets all highlights and selections.
- */
 function resetHighlight(hidePanel = true) {
-    // FIX: Only block the reset if it's a mouse event (hidePanel=false) AND we are in a locked state.
-    // If hidePanel is TRUE (the close button was clicked), we proceed with the reset.
-    if (!hidePanel && (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected')) {
+    if (!hidePanel && (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected' || app.interactionState === 'manual_building')) {
         return; 
     }
 
@@ -166,9 +156,6 @@ function resetHighlight(hidePanel = true) {
     d3.select('#graph-container').classed('selection-active', false);
 }
 
-
-// --- Camera & Zoom Controls ---
-
 function resetZoom() {
     if (app.svg && app.zoom) {
         app.svg.transition().duration(1000).ease(d3.easeCubicInOut)
@@ -178,11 +165,9 @@ function resetZoom() {
 
 function centerViewOnNode(d) {
     if (!d || d.x == null || d.y == null || !app.svg || !app.zoom) return;
-    
     const scale = 1.5; 
     const x = app.width / 2 - d.x * scale;
     const y = app.height / 2 - d.y * scale;
-    
     app.svg.transition().duration(800).ease(d3.easeCubicInOut)
         .call(app.zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
 }
