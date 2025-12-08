@@ -1,10 +1,11 @@
 // --- app-tours.js ---
-// VERSION 31: Double-Click Logic + Persistent Path Visualization
+// VERSION 32: "Candidate" Highlighting (Possible Next Steps)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
     const packageGroup = d3.select("#package-tours");
     
+    // Load Standard Data
     if (typeof tours !== 'undefined' && tours.platform) {
         Object.entries(tours.platform).forEach(([id, tour]) => platformGroup.append("option").attr("value", id).text(tour.name));
     }
@@ -33,12 +34,14 @@ function initializeTourControls() {
     d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
     d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
 
+    // AI Modal Controls
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
     aiModalOverlay.on("click", function(e) { if (e.target === this) aiModalOverlay.classed("visible", false); });
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 
+    // Manual Builder Button
     const container = d3.select("#tour-container");
     container.append("button")
         .attr("id", "manual-workflow-builder-btn")
@@ -99,9 +102,9 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Initial State: Dim everything
-    app.node.transition().duration(500).style("opacity", 0.3);
-    app.link.transition().duration(500).style("stroke-opacity", 0.05);
+    // Initial State: Show all nodes clearly so user can pick start
+    app.node.transition().duration(500).style("opacity", 1);
+    app.link.transition().duration(500).style("stroke-opacity", 0.1); // Dim links to reduce noise
 
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
@@ -110,7 +113,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Click to ADD. Double-Click to REMOVE.</p>
+            <p class="text-sm italic text-gray-300">Click a tool to start. Recommended next steps will highlight automatically.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -122,11 +125,15 @@ function startManualBuilder() {
     d3.select("#finish-manual-btn").on("click", finishManualBuilder);
     
     if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
-    if(typeof showToast === 'function') showToast("Recording started.");
+    if(typeof showToast === 'function') showToast("Select the first step in your process.");
 }
 
 // 1. Add Step
 function handleManualNodeClick(d) {
+    // Check if we are "jumping" (clicking a node not connected to the last one)
+    // Optional: We could block it, but for flexibility, we allow jumps with a warning?
+    // For now, we allow free selection.
+    
     manualBuilderSteps.push({
         nodeId: d.id,
         info: `Maps to ${d.id} tool.` 
@@ -136,8 +143,10 @@ function handleManualNodeClick(d) {
 
 // 2. Remove Step (Double Click)
 function handleManualNodeDoubleClick(d) {
-    // Remove ALL instances of this node from the sequence
     const initialLen = manualBuilderSteps.length;
+    // Remove only the LAST instance if it matches, or all? 
+    // Usually removing specific steps is hard without a list UI.
+    // Simple logic: Remove ALL instances of this node.
     manualBuilderSteps = manualBuilderSteps.filter(s => s.nodeId !== d.id);
     
     if (manualBuilderSteps.length < initialLen) {
@@ -146,50 +155,89 @@ function handleManualNodeDoubleClick(d) {
     }
 }
 
-// 3. Central Visualizer (Keeps the whole path lit)
+// 3. Central Visualizer (The "Guide" Logic)
 function updateManualBuilderVisuals() {
-    // Update Counter
     d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
 
-    // Identify Nodes in list
+    // A. Identify Active Path (Where we are)
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
+    
+    // B. Identify Candidates (Where we can go)
+    const candidateIds = new Set();
+    const candidateLinkKeys = new Set();
+    
+    // Get the very last node selected
+    if (manualBuilderSteps.length > 0) {
+        const lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
+        
+        // Find all links connected to this last node
+        app.simulation.force("link").links().forEach(l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            
+            if (s === lastNodeId && !activeIds.has(t)) {
+                candidateIds.add(t);
+                candidateLinkKeys.add(`${s}-${t}`);
+            }
+            if (t === lastNodeId && !activeIds.has(s)) {
+                candidateIds.add(s);
+                candidateLinkKeys.add(`${s}-${t}`); // Maintain consistent key if needed
+                candidateLinkKeys.add(`${t}-${s}`);
+            }
+        });
+    }
 
-    // Identify Links in Sequence (Step 1-2, 2-3, 3-4...)
-    // We create a Set of "Source-Target" strings to check against
-    const activeLinks = new Set();
+    // C. Identify Active Links (The path drawn so far)
+    const activeLinkKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
         const v = manualBuilderSteps[i+1].nodeId;
-        activeLinks.add(`${u}-${v}`);
-        activeLinks.add(`${v}-${u}`); // Bi-directional check
+        activeLinkKeys.add(`${u}-${v}`);
+        activeLinkKeys.add(`${v}-${u}`);
     }
 
-    // Update Nodes
+    // D. Update Nodes (3 Tiers: Active, Candidate, Inactive)
     app.node.transition().duration(300).style("opacity", n => {
-        return activeIds.has(n.id) ? 1 : 0.2;
+        if (activeIds.has(n.id)) return 1;       // Active Path (Full)
+        if (candidateIds.has(n.id)) return 0.7;  // Candidate (Visible Hint)
+        return 0.1;                              // Inactive (Dim)
     });
 
-    // Update Links
+    // E. Update Links
     app.link.transition().duration(300)
         .style("stroke-opacity", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`;
-            return activeLinks.has(key) ? 1 : 0.05;
+            const reverseKey = `${t}-${s}`;
+            
+            if (activeLinkKeys.has(key) || activeLinkKeys.has(reverseKey)) return 1; // Active Path
+            if (candidateLinkKeys.has(key) || candidateLinkKeys.has(reverseKey)) return 0.3; // Hint Path
+            return 0.05; // Hidden
         })
         .attr("stroke", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`;
-            return activeLinks.has(key) ? "var(--procore-orange)" : "#a0a0a0";
+            const reverseKey = `${t}-${s}`;
+            
+            if (activeLinkKeys.has(key) || activeLinkKeys.has(reverseKey)) return "var(--procore-orange)";
+            return "#a0a0a0"; // Candidates are gray
         })
         .attr("marker-end", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`;
-            if (activeLinks.has(key)) return `url(#arrow-highlighted)`;
-            return null; // Hide non-active markers
+            const reverseKey = `${t}-${s}`;
+            
+            if (activeLinkKeys.has(key) || activeLinkKeys.has(reverseKey)) return `url(#arrow-highlighted)`;
+            // Hide markers for candidates to reduce clutter, or show default
+            if (candidateLinkKeys.has(key) || candidateLinkKeys.has(reverseKey)) {
+                 const legend = legendData.find(leg => leg.type_id === l.type);
+                 return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
+            }
+            return null;
         });
 }
 
@@ -208,7 +256,7 @@ function finishManualBuilder() {
     previewTour(newTour); 
 }
 
-// --- STANDARD TOUR PREVIEW & EXECUTION ---
+// --- STANDARD TOUR PREVIEW & EXECUTION (Unchanged) ---
 function previewTour(tourData) {
     stopTour(false); 
     app.currentTour = tourData;
