@@ -45,12 +45,13 @@
         <i class="fas fa-sliders-h text-xl"></i>
     </button>
 
-    <div id="controls" class="panel absolute top-6 left-6 w-96 p-6 z-10 flex flex-col" style="height: calc(100vh - 3rem);" aria-labelledby="controls-heading">
+    <div id="controls" class="panel absolute top-6 left-6 w-[28rem] p-6 z-10 flex flex-col" style="height: calc(100vh - 3rem);" aria-labelledby="controls-heading">
+        
         <div class="flex flex-col mb-4 pb-4 border-b border-gray-100 flex-shrink-0">
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center min-w-0">
                     <i class="fas fa-project-diagram fa-2x text-orange-500 flex-shrink-0 w-8" aria-hidden="true"></i>
-                    <h1 id="controls-heading" class="text-xl font-bold ml-3 text-gray-800 leading-tight">Procoreverse</h1>
+                    <h1 id="controls-heading" class="text-xl font-bold ml-3 text-gray-800 leading-tight whitespace-nowrap">Procoreverse Simulator</h1>
                 </div>
                 <div class="flex-shrink-0">
                     <button id="left-panel-toggle" class="text-gray-400 hover:text-gray-600 focus:outline-none rounded-full h-8 w-8 flex items-center justify-center transition" title="Collapse Panel">
@@ -61,6 +62,7 @@
             
             <select id="team-selector" class="w-full text-xs font-bold uppercase tracking-wide text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-2 focus:outline-none focus:border-indigo-300 transition cursor-pointer">
                 <option value="admin">View: All Features (Admin)</option>
+                <option value="enablement">View: Enablement</option>
                 <option value="sales">View: Sales & GTM</option>
                 <option value="services">View: Prof. Services</option>
                 <option value="product">View: Product & Tech</option>
