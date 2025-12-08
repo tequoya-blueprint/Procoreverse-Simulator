@@ -1,11 +1,10 @@
 // --- app-tours.js ---
-// VERSION 30: Terminology Shift ("Process Maps" instead of "Workflows")
+// VERSION 31: Double-Click Logic + Persistent Path Visualization
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
     const packageGroup = d3.select("#package-tours");
     
-    // Load Standard Data
     if (typeof tours !== 'undefined' && tours.platform) {
         Object.entries(tours.platform).forEach(([id, tour]) => platformGroup.append("option").attr("value", id).text(tour.name));
     }
@@ -34,20 +33,17 @@ function initializeTourControls() {
     d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
     d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
 
-    // AI Modal Controls
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
     aiModalOverlay.on("click", function(e) { if (e.target === this) aiModalOverlay.classed("visible", false); });
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 
-    // --- MANUAL BUILDER BUTTON (UPDATED TEXT) ---
     const container = d3.select("#tour-container");
     container.append("button")
         .attr("id", "manual-workflow-builder-btn")
         .attr("class", "w-full mt-2 btn-indigo bg-gray-600 hover:bg-gray-700") 
         .style("display", "none") 
-        // Renamed to "Build Custom Process"
         .html('<i class="fas fa-hand-pointer mr-2"></i> Build Custom Process')
         .on("click", startManualBuilder);
 }
@@ -90,7 +86,6 @@ function saveCurrentTour() {
     }
     d3.select("#tour-select").property("value", tourId);
     
-    // Updated Toast Message
     if(typeof showToast === 'function') showToast("Process Saved!");
     d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
 }
@@ -104,6 +99,7 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
+    // Initial State: Dim everything
     app.node.transition().duration(500).style("opacity", 0.3);
     app.link.transition().duration(500).style("stroke-opacity", 0.05);
 
@@ -114,7 +110,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Click tools in the graph to map your custom process.</p>
+            <p class="text-sm italic text-gray-300">Click to ADD. Double-Click to REMOVE.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -126,49 +122,78 @@ function startManualBuilder() {
     d3.select("#finish-manual-btn").on("click", finishManualBuilder);
     
     if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
-    if(typeof showToast === 'function') showToast("Click on nodes to build your process map.");
+    if(typeof showToast === 'function') showToast("Recording started.");
 }
 
+// 1. Add Step
 function handleManualNodeClick(d) {
     manualBuilderSteps.push({
         nodeId: d.id,
         info: `Maps to ${d.id} tool.` 
     });
+    updateManualBuilderVisuals();
+}
 
-    d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
-    d3.select("#finish-manual-btn").property("disabled", false);
-
-    app.node.transition().duration(300).style("opacity", n => {
-        return manualBuilderSteps.some(s => s.nodeId === n.id) ? 1 : 0.3;
-    });
-
-    if (manualBuilderSteps.length > 1) {
-        const prevId = manualBuilderSteps[manualBuilderSteps.length - 2].nodeId;
-        const currId = d.id;
-        app.link.transition().duration(300)
-            .style("stroke-opacity", l => {
-                const s = l.source.id || l.source;
-                const t = l.target.id || l.target;
-                return 0.05; 
-            });
-        
-        const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
-        app.link.transition().duration(300)
-            .style("stroke-opacity", l => {
-                const s = l.source.id || l.source;
-                const t = l.target.id || l.target;
-                return (activeIds.has(s) && activeIds.has(t)) ? 1 : 0.05;
-            })
-            .attr("stroke", l => {
-                const s = l.source.id || l.source;
-                const t = l.target.id || l.target;
-                return (activeIds.has(s) && activeIds.has(t)) ? "var(--procore-orange)" : "#a0a0a0";
-            });
+// 2. Remove Step (Double Click)
+function handleManualNodeDoubleClick(d) {
+    // Remove ALL instances of this node from the sequence
+    const initialLen = manualBuilderSteps.length;
+    manualBuilderSteps = manualBuilderSteps.filter(s => s.nodeId !== d.id);
+    
+    if (manualBuilderSteps.length < initialLen) {
+        if(typeof showToast === 'function') showToast(`Removed ${d.id} from process.`);
+        updateManualBuilderVisuals();
     }
 }
 
+// 3. Central Visualizer (Keeps the whole path lit)
+function updateManualBuilderVisuals() {
+    // Update Counter
+    d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
+    d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
+
+    // Identify Nodes in list
+    const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
+
+    // Identify Links in Sequence (Step 1-2, 2-3, 3-4...)
+    // We create a Set of "Source-Target" strings to check against
+    const activeLinks = new Set();
+    for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
+        const u = manualBuilderSteps[i].nodeId;
+        const v = manualBuilderSteps[i+1].nodeId;
+        activeLinks.add(`${u}-${v}`);
+        activeLinks.add(`${v}-${u}`); // Bi-directional check
+    }
+
+    // Update Nodes
+    app.node.transition().duration(300).style("opacity", n => {
+        return activeIds.has(n.id) ? 1 : 0.2;
+    });
+
+    // Update Links
+    app.link.transition().duration(300)
+        .style("stroke-opacity", l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            const key = `${s}-${t}`;
+            return activeLinks.has(key) ? 1 : 0.05;
+        })
+        .attr("stroke", l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            const key = `${s}-${t}`;
+            return activeLinks.has(key) ? "var(--procore-orange)" : "#a0a0a0";
+        })
+        .attr("marker-end", l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            const key = `${s}-${t}`;
+            if (activeLinks.has(key)) return `url(#arrow-highlighted)`;
+            return null; // Hide non-active markers
+        });
+}
+
 function finishManualBuilder() {
-    // Updated Prompt Text
     const name = prompt("Enter a name for this Custom Process:", "New SOP Process");
     if (!name) return;
 
@@ -183,7 +208,7 @@ function finishManualBuilder() {
     previewTour(newTour); 
 }
 
-// --- STANDARD TOUR LOGIC ---
+// --- STANDARD TOUR PREVIEW & EXECUTION ---
 function previewTour(tourData) {
     stopTour(false); 
     app.currentTour = tourData;
@@ -324,8 +349,6 @@ function resizeTourAccordion() {
     }
 }
 
-// --- AI GENERATION ---
-
 async function generateAiWorkflow() {
     const input = d3.select("#ai-workflow-input").property("value").trim();
     const status = d3.select("#ai-modal-status");
@@ -340,8 +363,6 @@ async function generateAiWorkflow() {
     generateBtn.property("disabled", true).classed("opacity-50", true);
 
     const validNodes = nodesData.map(n => n.id).join(", ");
-    
-    // --- UPDATED SYSTEM PROMPT: Uses "Process" Terminology ---
     const exampleWorkflow = JSON.stringify({
         name: "Change Management Process",
         steps: [
@@ -353,29 +374,8 @@ async function generateAiWorkflow() {
         ]
     });
 
-    const systemPrompt = `You are a Procore Platform Architect. 
-    Create a linear step-by-step business process map based on the user's request.
-    
-    CRITICAL RULES:
-    1. You may ONLY use these exact Tool Names (Node IDs): [${validNodes}].
-    2. Do not invent tools. If a step implies an external tool, use 'ERP Systems' or 'Documents'.
-    3. Return ONLY valid JSON. No Markdown.
-    
-    GUIDANCE & STYLE:
-    - Mimic the logical flow of this example: ${exampleWorkflow}
-    - Ensure steps follow the flow of data.
-    - Use "Process" terminology instead of "Workflow" (e.g. "Invoice Process", not "Invoice Workflow").
-    - Keep descriptions concise (under 20 words).
-    
-    JSON Structure:
-    {
-      "name": "Short Descriptive Title",
-      "steps": [
-        { "nodeId": "Exact Tool Name", "info": "Description of action taken here." }
-      ]
-    }`;
+    const systemPrompt = `You are a Procore Platform Architect. Create a linear step-by-step business process map based on the user's request. CRITICAL RULES: 1. You may ONLY use these exact Tool Names (Node IDs): [${validNodes}]. 2. Do not invent tools. If a step implies an external tool, use 'ERP Systems' or 'Documents'. 3. Return ONLY valid JSON. No Markdown. GUIDANCE & STYLE: - Mimic the logical flow of this example: ${exampleWorkflow} - Ensure steps follow the flow of data. - Use "Process" terminology instead of "Workflow". - Keep descriptions concise. JSON Structure: { "name": "Short Descriptive Title", "steps": [ { "nodeId": "Exact Tool Name", "info": "Description of action taken here." } ] }`;
 
-    // Using Verified Lite Model
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite-preview-02-05:generateContent?key=${app.apiKey}`;
 
     const payload = {
@@ -390,31 +390,22 @@ async function generateAiWorkflow() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-
         const result = await response.json();
         let rawText = result.candidates[0].content.parts[0].text;
         rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-
         const newTour = JSON.parse(rawText);
-
         if (newTour && newTour.steps && newTour.steps.length > 0) {
             const tourId = `ai_tour_${Date.now()}`;
             newTour.name = `✨ ${newTour.name}`;
             newTour.id = tourId; 
-
-            // Preview Only
             d3.select("#ai-modal-overlay").classed("visible", false);
             d3.select("#ai-workflow-input").property("value", "");
             status.text("");
-            
             previewTour(newTour);
-
         } else {
             throw new Error("AI returned invalid process structure.");
         }
-
     } catch (error) {
         console.error("AI Process generation failed:", error);
         status.text("Error generating process map. Please try again.").classed("text-red-500", true);
