@@ -1,18 +1,27 @@
 // --- app-controls.js ---
-// VERSION FINAL: Team Config, "Process" Logic, and Manual Builder Support
+// VERSION: Added "Enablement" View
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
     admin: {
         showTours: true,
         showAiBuilder: true,
-        showManualBuilder: true, // Admin gets everything
+        showManualBuilder: true, 
         showFilters: true,
         showLegend: true,
         defaultOpen: 'filter-accordion' 
     },
+    // ENABLEMENT: The "Creator" View. Needs tools to build demos/training.
+    enablement: {
+        showTours: true,
+        showAiBuilder: true,      // Enabled: Great for brainstorming new pitches
+        showManualBuilder: true,  // Enabled: Critical for building "Golden Demo" scripts
+        showFilters: true,
+        showLegend: true,
+        defaultOpen: 'tour-accordion' // Focus on the Processes first
+    },
     sales: {
-        showTours: false, // Sales focuses on filters/packages
+        showTours: false,         // Sales usually just needs the "What connects to what?"
         showAiBuilder: false,
         showManualBuilder: false,
         showFilters: true,
@@ -21,20 +30,19 @@ const TEAM_CONFIG = {
     },
     product: {
         showTours: true,
-        showAiBuilder: true, // Product tests the AI
+        showAiBuilder: true,
         showManualBuilder: true, 
         showFilters: true,
         showLegend: true,
         defaultOpen: 'tour-accordion'
     },
-    // SERVICES: Manual Builder ONLY (No AI)
     services: {
         showTours: true,
-        showAiBuilder: false, 
-        showManualBuilder: true, // The critical tool for SOP creation
+        showAiBuilder: false,     // Services focuses on "Real" SOPs, less on AI generation
+        showManualBuilder: true, 
         showFilters: true,
         showLegend: true,
-        defaultOpen: 'view-options-accordion' // Starts clean, can open Process Maps manually
+        defaultOpen: 'view-options-accordion'
     }
 };
 
@@ -90,7 +98,6 @@ function initializeControls() {
     
     if (TEAM_CONFIG[initialTeam]) {
         teamSelector.property('value', initialTeam);
-        // We delay the application slightly to ensure app-tours.js has loaded the Manual button
         setTimeout(() => applyTeamView(initialTeam), 100);
     }
 
@@ -123,7 +130,7 @@ function applyTeamView(team) {
     d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
     d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none"); 
     
-    // 3. Manual Builder Button (Handled dynamically)
+    // 3. Manual Builder Button
     const manualBtn = d3.select("#manual-workflow-builder-btn");
     if (!manualBtn.empty()) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
@@ -139,8 +146,6 @@ function applyTeamView(team) {
         if (content) content.style.maxHeight = content.scrollHeight + "px";
     }
 }
-
-// ... (Existing Functions: populateRegionFilter, etc. - KEEP THESE!) ...
 
 function toggleAllConnections() {
     let allConnectionsChecked = true;
@@ -327,13 +332,6 @@ function populateCategoryFilters() {
     }
 }
 
-let allCategoriesChecked = true;
-function toggleAllCategories() {
-    allCategoriesChecked = !allCategoriesChecked;
-    d3.selectAll("#category-filters input").property("checked", allCategoriesChecked);
-    if (typeof updateGraph === 'function') updateGraph(true);
-}
-
 function resetView() {
     if (typeof stopTour === 'function') stopTour();
     d3.select("#region-filter").property('value', 'all');
@@ -342,7 +340,9 @@ function resetView() {
     d3.select("#package-filter").property('value', 'all').property('disabled', true).html('<option value="all">All Packages</option>');
     d3.selectAll("#category-filters input").property("checked", true);
     d3.selectAll(".legend-checkbox").property("checked", true);
-    allCategoriesChecked = true;
+    // Reset toggle button states
+    let allCategoriesChecked = true;
+    let allConnectionsChecked = true;
     clearPackageDetails();
     if (typeof updateGraph === 'function') updateGraph(false);
     if (typeof resetZoom === 'function') resetZoom();
