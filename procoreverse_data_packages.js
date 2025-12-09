@@ -20,6 +20,9 @@ const packagingData = [
       "Equipment",
       "Timesheets"
     ],
+     "procore_led_tools": [
+       "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets"
+    ],
     "included_features": [],
     "available_add-ons": [
       "Procore Pay",
@@ -59,6 +62,9 @@ const packagingData = [
       "Incidents",
       "Bidding"
     ],
+     "procore_led_tools": [
+       "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding"
+        ],
     "included_features": [
       "Assist",
       "Training Center",
@@ -106,11 +112,14 @@ const packagingData = [
       "Analytics",
       "Insights"
     ],
+     "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Models", "Coordination Issues", "Training Center", "Analytics"
+    ],
     "included_features": [
       "Assist",
       "Training Center"
     ],
-    "available_add-ons": [
+      "available_add-ons": [
       "Procore Pay",
       "Resource Tracking",
       "Resource Planning",
@@ -138,6 +147,9 @@ const packagingData = [
       "Direct Costs",
       "Project Status Snapshots"
     ],
+     "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"
+        ],
     "included_features": [
       "Assist"
     ],
@@ -173,6 +185,9 @@ const packagingData = [
       "Insights",
       "Analytics"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
+    ],
     "included_features": [
       "Assist"
     ],
@@ -204,6 +219,9 @@ const packagingData = [
       "Resource Planning",
       "Analytics"
     ],
+   "procore_led_tools": [
+     "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Reporting", "Analytics"
+        ],
     "included_features": [],
     "available_add-ons": [],
     "available_services": [
@@ -228,6 +246,9 @@ const packagingData = [
       "Timesheets",
       "T&M Tickets"
     ],
+    "procore_led_tools": [
+       "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "T&M Tickets"
+    ],
     "included_features": [],
     "available_add-ons": [
       "Procore Pay",
@@ -268,6 +289,9 @@ const packagingData = [
       "Incidents",
       "Bidding"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "T&M Tickets", "Punch list", "Inspections", "Bidding"
+        ],
     "included_features": [
       "Assist"
     ],
@@ -314,6 +338,9 @@ const packagingData = [
       "Analytics",
       "Insights"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Models", "Coordination Issues", "Training Center", "Analytics"
+    ],
     "included_features": [
       "Assist",
       "Training Center"
@@ -346,6 +373,9 @@ const packagingData = [
       "Direct Costs",
       "Project Status Snapshots"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"
+        ],
     "included_features": [
       "Assist"
     ],
@@ -381,6 +411,9 @@ const packagingData = [
       "Insights",
       "Analytics"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
+        ],
     "included_features": [
       "Assist"
     ],
@@ -412,6 +445,9 @@ const packagingData = [
       "Resource Planning",
       "Analytics"
     ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Reporting", "Analytics"
+        ],
     "included_features": [],
     "available_add-ons": [],
     "available_services": [
@@ -435,6 +471,9 @@ const packagingData = [
       "Punch List",
       "Inspections"
     ],
+    "procore_led_tools": [
+      "Drawings", "Observations", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections"
+        ],
     "included_features": [],
     "available_add-ons": [
       "Procore Pay",
@@ -471,6 +510,9 @@ const packagingData = [
       "Transmittals",
       "Bidding"
     ],
+   "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding"
+        ],
     "included_features": [
       "Assist"
     ],
@@ -513,6 +555,9 @@ const packagingData = [
       "Analytics",
       "Insights"
     ],
+    "procore_led_tools": [
+       "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Models", "Coordination Issues", "Training Center", "Analytics"
+    ],
     "included_features": [
       "Assist",
       "Training Center"
@@ -545,6 +590,9 @@ const packagingData = [
       "Direct Costs",
       "Project Status Snapshots"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"
+        ],
     "included_features": [
       "Assist"
     ],
@@ -580,6 +628,9 @@ const packagingData = [
       "Insights",
       "Analytics"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
+    ],
     "included_features": [
       "Assist"
     ],
@@ -611,6 +662,9 @@ const packagingData = [
       "Resource Planning",
       "Analytics"
     ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Reporting", "Analytics"
+        ],
     "included_features": [],
     "available_add-ons": [],
     "available_services": [
@@ -647,6 +701,9 @@ const packagingData = [
       "Bidding",
       "Analytics"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Analytics"
+    ],
     "included_features": [
       "Assist"
     ],
@@ -678,6 +735,9 @@ const packagingData = [
       "Project Status Snapshots",
       "Direct Costs",
       "Analytics"
+    ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"
     ],
     "included_features": [
       "Assist"
@@ -729,6 +789,9 @@ const packagingData = [
       "Insights",
       "Analytics"
     ],
+    "procore_led_tools": [
+       "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Models", "Coordination Issues", "Training Center", "Analytics", "Models", "Coordination Issues", "Training Center"
+    ],    
     "included_features": [
       "Assist",
       "Training Center",
@@ -766,6 +829,9 @@ const packagingData = [
       "Insights",
       "Analytics"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
+    ],    
     "included_features": [
       "Assist"
     ],
@@ -799,6 +865,9 @@ const packagingData = [
       "Incidents",
       "Instructions"
     ],
+     "procore_led_tools": [
+       "Drawings", "Inspections", "Punch List", "Observations", "Daily Log", "Timesheets". "Equipment", 
+        ],    
     "included_features": [],
     "available_add-ons": [],
     "available_services": [
@@ -833,6 +902,9 @@ const packagingData = [
       "Meetings",
       "Bidding"
     ],
+   "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Analytics", "Equipment", "Timesheets", "Incidents", "Emails"
+    ], 
     "included_features": [
       "Assist"
     ],
@@ -876,6 +948,9 @@ const packagingData = [
       "Bidding",
       "Documents"
     ],
+   "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Analytics", "Equipment", "Timesheets", "Incidents", "Emails"
+    ],     
     "included_features": [
       "Assist"
     ],
@@ -913,6 +988,9 @@ const packagingData = [
       "Models",
       "Analytics",
       "Insights"
+    ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Models", "Coordination Issues", "Training Center", "Analytics"
     ],
     "included_features": [
       "Assist",
@@ -954,6 +1032,9 @@ const packagingData = [
       "Analytics",
       "Insights"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Equipment", "Timesheets", "Models", "Coordination Issues", "Analytics"
+    ],
     "included_features": [
       "Assist",
       "Training Center"
@@ -978,6 +1059,9 @@ const packagingData = [
       "Direct Costs",
       "Project Status Snapshots"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"
+    ],    
     "included_features": [
       "Assist"
     ],
@@ -1006,6 +1090,9 @@ const packagingData = [
       "Insights",
       "Analytics"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
+    ],    
     "included_features": [
       "Assist"
     ],
@@ -1030,6 +1117,9 @@ const packagingData = [
       "Resource Planning",
       "Analytics"
     ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Reporting", "Analytics"
+        ],
     "included_features": [],
     "available_add-ons": [],
     "available_services": []
@@ -1051,6 +1141,9 @@ const packagingData = [
       "Punch List",
       "Inspections",
       "Instructions"
+    ],
+    "procore_led_tools": [
+      "Drawings", "Observations", "Punch List", "Inspections", "Correspondence", "Schedule", "Action Plans"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1081,6 +1174,9 @@ const packagingData = [
       "Transmittals",
       "Bidding"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Correspondence", "Action Plans", "Bidding"
+    ], 
     "included_features": [
       "Assist"
     ],
@@ -1113,6 +1209,9 @@ const packagingData = [
       "Bidding",
       "Documents"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Correspondence", "Action Plans", "Bidding"
+    ], 
     "included_features": [
       "Assist"
     ],
@@ -1148,6 +1247,9 @@ const packagingData = [
       "Analytics",
       "Insights"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Equipment", "Timesheets", "Models", "Coordination Issues", "Analytics"
+    ],    
     "included_features": [
       "Assist",
       "Training Center"
@@ -1185,6 +1287,9 @@ const packagingData = [
       "Analytics",
       "Insights"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Equipment", "Timesheets", "Models", "Coordination Issues", "Analytics"
+    ],
     "included_features": [
       "Assist",
       "Training Center"
@@ -1209,6 +1314,9 @@ const packagingData = [
       "Direct Costs",
       "Project Status Snapshots"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"
+    ],    
     "included_features": [
       "Assist"
     ],
@@ -1237,6 +1345,9 @@ const packagingData = [
       "Insights",
       "Analytics"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
+    ],    
     "included_features": [
       "Assist"
     ],
@@ -1260,6 +1371,9 @@ const packagingData = [
       "Resource Tracking",
       "Resource Planning",
       "Analytics"
+    ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Reporting", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1286,6 +1400,9 @@ const packagingData = [
       "Incidents",
       "Models"
     ],
+    "procore_led_tools": [
+      "Drawings", "Observations", "Daily Log", "Punch List", "Inspections", "Equipment", "Timesheets"
+    ],  
     "included_features": [],
     "available_add-ons": [],
     "available_services": []
@@ -1320,6 +1437,9 @@ const packagingData = [
       "Meetings",
       "Bidding"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding"
+    ],   
     "included_features": [
       "Assist"
     ],
@@ -1357,6 +1477,9 @@ const packagingData = [
       "Bidding",
       "Documents"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding"
+    ],       
     "included_features": [
       "Assist"
     ],
@@ -1396,6 +1519,9 @@ const packagingData = [
       "Analytics",
       "Insights"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Equipment", "Timesheets", "Models", "Coordination Issues", "Analytics"
+    ],    
     "included_features": [
       "Assist",
       "Training Center"
@@ -1437,6 +1563,9 @@ const packagingData = [
       "Analytics",
       "Insights"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Equipment", "Timesheets", "Models", "Coordination Issues", "Analytics"
+    ],    
     "included_features": [
       "Assist",
       "Training Center"
@@ -1456,6 +1585,9 @@ const packagingData = [
       "Invoicing",
       "Direct Costs"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"
+    ],    
     "included_features": [],
     "available_add-ons": [],
     "available_services": []
@@ -1473,6 +1605,9 @@ const packagingData = [
       "Direct Costs",
       "Estimating",
       "Analytics"
+    ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1496,6 +1631,9 @@ const packagingData = [
       "Resource Planning",
       "Analytics"
     ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Reporting", "Analytics"
+    ],
     "included_features": [],
     "available_add-ons": [],
     "available_services": []
@@ -1517,6 +1655,9 @@ const packagingData = [
       "Punch List",
       "Inspections",
       "Instructions"
+    ],
+    "procore_led_tools": [
+      "Drawings", "Submittals", "Observations", "Punch List", "Inspections", "Correspondence", "Schedule"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1547,6 +1688,9 @@ const packagingData = [
       "Transmittals",
       "Bidding"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding"
+    ],   
     "included_features": [
       "Assist"
     ],
@@ -1579,6 +1723,9 @@ const packagingData = [
       "Bidding",
       "Documents"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding"
+    ],   
     "included_features": [
       "Assist"
     ],
@@ -1614,6 +1761,9 @@ const packagingData = [
       "Analytics",
       "Insights"
     ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch list", "Inspections", "Bidding", "Equipment", "Timesheets", "Models", "Coordination Issues", "Analytics"
+    ],    
     "included_features": [
       "Assist",
       "Training Center"
@@ -1675,6 +1825,9 @@ const packagingData = [
       "Direct Costs",
       "Project Status Snapshots"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"
+    ],    
     "included_features": [
       "Assist"
     ],
@@ -1703,6 +1856,9 @@ const packagingData = [
       "Insights",
       "Analytics"
     ],
+    "procore_led_tools": [
+       "Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
+    ],    
     "included_features": [
       "Assist"
     ],
@@ -1726,6 +1882,9 @@ const packagingData = [
       "Resource Tracking",
       "Resource Planning",
       "Analytics"
+    ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Reporting", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
