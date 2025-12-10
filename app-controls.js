@@ -1,7 +1,7 @@
 // --- app-controls.js ---
-// VERSION: 43 (FULL RESTORE - All Functions & Helpers Included)
+// VERSION: 46 (PART 1 - FULL RESTORE)
 
-// --- CONFIGURATION ---
+// --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
     admin: { 
         showTours: true, 
@@ -76,7 +76,7 @@ const audienceKeyToDataValuesMap = {
 
 // --- INITIALIZATION ---
 function initializeControls() {
-    // Accordion Logic
+    // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {
             if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement);
@@ -86,10 +86,10 @@ function initializeControls() {
     populateRegionFilter();
     populatePersonaFilter();
    
-    // Event Listeners
+    // Filter Event Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
-    // Note: 'package-filter' dropdown is hidden, but we keep the logic safe
+    // Legacy dropdown listener (kept for safety)
     d3.select("#package-filter").on("change", onPackageChange); 
     
     d3.select("#persona-filter").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
@@ -101,25 +101,27 @@ function initializeControls() {
 
     d3.select("#search-input").on("input", handleSearchInput);
     
-    // Team Selector
+    // Team Selector Logic
     const teamSelector = d3.select("#team-selector");
     const initialTeam = getUrlParam('team') || 'admin'; 
+    
     if (TEAM_CONFIG[initialTeam]) {
         teamSelector.property('value', initialTeam);
         setTimeout(() => applyTeamView(initialTeam), 100);
     }
+
     teamSelector.on("change", function() {
         applyTeamView(this.value);
     });
 
-    // Body Click (Search Dismissal)
+    // Dismiss Search Results
     d3.select("body").on("click", (e) => {
         if (e.target && !document.getElementById('search-container').contains(e.target)) {
             d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
         }
     });
 
-    // Global Buttons
+    // Control Buttons
     d3.select("#reset-view").on("click", resetView);
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
@@ -135,20 +137,20 @@ function initializeControls() {
     if(sliderChange) sliderChange.addEventListener('input', calculateScoping);
 }
 
-// --- SCOPING LOGIC ---
+// --- SCOPING CALCULATOR (With 1.5x Prep Factor) ---
 function calculateScoping() {
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
     
-    // Safety check
+    // Safety check to prevent crashes if HTML is missing
     if (!sliderMaturity || !sliderData || !sliderChange) return;
 
     const mat = parseFloat(sliderMaturity.value);
     const data = parseFloat(sliderData.value);
     const change = parseFloat(sliderChange.value);
 
-    // Update Label Text
+    // Update Label Text in UI
     const valMat = document.getElementById('val-maturity');
     if(valMat) valMat.innerText = mat + "x";
     
@@ -207,9 +209,13 @@ function calculateScoping() {
         return;
     }
 
-    // Heuristic: 3 hours of Services = ~1 Week of Duration
-    // Heuristic: Each Add-on adds 2 weeks flat
-    const baseWeeks = (baseHours / 3) + (addOnCount * 2); 
+    // --- FORMULA UPDATE: PREP FACTOR 1.5x ---
+    const PREP_FACTOR = 1.5; // 1 Hour Delivery + 0.5 Hour Prep
+    const CONSULTING_VELOCITY = 3; // Hours of engagement per week per consultant
+    
+    // Logic: (Base Hours * Prep Factor) / Weekly Velocity
+    const totalEffortHours = baseHours * PREP_FACTOR;
+    const baseWeeks = (totalEffortHours / CONSULTING_VELOCITY) + (addOnCount * 2); 
     
     // Apply Multipliers (Average of the 3 sliders)
     const combinedMultiplier = (mat + data + change) / 3; 
@@ -352,15 +358,14 @@ function onAudienceChange() {
     }
     if (typeof updateGraph === 'function') updateGraph(true);
 }
+// --- app-controls.js (PART 2) ---
 
-// Fallback for dropdown (if ever enabled again)
+// Fallback helper for single-select mode (if ever needed)
 function onPackageChange() {
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const pkgName = d3.select("#package-filter").property('value');
-    
     clearPackageDetails();
-    
     if (region !== 'all' && audience !== 'all' && pkgName !== 'all') {
         const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
         const packageInfo = packagingData.find(pkg =>
@@ -368,13 +373,7 @@ function onPackageChange() {
         );
         if (packageInfo) populateAddOnsAndServices(packageInfo);
     }
-    
-    // Refresh height helper
-    const content = document.querySelector('#packaging-container').closest('.accordion-content');
-    if (content && content.parentElement.classList.contains('active')) {
-        content.style.maxHeight = content.scrollHeight + "px";
-    }
-    
+    refreshAccordionHeight();
     if (typeof updateGraph === 'function') updateGraph(true);
     calculateScoping();
 }
@@ -395,7 +394,6 @@ function updatePackageAddOns() {
         if (pkg) {
             const addOns = pkg['available_add-ons'] || pkg['available_add_ons'] || pkg['add_ons'] || [];
             addOns.forEach(a => allAddOns.add(a));
-            
             const services = pkg['available_services'] || [];
             services.forEach(s => allServices.add(s));
         }
@@ -422,7 +420,7 @@ function updatePackageAddOns() {
         addOnsContainer.classed('hidden', true);
     }
     
-    // Render Services (for visibility)
+    // Render Services (Reference only)
     const servicesContainer = d3.select("#package-services-container");
     const servicesList = d3.select("#package-services-list");
     servicesList.html("");
@@ -438,8 +436,7 @@ function updatePackageAddOns() {
     }
     
     // Auto-grow Accordion
-    const content = document.querySelector('#packaging-container').closest('.accordion-content');
-    if (content) content.style.maxHeight = "1000px"; 
+    refreshAccordionHeight();
 }
 
 function getActiveFilters() {
@@ -502,6 +499,13 @@ function clearPackageDetails() {
     calculateScoping();
 }
 
+function refreshAccordionHeight() {
+    const content = document.querySelector('#packaging-container').closest('.accordion-content');
+    if (content && content.parentElement.classList.contains('active')) {
+        content.style.maxHeight = "1200px"; // Force plenty of room
+    }
+}
+
 function populatePersonaFilter() {
     const personaFilter = d3.select("#persona-filter");
     personaFilter.html('<option value="all">All Personas</option>');
@@ -535,9 +539,8 @@ function populateCategoryFilters() {
     }
 }
 
-// Fallback helper in case dropdown is used
+// Fallback helper for legacy dropdown
 function populateAddOnsAndServices(packageInfo) {
-    // This is a legacy helper but kept for completeness
     const addOnsContainer = d3.select("#add-ons-container");
     const addOnsCheckboxes = d3.select("#add-ons-checkboxes");
     const servicesContainer = d3.select("#package-services-container");
@@ -547,7 +550,9 @@ function populateAddOnsAndServices(packageInfo) {
     if (addOns && addOns.length > 0) {
         addOns.forEach(addOn => {
             const label = addOnsCheckboxes.append("label").attr("class", "flex items-center cursor-pointer py-1");
-            label.append("input").attr("type", "checkbox").attr("value", addOn).attr("class", "form-checkbox h-5 w-5 text-orange-600").on("change", () => { if (typeof updateGraph === 'function') updateGraph(true); calculateScoping(); });
+            label.append("input").attr("type", "checkbox").attr("value", addOn)
+                .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
+                .on("change", () => { if (typeof updateGraph === 'function') updateGraph(true); calculateScoping(); });
             label.append("span").attr("class", "text-gray-700").text(addOn);
         });
         addOnsContainer.classed('hidden', false);
@@ -575,9 +580,8 @@ function resetView() {
     d3.selectAll("#category-filters input").property("checked", true);
     toggleAllConnections(); 
     d3.selectAll(".legend-checkbox").property("checked", true);
-    
+    allCategoriesChecked = true;
     clearPackageDetails();
-    
     if (typeof updateGraph === 'function') updateGraph(false);
     if (typeof resetZoom === 'function') resetZoom();
 }
