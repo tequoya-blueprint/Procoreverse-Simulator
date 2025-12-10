@@ -1,19 +1,25 @@
 // --- app-tours.js ---
-// VERSION 43: Strict Directional Logic + Toggle
+// VERSION: FINAL (Instant Toggle + Directional Candidates)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
     const packageGroup = d3.select("#package-tours");
+    
+    // Load Standard Tours
     if (typeof tours !== 'undefined' && tours.platform) {
         Object.entries(tours.platform).forEach(([id, tour]) => platformGroup.append("option").attr("value", id).text(tour.name));
     }
     if (typeof tours !== 'undefined' && tours.packages) {
         Object.entries(tours.packages).forEach(([id, tour]) => packageGroup.append("option").attr("value", id).text(tour.name));
     }
+
     loadSavedTours();
+
     d3.select("#tour-select").on("change", function() {
         const tourId = this.value;
-        if (tourId === "none") { stopTour(); } else {
+        if (tourId === "none") {
+            stopTour();
+        } else {
             let tourData = null;
             if (typeof flatTours !== 'undefined' && flatTours[tourId]) tourData = flatTours[tourId];
             else if (typeof tours !== 'undefined' && tours.ai && tours.ai[tourId]) tourData = tours.ai[tourId];
@@ -24,17 +30,28 @@ function initializeTourControls() {
             if (tourData) previewTour(tourData);
         }
     });
+
     d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
     d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
+
+    // AI Modal
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
     aiModalOverlay.on("click", function(e) { if (e.target === this) aiModalOverlay.classed("visible", false); });
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
+
+    // Manual Builder Button
     const container = d3.select("#tour-container");
-    container.append("button").attr("id", "manual-workflow-builder-btn").attr("class", "w-full mt-2 btn-indigo bg-gray-600 hover:bg-gray-700").style("display", "none").html('<i class="fas fa-hand-pointer mr-2"></i> Build Custom Process').on("click", startManualBuilder);
+    container.append("button")
+        .attr("id", "manual-workflow-builder-btn")
+        .attr("class", "w-full mt-2 btn-indigo bg-gray-600 hover:bg-gray-700") 
+        .style("display", "none") 
+        .html('<i class="fas fa-hand-pointer mr-2"></i> Build Custom Process')
+        .on("click", startManualBuilder);
 }
 
+// --- PERSISTENCE ---
 function loadSavedTours() {
     const saved = localStorage.getItem('procoreverse_saved_tours');
     if (saved) {
@@ -53,22 +70,30 @@ function loadSavedTours() {
 function saveCurrentTour() {
     if (!app.currentTour) return;
     let tourId = app.currentTour.id;
-    if (!tourId) { tourId = `custom_tour_${Date.now()}`; app.currentTour.id = tourId; }
+    if (!tourId) {
+        tourId = `custom_tour_${Date.now()}`;
+        app.currentTour.id = tourId;
+    }
     if (!tours.ai) tours.ai = {};
     tours.ai[tourId] = app.currentTour;
+
     let saved = {};
     const existing = localStorage.getItem('procoreverse_saved_tours');
     if (existing) { try { saved = JSON.parse(existing); } catch(e) {} }
     saved[tourId] = app.currentTour;
     localStorage.setItem('procoreverse_saved_tours', JSON.stringify(saved));
+    
     const aiGroup = d3.select("#ai-tours");
     if (aiGroup.select(`option[value="${tourId}"]`).empty()) {
         aiGroup.append("option").attr("value", tourId).text(app.currentTour.name);
     }
     d3.select("#tour-select").property("value", tourId);
+    
     if(typeof showToast === 'function') showToast("Process Saved!");
     d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
 }
+
+// --- MANUAL BUILDER LOGIC ---
 
 let manualBuilderSteps = [];
 
@@ -76,8 +101,11 @@ function startManualBuilder() {
     stopTour(); 
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
+    
+    // Initial Visual State
     app.node.transition().duration(500).style("opacity", 1);
     app.link.transition().duration(500).style("stroke-opacity", 0.1); 
+
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
         <div class="bg-gray-800 text-white p-3 rounded-lg shadow-inner mb-2">
@@ -85,34 +113,45 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Click a tool to select it. Click again to remove.</p>
+            <p class="text-sm italic text-gray-300">Click a tool to Add. Click again to Remove.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
             <button id="finish-manual-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded disabled:opacity-50" disabled>Finish & Save</button>
         </div>
     `);
+
     d3.select("#cancel-manual-btn").on("click", stopTour);
     d3.select("#finish-manual-btn").on("click", finishManualBuilder);
+    
     if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
     if(typeof showToast === 'function') showToast("Recording started.");
 }
 
-// --- INSTANT TOGGLE LOGIC ---
+// TOGGLE LOGIC: Add or Remove based on current state
 function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
-        // Remove it and everything after it? Or just it? 
-        // For simple linearity, we remove it.
+        // Node is already in the list -> REMOVE IT
         manualBuilderSteps.splice(existingIndex, 1);
         if(typeof showToast === 'function') showToast(`Removed ${d.id}`);
     } else {
-        manualBuilderSteps.push({ nodeId: d.id, info: `Maps to ${d.id} tool.` });
+        // Node is not in list -> ADD IT
+        manualBuilderSteps.push({
+            nodeId: d.id,
+            info: `Maps to ${d.id} tool.` 
+        });
     }
     updateManualBuilderVisuals();
 }
 
+// Double click kept as fallback, but single click handles everything now
+function handleManualNodeDoubleClick(d) {
+    // No-op to prevent conflict
+}
+
+// VISUALIZER: Enforces Directional Highlighting
 function updateManualBuilderVisuals() {
     d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
@@ -120,6 +159,7 @@ function updateManualBuilderVisuals() {
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
     const activeLinkKeys = new Set();
     
+    // Calculate Active Path Lines
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
         const v = manualBuilderSteps[i+1].nodeId;
@@ -127,7 +167,7 @@ function updateManualBuilderVisuals() {
         activeLinkKeys.add(`${v}-${u}`);
     }
 
-    // --- STRICT DIRECTIONAL CANDIDATE LOGIC ---
+    // --- DIRECTIONAL CANDIDATE LOGIC ---
     const candidateIds = new Set();
     const candidateLinkKeys = new Set();
     
@@ -138,18 +178,18 @@ function updateManualBuilderVisuals() {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             
-            // STRICT: Source MUST be the last node. Target MUST NOT be already selected.
+            // LOGIC: Highlight Target ONLY if Source is the Last Node
+            // (Standard Process Flow: Downstream)
             if (s === lastNodeId && !activeIds.has(t)) {
                 candidateIds.add(t);
                 candidateLinkKeys.add(`${s}-${t}`);
             }
             
-            // NOTE: We do NOT allow "t === lastNodeId" (Upstream) suggestions anymore.
-            // This forces the user to follow the arrows.
+            // NOTE: We deliberately exclude upstream (t === lastNodeId) to enforce flow.
         });
     } else {
-        // Step 0: Everything is a candidate (Start anywhere)
-        app.node.each(d => candidateIds.add(d.id));
+        // Step 0: All nodes are valid start points
+        if(app.node) app.node.each(d => candidateIds.add(d.id));
     }
 
     // Update Nodes
@@ -166,9 +206,9 @@ function updateManualBuilderVisuals() {
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
             
-            if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return 1; // Active Path
-            if (candidateLinkKeys.has(key) || candidateLinkKeys.has(rKey)) return 0.3; // Hint
-            return 0.05;
+            if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return 1; // Active
+            if (candidateLinkKeys.has(key) || candidateLinkKeys.has(rKey)) return 0.3; // Candidate
+            return 0.05; // Dim
         })
         .attr("stroke", l => {
             const s = l.source.id || l.source;
@@ -183,10 +223,9 @@ function updateManualBuilderVisuals() {
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
             
-            // Show arrow for active OR candidate paths
+            // Show arrow for active path OR candidate suggestion
             if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return `url(#arrow-highlighted)`;
             if (candidateLinkKeys.has(key) || candidateLinkKeys.has(rKey)) {
-                 // Show standard arrow for hints
                  const legend = legendData.find(leg => leg.type_id === l.type);
                  return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
             }
@@ -197,19 +236,28 @@ function updateManualBuilderVisuals() {
 function finishManualBuilder() {
     const name = prompt("Enter a name for this Custom Process:", "New SOP Process");
     if (!name) return;
-    const newTour = { name: `📝 ${name}`, steps: manualBuilderSteps, id: `custom_${Date.now()}` };
+
+    const newTour = {
+        name: `📝 ${name}`, 
+        steps: manualBuilderSteps,
+        id: `custom_${Date.now()}`
+    };
+
     app.currentTour = newTour;
     saveCurrentTour(); 
     previewTour(newTour); 
 }
 
+// --- STANDARD PREVIEW ---
 function previewTour(tourData) {
     stopTour(false); 
     app.currentTour = tourData;
     app.currentStep = -1; 
     app.interactionState = 'tour_preview';
+    
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     
+    // Identify internal links
     const tourLinkKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
@@ -241,6 +289,7 @@ function previewTour(tourData) {
 
     let isSaved = false;
     if (tours.ai) isSaved = Object.values(tours.ai).some(t => t.name === tourData.name);
+
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
         <div class="flex flex-col gap-3 pb-2">
@@ -254,6 +303,7 @@ function previewTour(tourData) {
             </div>
         </div>
     `);
+
     d3.select("#start-tour-btn").on("click", startTour);
     d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
     if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
@@ -271,10 +321,12 @@ function startTour() {
     `);
     d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
     d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
+    
     let isSaved = false;
     if (tours.ai) isSaved = Object.values(tours.ai).some(t => t.name === app.currentTour.name);
     if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     else d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
+
     runTourStep();
     resizeTourAccordion();
 }
@@ -285,24 +337,30 @@ function runTourStep() {
     d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
+
     const isLastStep = (app.currentStep === app.currentTour.steps.length - 1);
     const saveBtn = d3.select("#tour-controls .save-tour-btn");
     if (isLastStep) saveBtn.classed("hidden", false).classed("flex", true);
     else saveBtn.classed("hidden", true).classed("flex", false);
+
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
+        
         const activeNodeIds = new Set();
         activeNodeIds.add(step.nodeId);
+        
         let prevNodeId = null;
         if (app.currentStep > 0) {
             prevNodeId = app.currentTour.steps[app.currentStep - 1].nodeId;
             activeNodeIds.add(prevNodeId);
         }
+        
         app.node.transition().duration(300).style("opacity", d => {
             if (activeNodeIds.has(d.id)) return 1;
             if (new Set(app.currentTour.steps.map(s => s.nodeId)).has(d.id)) return 0.15;
             return 0.05;
         });
+        
         app.link.transition().duration(300)
             .style("stroke-opacity", l => {
                 const s = l.source.id || l.source;
@@ -323,6 +381,7 @@ function runTourStep() {
                 if (isActiveLink) return `url(#arrow-highlighted)`;
                 return null; 
             });
+            
         if(typeof showInfoPanel === 'function') showInfoPanel(nodeData); 
         const tourBox = d3.select("#tour-info-box").style("display", "block");
         d3.select("#tour-info-text").text(step.info);
@@ -355,20 +414,26 @@ async function generateAiWorkflow() {
     const input = d3.select("#ai-workflow-input").property("value").trim();
     const status = d3.select("#ai-modal-status");
     const generateBtn = d3.select("#ai-workflow-generate");
+
     if (!input) {
         status.text("Please describe a process first.").classed("text-red-500", true);
         return;
     }
+
     status.text("Analyzing Procore platform...").classed("text-red-500", false).classed("text-indigo-600", true);
     generateBtn.property("disabled", true).classed("opacity-50", true);
+
     const validNodes = nodesData.map(n => n.id).join(", ");
     const systemPrompt = `You are a Procore Platform Architect. Create a linear step-by-step business process map based on the user's request. CRITICAL RULES: 1. You may ONLY use these exact Tool Names (Node IDs): [${validNodes}]. 2. Do not invent tools. 3. Return ONLY valid JSON. JSON Structure: { "name": "Short Title", "steps": [ { "nodeId": "Exact Tool Name", "info": "Description" } ] }`;
+
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${app.apiKey}`;
+
     const payload = {
         contents: [{ parts: [{ text: `User Request: "${input}"` }] }],
         system_instruction: { parts: [{ text: systemPrompt }] },
         generationConfig: { responseMimeType: "application/json" }
     };
+
     try {
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -380,6 +445,7 @@ async function generateAiWorkflow() {
         let rawText = result.candidates[0].content.parts[0].text;
         rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
         const newTour = JSON.parse(rawText);
+        
         if (newTour && newTour.steps && newTour.steps.length > 0) {
             const tourId = `ai_tour_${Date.now()}`;
             newTour.name = `✨ ${newTour.name}`;
@@ -388,7 +454,9 @@ async function generateAiWorkflow() {
             d3.select("#ai-workflow-input").property("value", "");
             status.text("");
             previewTour(newTour);
-        } else { throw new Error("AI returned invalid process structure."); }
+        } else {
+            throw new Error("AI returned invalid process structure.");
+        }
     } catch (error) {
         console.error("AI Process generation failed:", error);
         status.text("Error generating process map. Please try again.").classed("text-red-500", true);
