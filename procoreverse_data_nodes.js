@@ -408,7 +408,7 @@ const nodesData = [
     "level": "project",
     "description": "Provides team members on a construction project with the ability to capture and record all types of instructions Available in Australia, New Zealand, and Canada.",
     "personas": ["pm", "fm", "owner", "super"],
-    "features": [],
+    "features": ["mobile", "assist"],
     "caseStudyUrl": "",
     "supportDocUrl": "https://v2.support.procore.com/product-manuals/instructions-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new"
