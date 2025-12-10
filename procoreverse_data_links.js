@@ -192,6 +192,18 @@ const linksData = [
     "type": "syncs",
     "dataFlow": "Generates bid packages based on cost estimates."
   },
+   {
+    "source": "Cost Catalog",
+    "target": "Estimating",
+    "type": "syncs",
+    "dataFlow": "Data for Materials used in takeoffs are synced between tools to allow for estimate creation based stored data."
+  },
+   {
+    "source": "Estimating",
+    "target": "Cost Catalog",
+    "type": "syncs",
+    "dataFlow": "Material data can be updated from the Estimating tool and new items added to the catalog"
+  },
   {
     "source": "Bidding",
     "target": "Commitments",
