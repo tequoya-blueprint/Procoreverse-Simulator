@@ -380,6 +380,20 @@ const nodesData = [
   },
   
   // --- [Group: Preconstruction] ---
+   {
+    "id": "Cost Catalog",
+    "group": "Preconstruction",
+    "level": "company",
+    "description": "Allows you to easily store pricing andother data for materials, labor, etc. to be used during takeoffs.",
+    "personas": [
+      "pm",
+      "estimator",
+      "fm"
+     ],
+    "caseStudyUrl": "",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/cost-catalog-company/",
+    "whatsNewUrl": "https://www.procore.com/whats-new"
+  },
   {
     "id": "Bid Board",
     "group": "Preconstruction",
