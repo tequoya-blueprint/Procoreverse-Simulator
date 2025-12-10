@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: SAFE MODE (Fixes "null.checked" error)
+// VERSION: COMPLETE & VERIFIED (Includes updatePackageAddOns + Safe Checks)
 
 const TEAM_CONFIG = {
     admin: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' },
@@ -65,7 +65,7 @@ function calculateScoping() {
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
     
-    // Safely exit if elements are missing
+    // Safely exit if elements are missing to prevent crash
     if (!sliderMaturity || !sliderData || !sliderChange) return;
 
     const mat = parseFloat(sliderMaturity.value);
@@ -143,20 +143,13 @@ function applyTeamView(team) {
     }
 }
 
-// --- SAFE TOGGLE FUNCTION ---
+// --- HELPER FUNCTIONS ---
+
 function toggleAllConnections() {
-    // 1. Get all checkboxes
     const checkboxes = d3.selectAll(".legend-checkbox");
-    
-    // 2. Safety Check: If none exist, exit
     if (checkboxes.empty()) return;
-
-    // 3. Logic: If ANY are unchecked, we check ALL. 
-    //    If ALL are checked, we uncheck ALL.
     const allChecked = checkboxes.nodes().every(node => node.checked);
-    const newState = !allChecked;
-
-    checkboxes.property("checked", newState);
+    checkboxes.property("checked", !allChecked);
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
@@ -220,7 +213,7 @@ function onAudienceChange() {
                     .attr("value", pkg.package_name)
                     .attr("class", "form-checkbox h-4 w-4 text-indigo-600 package-checkbox mr-2")
                     .on("change", () => {
-                        updatePackageAddOns();
+                        updatePackageAddOns(); // THIS FUNCTION IS NOW INCLUDED BELOW
                         if (typeof updateGraph === 'function') updateGraph(true);
                         calculateScoping();
                     });
@@ -235,25 +228,34 @@ function onAudienceChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
+// --- MISSING FUNCTION RESTORED ---
 function updatePackageAddOns() {
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+    
+    // Find all selected package names
     const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
+    
     const allAddOns = new Set();
     const allServices = new Set();
+    
     selectedPackageNames.forEach(pkgName => {
         const pkg = packagingData.find(p => p.region === region && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
         if (pkg) {
             const addOns = pkg['available_add-ons'] || pkg['available_add_ons'] || pkg['add_ons'] || [];
             addOns.forEach(a => allAddOns.add(a));
+            
             const services = pkg['available_services'] || [];
             services.forEach(s => allServices.add(s));
         }
     });
+    
+    // Render Add-ons
     const addOnsContainer = d3.select("#add-ons-container");
     const addOnsCheckboxes = d3.select("#add-ons-checkboxes");
-    addOnsCheckboxes.html("");
+    addOnsCheckboxes.html(""); // Clear old
+    
     if (allAddOns.size > 0) {
         addOnsContainer.classed('hidden', false);
         [...allAddOns].sort().forEach(addOn => {
@@ -269,9 +271,12 @@ function updatePackageAddOns() {
     } else {
         addOnsContainer.classed('hidden', true);
     }
+    
+    // Render Services (Reference only)
     const servicesContainer = d3.select("#package-services-container");
     const servicesList = d3.select("#package-services-list");
     servicesList.html("");
+    
     if (allServices.size > 0) {
         servicesContainer.classed('hidden', false);
         [...allServices].sort().forEach(service => {
@@ -281,14 +286,17 @@ function updatePackageAddOns() {
     } else {
         servicesContainer.classed('hidden', true);
     }
+    
+    // Resize accordion again
     const content = document.querySelector('#packaging-container').closest('.accordion-content');
-    if (content) content.style.maxHeight = "1000px"; // Auto-grow
+    if (content) content.style.maxHeight = "1000px"; 
 }
 
 function getActiveFilters() {
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+    
     const activeCategories = d3.selectAll("#category-filters input:checked").nodes().map(el => el.value);
     const activeConnectionTypes = d3.selectAll(".legend-checkbox:checked").nodes().map(el => el.value);
     const showProcoreLed = d3.select("#toggle-procore-led").property("checked");
@@ -298,8 +306,10 @@ function getActiveFilters() {
     
     if (region !== 'all' && audience !== 'all') {
         const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
+        
         if (selectedPackageNames.length > 0) {
             packageTools = new Set();
+            
             selectedPackageNames.forEach(pkgName => {
                 const pkg = packagingData.find(p => p.region === region && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
                 if (pkg) {
@@ -309,6 +319,7 @@ function getActiveFilters() {
                     }
                 }
             });
+            
             const selectedAddOns = d3.selectAll("#add-ons-checkboxes input:checked").nodes().map(el => el.value);
             selectedAddOns.forEach(addOn => packageTools.add(addOn));
         }
@@ -375,7 +386,7 @@ function resetView() {
     d3.select("#package-checkboxes").html("");
     d3.select("#toggle-procore-led").property("checked", false);
     d3.selectAll("#category-filters input").property("checked", true);
-    toggleAllConnections(); // Reset connections state safely
+    toggleAllConnections();
     d3.selectAll(".legend-checkbox").property("checked", true);
     allCategoriesChecked = true;
     clearPackageDetails();
