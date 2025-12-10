@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 38 (Full Verification)
+// VERSION: 40 (Complete)
 
 const TEAM_CONFIG = {
     admin: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' },
@@ -16,19 +16,16 @@ const audienceKeyToLabelMap = { "GC": "General Contractor", "SC": "Specialty Con
 const audienceKeyToDataValuesMap = { "GC": ["Contractor", "General Contractor", "GC"], "SC": ["SC", "Specialty Contractor"], "O": ["Owners", "Owner", "Owner Developer *Coming Soon"] };
 
 function initializeControls() {
-    // Accordion Logic
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
     });
 
     populateRegionFilter();
     
-    // Bind Event Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
-    d3.select("#persona-filter").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
     
-    // Procore-Led Toggle Listener
+    d3.select("#persona-filter").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
     d3.select("#toggle-procore-led").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
 
     populateCategoryFilters();
@@ -36,7 +33,6 @@ function initializeControls() {
     d3.select("#toggle-legend").on("click", toggleAllConnections);
     d3.select("#search-input").on("input", handleSearchInput);
     
-    // Team Selector Logic
     const teamSelector = d3.select("#team-selector");
     const initialTeam = getUrlParam('team') || 'admin'; 
     if (TEAM_CONFIG[initialTeam]) {
@@ -45,24 +41,20 @@ function initializeControls() {
     }
     teamSelector.on("change", function() { applyTeamView(this.value); });
 
-    // Search Dismissal
     d3.select("body").on("click", (e) => {
         if (e.target && !document.getElementById('search-container').contains(e.target)) {
             d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
         }
     });
 
-    // Button Listeners
     d3.select("#reset-view").on("click", resetView);
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 
-    // Scoping Calculator Listeners (Safe Check)
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
-    
     if(sliderMaturity) sliderMaturity.addEventListener('input', calculateScoping);
     if(sliderData) sliderData.addEventListener('input', calculateScoping);
     if(sliderChange) sliderChange.addEventListener('input', calculateScoping);
@@ -73,14 +65,12 @@ function calculateScoping() {
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
     
-    // Exit if elements missing (prevents crash)
     if (!sliderMaturity || !sliderData || !sliderChange) return;
 
     const mat = parseFloat(sliderMaturity.value);
     const data = parseFloat(sliderData.value);
     const change = parseFloat(sliderChange.value);
 
-    // Update Label Text
     const valMat = document.getElementById('val-maturity');
     if(valMat) valMat.innerText = mat + "x";
     
@@ -90,7 +80,6 @@ function calculateScoping() {
     const valChange = document.getElementById('val-change');
     if(valChange) valChange.innerText = change + "x";
 
-    // Logic: Sum hours from selected packages
     let baseHours = 0;
     let addOnCount = 0;
     
@@ -104,7 +93,6 @@ function calculateScoping() {
             const pkgName = this.value;
             const pkg = packagingData.find(p => p.region === region && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
             if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
-                // Regex to find "25 hrs"
                 const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
                 if (match) baseHours += parseInt(match[1], 10);
             }
@@ -113,7 +101,6 @@ function calculateScoping() {
         addOnCount = d3.selectAll("#add-ons-checkboxes input:checked").size();
     }
 
-    // Update UI
     const baseLabel = document.getElementById('base-tools-count');
     if (baseLabel) {
         if (baseHours > 0) {
@@ -129,7 +116,6 @@ function calculateScoping() {
         return;
     }
 
-    // Calculation Formula
     const baseWeeks = (baseHours / 3) + (addOnCount * 2); 
     const combinedMultiplier = (mat + data + change) / 3; 
     const finalWeeks = Math.round(baseWeeks * combinedMultiplier);
@@ -141,16 +127,12 @@ function calculateScoping() {
 function applyTeamView(team) {
     const config = TEAM_CONFIG[team];
     if (!config) return;
-    
     d3.select("#tour-accordion").style("display", config.showTours ? "block" : "none");
     d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
     d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none"); 
-    
     const manualBtn = d3.select("#manual-workflow-builder-btn");
     if (!manualBtn.empty()) manualBtn.style("display", config.showManualBuilder ? "block" : "none");
-    
     d3.select("#scoping-ui-container").classed("hidden", !config.showScoping);
-    
     document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
     const target = document.getElementById(config.defaultOpen);
     if (target) {
@@ -159,8 +141,6 @@ function applyTeamView(team) {
         if (content) content.style.maxHeight = content.scrollHeight + "px";
     }
 }
-
-// --- HELPER FUNCTIONS ---
 
 function toggleAllConnections() {
     const checkboxes = d3.selectAll(".legend-checkbox");
@@ -191,15 +171,11 @@ function populateRegionFilter() {
 function onRegionChange() {
     const region = d3.select(this).property("value");
     const audienceFilter = d3.select("#audience-filter");
-    
-    // Reset Filters
     audienceFilter.property("value", "all").property("disabled", region === "all");
     audienceFilter.html('<option value="all">All Audiences</option>');
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
-    
     clearPackageDetails();
-    
     if (region !== "all") {
         const availableAudiences = new Set();
         packagingData.filter(pkg => pkg.region === region).forEach(pkg => {
@@ -218,20 +194,15 @@ function onAudienceChange() {
     const audience = d3.select(this).property("value");
     const packageArea = d3.select("#package-selection-area");
     const packageList = d3.select("#package-checkboxes");
-    
     packageList.html("");
     clearPackageDetails();
-    
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-    
     if (region !== 'all' && audience !== 'all') {
         const packages = packagingData.filter(pkg =>
             pkg.region === region && audienceDataKeys.includes(pkg.audience)
         );
-        
         if (packages.length > 0) {
             packageArea.classed("hidden", false);
-            
             packages.sort((a, b) => a.package_name.localeCompare(b.package_name)).forEach(pkg => {
                 const label = packageList.append("label").attr("class", "flex items-center cursor-pointer py-1 hover:bg-gray-100 rounded px-1");
                 label.append("input")
