@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 40: Assist Sparkles Icon + Full Legend + Procore-Led Rings
+// VERSION 42: Sparkles Emoji, No Badge Circles, Full Legend, Procore-Led Rings
 
 // --- Global App State ---
 const app = {
@@ -270,14 +270,14 @@ function updateGraph(isFilterChange = true) {
                     .attr("fill", d => app.categories[d.group].color)
                     .style("color", d => app.categories[d.group].color);
                 
-                // PROCORE LED RING
+                // Procore Led Ring (Orange Halo)
                 nodeGroup.append("circle")
                     .attr("class", "procore-led-ring")
                     .attr("r", app.baseNodeSize + 6)
                     .attr("fill", "none")
-                    .attr("stroke", "#9333ea") // Purple
+                    .attr("stroke", "#F36C23") // Orange
                     .attr("stroke-width", 3)
-                    .attr("stroke-opacity", 0); // Hidden by default
+                    .attr("stroke-opacity", 0); 
 
                 nodeGroup.append("text")
                     .text(d => d.id)
@@ -299,9 +299,9 @@ function updateGraph(isFilterChange = true) {
                         addBadge(g, "\uf3cd", "#4A4A4A", 14, 10, "Available on Mobile");
                     }
 
-                    // 3. Assist (Top Left) - UPDATED TO SPARKLES (f0d0)
+                    // 3. Assist (Top Left) - Sparkles Emoji
                     if (d.features && d.features.includes("assist")) {
-                        addBadge(g, "\uf0d0", "#eab308", -18, -14, "Enhanced with Assist AI"); 
+                        addEmojiBadge(g, "✨", -18, -14, "Enhanced with Assist AI"); 
                     }
                 });
                 
@@ -356,25 +356,21 @@ function updateGraph(isFilterChange = true) {
     resetHighlight(); 
 }
 
-// Badge Helper Function
+// Badge Helper Function (FontAwesome) - No Circle
 function addBadge(group, iconCode, color, x, y, tooltipText) {
     const badge = group.append("g")
         .attr("transform", `translate(${x}, ${y})`)
         .style("cursor", "help");
     
-    badge.append("circle")
-        .attr("r", 6)
-        .attr("fill", "white")
-        .attr("stroke", color)
-        .attr("stroke-width", 1);
-        
+    // Removed <circle> to hide white background
+    
     badge.append("text")
         .attr("class", "fas")
         .text(iconCode)
         .attr("text-anchor", "middle")
         .attr("dy", 3) 
         .attr("fill", color)
-        .attr("font-size", "8px")
+        .attr("font-size", "10px") // Slightly smaller for cleanliness
         .style("font-family", "'Font Awesome 6 Free'");
 
     badge.on("mouseover", function(event) {
@@ -382,6 +378,36 @@ function addBadge(group, iconCode, color, x, y, tooltipText) {
         const tooltip = d3.select("#tooltip");
         tooltip.html(`
             <div class="font-bold text-xs" style="color: ${color};">
+                ${tooltipText}
+            </div>
+        `)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 10) + "px")
+        .classed("visible", true);
+    })
+    .on("mouseout", function(event) {
+        event.stopPropagation();
+        d3.select("#tooltip").classed("visible", false);
+    });
+}
+
+// Badge Helper Function (Emoji) - No Circle
+function addEmojiBadge(group, emoji, x, y, tooltipText) {
+    const badge = group.append("g")
+        .attr("transform", `translate(${x}, ${y})`)
+        .style("cursor", "help");
+    
+    badge.append("text")
+        .text(emoji)
+        .attr("text-anchor", "middle")
+        .attr("dy", 3) 
+        .attr("font-size", "12px"); // Emoji size
+
+    badge.on("mouseover", function(event) {
+        event.stopPropagation(); 
+        const tooltip = d3.select("#tooltip");
+        tooltip.html(`
+            <div class="font-bold text-xs" style="color: #eab308;">
                 ${tooltipText}
             </div>
         `)
@@ -411,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(typeof initializeInfoPanel === 'function') initializeInfoPanel(); 
     if(typeof initializeTourControls === 'function') initializeTourControls(); 
     
-    populateLegend(); // Now explicitly called
+    populateLegend(); 
     updateGraph(false); 
 
     setTimeout(() => {
