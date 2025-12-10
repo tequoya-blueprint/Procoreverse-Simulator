@@ -1,9 +1,7 @@
 /**
- * Procoreverse Data Module (Part 1/3)
- * This file contains all the tool nodes from SECTION 1.
+ * Procoreverse Data Module - Tool Definitions
+ * BASELINE VERSION: 1.1 (Rich Content + Standardized Features)
  */
-
-// --- [SECTION 1] - All Tool Nodes ---
 const nodesData = [
 
   // --- [Group: External Integrations] ---
@@ -11,7 +9,7 @@ const nodesData = [
     "id": "ERP Systems",
     "group": "External Integrations",
     "level": "company",
-    "description": "Connection to external ERP or accounting system (e.G., Sage, Viewpoint).",
+    "description": "Connection to external ERP or accounting system (e.g., Sage, Viewpoint).",
     "personas": ["fm"],
     "features": [],
     "caseStudyUrl": "",
@@ -101,7 +99,7 @@ const nodesData = [
     "id": "Procore Pay",
     "group": "Financial Management",
     "level": "company",
-    "description": "Centralizes lien waivers, payment requirements, payment holds, and invoice payments for payors, and allows payees to securely link their bank accounts to get paid.",
+    "description": "Centralizes lien waivers, payment requirements, payment holds, and invoice payments for payors.",
     "personas": ["pm", "fm", "owner"],
     "features": [],
     "caseStudyUrl": "",
@@ -112,7 +110,7 @@ const nodesData = [
     "id": "Project Status Snapshots",
     "group": "Financial Management",
     "level": "project",
-    "description": "Simplifies how your team monitors and reviews project status snapshots of budgets for all your company's projects.",
+    "description": "Simplifies how your team monitors and reviews project status snapshots of budgets.",
     "personas": ["pm", "fm", "owner"],
     "features": [],
     "caseStudyUrl": "",
@@ -136,7 +134,7 @@ const nodesData = [
     "id": "Insights",
     "group": "Helix",
     "level": "project",
-    "description": "Help you spot risks early, understand performance trends, and take action;  bringing the most critical patterns to the surface without guesswork or manual digging.",
+    "description": "Helps spot risks early, understand performance trends, and take action.",
     "personas": ["pm", "fm", "owner"],
     "features": [],
     "caseStudyUrl": "",
@@ -164,7 +162,7 @@ const nodesData = [
     "personas": ["pm", "super", "fm", "owner", "sub", "design"],
     "features": ["mobile", "assist"],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/document-management-project/ | https://v2.support.procore.com/product-manuals/documents-company/ | https://v2.support.procore.com/product-manuals/documents-project/",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/documents-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
@@ -197,7 +195,7 @@ const nodesData = [
     "personas": ["pm", "fm", "super", "owner", "sub", "design"],
     "features": ["mobile", "assist"],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/directory-company/ | https://v2.support.procore.com/product-manuals/directory-project/",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/directory-company/",
     "whatsNewUrl": "https://www.procore.com/whats-new"
   },
   {
@@ -215,7 +213,7 @@ const nodesData = [
     "id": "Project Map",
     "group": "Platform & Core",
     "level": "project",
-    "description": "Enhances project execution by visually showing your Procore items on a map, facilitating better planning, execution, and monitoring of construction projects.",
+    "description": "Enhances project execution by visually showing your Procore items on a map.",
     "personas": ["pm", "super", "owner", "sub", "design"],
     "features": ["mobile"],
     "caseStudyUrl": "",
@@ -248,7 +246,7 @@ const nodesData = [
     "id": "Tasks",
     "group": "Platform & Core",
     "level": "project",
-    "description": "A llows you to track and manage action items throughout the lifespan of the project.",
+    "description": "Allows you to track and manage action items throughout the lifespan of the project.",
     "personas": [],
     "features": ["mobile", "assist"],
     "caseStudyUrl": "",
@@ -259,7 +257,7 @@ const nodesData = [
     "id": "Conversations",
     "group": "Platform & Core",
     "level": "project",
-    "description": "P rovides a convenient solution for messaging across projects within Procore's web and mobile applications.",
+    "description": "Provides a convenient solution for messaging across projects.",
     "personas": [],
     "features": ["mobile"],
     "caseStudyUrl": "",
@@ -270,7 +268,7 @@ const nodesData = [
     "id": "Training Center",
     "group": "Platform & Core",
     "level": "project",
-    "description": "TBD",
+    "description": "Procore's integrated learning management system.",
     "personas": [],
     "features": [],
     "caseStudyUrl": "",
@@ -281,7 +279,7 @@ const nodesData = [
     "id": "Premier Support Bronze",
     "group": "Platform & Core",
     "level": "project",
-    "description": "TBD",
+    "description": "Standard support package included with certain tiers.",
     "personas": [],
     "features": [],
     "caseStudyUrl": "",
@@ -305,7 +303,7 @@ const nodesData = [
     "id": "Cost Catalog",
     "group": "Preconstruction",
     "level": "company",
-    "description": "Allows you to easily store pricing andother data for materials, labor, etc. to be used during takeoffs.",
+    "description": "Allows you to easily store pricing and other data for materials, labor, etc.",
     "personas": ["pm", "estimator", "fm"],
     "features": [],
     "caseStudyUrl": "",
@@ -338,11 +336,11 @@ const nodesData = [
     "id": "Estimating",
     "group": "Preconstruction",
     "level": "project",
-    "description": "Creates accurate cost estimates and forecasts to build competitive bids. Sub-features include digital takeoff and proposal generation.",
+    "description": "Creates accurate cost estimates and forecasts to build competitive bids.",
     "personas": ["fm", "pm", "estimator"],
     "features": [],
     "caseStudyUrl": "https://www.procore.com/casestudies/gardner-builders",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/estimating-project/ | https://v2.support.procore.com/product-manuals/cost-catalog-company/",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/estimating-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new?products=Estimating"
   },
   {
@@ -360,7 +358,7 @@ const nodesData = [
     "id": "Procore Construction Network",
     "group": "Preconstruction",
     "level": "company",
-    "description": "Procore Construction Network: directory to find contractors and partners.",
+    "description": "Directory to find contractors and partners.",
     "personas": ["pm", "fm", "estimator", "owner"],
     "features": [],
     "caseStudyUrl": "https://www.procore.com/casestudies/peridot-mechanical",
@@ -395,7 +393,7 @@ const nodesData = [
     "id": "Emails",
     "group": "Project Execution",
     "level": "project",
-    "description": "Control your communications and manage all project-related emails using one centralized email client.",
+    "description": "Control your communications and manage all project-related emails.",
     "personas": ["pm", "super", "owner", "sub"],
     "features": ["assist"],
     "caseStudyUrl": "",
@@ -406,9 +404,9 @@ const nodesData = [
     "id": "Instructions",
     "group": "Project Execution",
     "level": "project",
-    "description": "Provides team members on a construction project with the ability to capture and record all types of instructions Available in Australia, New Zealand, and Canada.",
+    "description": "Provides team members with the ability to capture and record instructions (Regional).",
     "personas": ["pm", "fm", "owner", "super"],
-    "features": ["mobile", "assist"],
+    "features": [],
     "caseStudyUrl": "",
     "supportDocUrl": "https://v2.support.procore.com/product-manuals/instructions-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new"
@@ -439,11 +437,11 @@ const nodesData = [
     "id": "Schedule",
     "group": "Project Execution",
     "level": "company",
-    "description": "Manages the project schedule and track progress.",
+    "description": "Manages the project schedule and tracks progress.",
     "personas": ["pm", "super", "owner", "sub"],
     "features": ["mobile"],
     "caseStudyUrl": "https://www.procore.com/casestudies/cyberco",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/schedule-company/ | https://v2.support.procore.com/product-manuals/schedule-project/",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/schedule-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new?products=Project+Management"
   },
   {
@@ -472,7 +470,7 @@ const nodesData = [
     "id": "Transmittals",
     "group": "Project Execution",
     "level": "project",
-    "description": "Keep documented records of any project-related correspondence with Procore's Transmittals tool.",
+    "description": "Keep documented records of any project-related correspondence.",
     "personas": ["pm", "fm", "owner"],
     "features": [],
     "caseStudyUrl": "",
@@ -485,7 +483,7 @@ const nodesData = [
     "id": "Action Plans",
     "group": "Quality & Safety",
     "level": "project",
-    "description": "Creates multi-step plans for standardizing processes, referencing other Procore items.",
+    "description": "Creates multi-step plans for standardizing processes.",
     "personas": ["pm", "super"],
     "features": ["mobile", "assist"],
     "caseStudyUrl": "",
@@ -511,7 +509,7 @@ const nodesData = [
     "personas": ["super", "pm", "sub"],
     "features": ["mobile", "assist"],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/inspections-company/ | https://v2.support.procore.com/product-manuals/inspections-project/",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/inspections-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new?products=Quality+%26+Safety"
   },
   {
@@ -557,7 +555,7 @@ const nodesData = [
     "personas": ["super", "fm"],
     "features": ["mobile"],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/equipment-company/ | https://v2.support.procore.com/product-manuals/equipment-project/",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/equipment-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Planning"
   },
   {
@@ -586,11 +584,11 @@ const nodesData = [
     "id": "Resource Tracking",
     "group": "Resource Management",
     "level": "company",
-    "description": "Allows you to  track and manage your production quantities.",
+    "description": "Allows you to track and manage your production quantities.",
     "personas": ["pm", "fm", "super"],
     "features": [],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timesheets-company/ | https://v2.support.procore.com/product-manuals/timesheets-project/ |",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timesheets-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Tracking"
   },
   {
@@ -608,11 +606,11 @@ const nodesData = [
     "id": "Timesheets",
     "group": "Resource Management",
     "level": "company",
-    "description": "Collects worker hours on-site, providing accurate labor data (e.g., labor hours, cost codes) for payroll and project costing.",
+    "description": "Collects worker hours on-site for payroll and project costing.",
     "personas": ["fm", "super", "sub"],
     "features": ["mobile", "assist"],
     "caseStudyUrl": "",
-    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timecard-company/ | https://v2.support.procore.com/product-manuals/timesheets-company/ | https://v2.support.procore.com/product-manuals/timesheets-project/",
+    "supportDocUrl": "https://v2.support.procore.com/product-manuals/timesheets-project/",
     "whatsNewUrl": "https://www.procore.com/whats-new?products=Resource+Planning"
   }
 ];
