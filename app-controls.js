@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 40 (Complete)
+// VERSION: 41 (COMPLETE & VERIFIED)
 
 const TEAM_CONFIG = {
     admin: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' },
@@ -55,6 +55,7 @@ function initializeControls() {
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
+    
     if(sliderMaturity) sliderMaturity.addEventListener('input', calculateScoping);
     if(sliderData) sliderData.addEventListener('input', calculateScoping);
     if(sliderChange) sliderChange.addEventListener('input', calculateScoping);
@@ -71,14 +72,9 @@ function calculateScoping() {
     const data = parseFloat(sliderData.value);
     const change = parseFloat(sliderChange.value);
 
-    const valMat = document.getElementById('val-maturity');
-    if(valMat) valMat.innerText = mat + "x";
-    
-    const valData = document.getElementById('val-data');
-    if(valData) valData.innerText = data + "x";
-    
-    const valChange = document.getElementById('val-change');
-    if(valChange) valChange.innerText = change + "x";
+    if(document.getElementById('val-maturity')) document.getElementById('val-maturity').innerText = mat + "x";
+    if(document.getElementById('val-data')) document.getElementById('val-data').innerText = data + "x";
+    if(document.getElementById('val-change')) document.getElementById('val-change').innerText = change + "x";
 
     let baseHours = 0;
     let addOnCount = 0;
@@ -229,7 +225,6 @@ function updatePackageAddOns() {
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-    
     const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
     
     const allAddOns = new Set();
@@ -372,11 +367,9 @@ function resetView() {
     d3.select("#region-filter").property('value', 'all');
     d3.select("#audience-filter").property('value', 'all').property("disabled", true).html('<option value="all">All Audiences</option>');
     d3.select("#persona-filter").property('value', 'all');
-    
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
     d3.select("#toggle-procore-led").property("checked", false);
-    
     d3.selectAll("#category-filters input").property("checked", true);
     toggleAllConnections(); 
     d3.selectAll(".legend-checkbox").property("checked", true);
