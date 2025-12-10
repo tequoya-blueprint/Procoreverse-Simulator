@@ -1,5 +1,5 @@
 // --- app-d3-helpers.js ---
-// VERSION: 12 (Full Verification)
+// VERSION: 13 (Restored Utility Functions)
 
 let clickTimeout = null;
 
@@ -14,21 +14,34 @@ function generateHexagonPath(size) {
 function drag(simulation) {
     function dragstarted(event, d) {
         if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x; d.fy = d.y;
+        d.fx = d.x;
+        d.fy = d.y;
         if (typeof hideTooltip === 'function') hideTooltip(); 
     }
-    function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
-    function dragended(event, d) { if (!event.active) simulation.alphaTarget(0); }
-    return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
+    
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
+    
+    function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+    }
+    
+    return d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
 }
 
+// --- SINGLE CLICK LOGIC ---
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // Prevent conflict if DblClick is pending
+    // If double-click is already pending, do nothing
     if (clickTimeout) return; 
 
-    // Timer: Wait 250ms to see if it's a single or double click
+    // Start timer
     clickTimeout = setTimeout(() => {
         clickTimeout = null; 
         executeSingleClick(d);
@@ -36,10 +49,10 @@ function nodeClicked(event, d) {
 }
 
 function executeSingleClick(d) {
-    // 1. BLOCKED STATES
+    // 1. Blocked States
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview') return;
 
-    // 2. MANUAL BUILDER MODE (Simple ADD)
+    // 2. Manual Builder (ADD)
     if (app.interactionState === 'manual_building') {
         if (typeof handleManualNodeClick === 'function') {
             handleManualNodeClick(d); 
@@ -47,7 +60,7 @@ function executeSingleClick(d) {
         return; 
     }
 
-    // 3. STANDARD SELECTION
+    // 3. Standard Selection
     if (app.selectedNode === d) {
         resetHighlight();
     } else {
@@ -60,16 +73,17 @@ function executeSingleClick(d) {
     }
 }
 
+// --- DOUBLE CLICK LOGIC ---
 function nodeDoubleClicked(event, d) {
     event.stopPropagation();
     
-    // Cancel any pending single click
+    // Clear the pending single click
     if (clickTimeout) {
         clearTimeout(clickTimeout);
         clickTimeout = null;
     }
 
-    // MANUAL BUILDER MODE (REMOVE)
+    // Manual Builder (REMOVE)
     if (app.interactionState === 'manual_building') {
         if (typeof handleManualNodeDoubleClick === 'function') {
             handleManualNodeDoubleClick(d); 
@@ -78,40 +92,87 @@ function nodeDoubleClicked(event, d) {
 }
 
 function nodeMouseOver(event, d) {
+    // Block hover during special states
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
+    
     if (typeof showTooltip === 'function') showTooltip(event, d);
-    if (app.interactionState === 'explore') applyHighlight(d);
+    
+    if (app.interactionState === 'explore') {
+        applyHighlight(d);
+    }
 }
 
 function nodeMouseOut() {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
+    
     if (typeof hideTooltip === 'function') hideTooltip();
-    if (app.interactionState === 'explore') resetHighlight();
+    
+    if (app.interactionState === 'explore') {
+        resetHighlight();
+    }
 }
 
 function applyHighlight(d) {
     if (!app.simulation) return;
+
     const connectedNodeIds = new Set([d.id]);
     const connectedLinks = new Set();
+
     app.simulation.force("link").links().forEach(l => {
         if (l.source.id === d.id || l.target.id === d.id) {
-            connectedNodeIds.add(l.source.id); connectedNodeIds.add(l.target.id); connectedLinks.add(l);
+            connectedNodeIds.add(l.source.id);
+            connectedNodeIds.add(l.target.id);
+            connectedLinks.add(l);
         }
     });
+
     const opacity = 0.1; 
-    app.node.transition().duration(300).style("opacity", n => connectedNodeIds.has(n.id) ? 1 : opacity);
-    app.link.transition().duration(300).style("stroke-opacity", l => connectedLinks.has(l) ? 1 : opacity * 0.5)
-        .attr("marker-end", l => connectedLinks.has(l) ? `url(#arrow-highlighted)` : null);
+    
+    app.node.transition().duration(300)
+        .style("opacity", n => connectedNodeIds.has(n.id) ? 1 : opacity);
+    
+    app.link.transition().duration(300)
+        .style("stroke-opacity", l => connectedLinks.has(l) ? 1 : opacity * 0.5)
+        .attr("marker-end", l => {
+            if (!connectedLinks.has(l)) return null;
+            return `url(#arrow-highlighted)`;
+        });
+}
+
+// RESTORED: This was previously removed but is good for legacy calls
+function highlightConnection(element, d) {
+    if (!app.simulation) return;
+    const { otherNodeId, type } = element.dataset;
+    const specificLink = app.simulation.force("link").links().find(l => 
+        (l.source.id === d.id && l.target.id === otherNodeId && l.type === type) ||
+        (l.target.id === d.id && l.source.id === otherNodeId && l.type === type)
+    );
+    
+    if (specificLink) {
+        app.link.transition().duration(200)
+            .style("stroke-opacity", l => l === specificLink ? 1 : 0.1)
+            .style("stroke-width", l => l === specificLink ? 4 : 2);
+    }
 }
 
 function resetHighlight(hidePanel = true) {
-    if (!hidePanel && ['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return; 
+    if (!hidePanel && ['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) {
+        return; 
+    }
+
     app.interactionState = 'explore';
     app.selectedNode = null;
-    if (app.node) { app.node.classed("selected", false); app.node.transition().duration(400).style("opacity", 1); }
+    
+    if (app.node) {
+        app.node.classed("selected", false);
+        app.node.transition().duration(400).style("opacity", 1);
+    }
+    
     if (app.link) {
         app.link.classed("highlighted", false).classed("pulsing", false);
-        app.link.transition().duration(400).style("stroke-opacity", 0.6) 
+        app.link.transition().duration(400)
+            .style("stroke-opacity", 0.6) 
+            .style("stroke-width", 2)
             .attr("marker-end", d => {
                 if (typeof legendData !== 'undefined') {
                      const legend = legendData.find(l => l.type_id === d.type);
@@ -120,12 +181,19 @@ function resetHighlight(hidePanel = true) {
                 return null;
             });
     }
-    if (hidePanel && typeof hideInfoPanel === 'function') hideInfoPanel();
+        
+    if (hidePanel) {
+        if (typeof hideInfoPanel === 'function') hideInfoPanel();
+    }
+    
     d3.select('#graph-container').classed('selection-active', false);
 }
 
 function resetZoom() {
-    if (app.svg && app.zoom) app.svg.transition().duration(1000).ease(d3.easeCubicInOut).call(app.zoom.transform, d3.zoomIdentity);
+    if (app.svg && app.zoom) {
+        app.svg.transition().duration(1000).ease(d3.easeCubicInOut)
+            .call(app.zoom.transform, d3.zoomIdentity);
+    }
 }
 
 function centerViewOnNode(d) {
@@ -133,5 +201,6 @@ function centerViewOnNode(d) {
     const scale = 1.5; 
     const x = app.width / 2 - d.x * scale;
     const y = app.height / 2 - d.y * scale;
-    app.svg.transition().duration(800).ease(d3.easeCubicInOut).call(app.zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+    app.svg.transition().duration(800).ease(d3.easeCubicInOut)
+        .call(app.zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
 }
