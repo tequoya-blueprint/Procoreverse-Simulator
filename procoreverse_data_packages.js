@@ -8,877 +8,463 @@ const packagingData = [
     "audience": "General Contractor",
     "package_name": "Project Execution Essentials",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Submittals",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets"
+      "Drawings", "Specifications", "Submittals", "RFIs", "Photos", 
+      "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets"
+    ],
+    "procore_led_tools": [
+        "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets"
     ],
     "included_features": [],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (25 hrs.)"
-    ]
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "General Contractor",
     "package_name": "Project Execution Enhanced",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Submittals",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Bidding"
+      "Drawings", "Specifications", "Submittals", "RFIs", "Photos", 
+      "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", 
+      "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", 
+      "Meetings", "Punch List", "Inspections", "Incidents", "Bidding"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center",
-      "Premier Support Bronze"
+    "procore_led_tools": [
+        "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+        "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+        "Punch List", "Inspections", "Bidding"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (44 hrs.)"
-    ]
+    "included_features": ["Assist", "Training Center", "Premier Support Bronze"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "General Contractor",
     "package_name": "Project Execution Premier",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Submittals",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Bidding",
-      "Coordination Issues",
-      "Models",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "Submittals", "RFIs", "Photos", 
+      "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", 
+      "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", 
+      "Meetings", "Punch List", "Inspections", "Incidents", "Bidding", 
+      "Coordination Issues", "Models", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Models", 
+      "Coordination Issues", "Analytics"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (64 hrs.)"
-    ]
+    "included_features": ["Assist", "Training Center"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "General Contractor",
     "package_name": "Cost Management Enhanced",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
       "Project Status Snapshots"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (32 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (32 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "General Contractor",
     "package_name": "Cost Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
-      "Project Status Snapshots",
-      "Estimating",
-      "Bid Board",
-      "Drawings",
-      "Insights",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
+      "Project Status Snapshots", "Estimating", "Bid Board", "Drawings", 
+      "Insights", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (52 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "General Contractor",
     "package_name": "Resource Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Project Map",
-      "Timesheets",
-      "Crews",
-      "Equipment",
-      "T&M Tickets",
-      "Resource Tracking",
-      "Resource Planning",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Tracking", 
+      "Resource Planning", "Analytics"
+    ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", 
+      "Resource Planning", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": [
-      "Professional Services Implementation (35 hrs.)"
-    ]
+    "available_services": ["Professional Services Implementation (35 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Specialty Contractor",
     "package_name": "Project Execution Essentials",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Submittals",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "T&M Tickets"
+      "Drawings", "Specifications", "Submittals", "RFIs", "Photos", 
+      "Observations", "Daily Log", "Emails", "Forms", "Equipment", 
+      "Timesheets", "T&M Tickets"
+    ],
+    "procore_led_tools": [
+        "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+        "Timesheets", "T&M Tickets"
     ],
     "included_features": [],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (25 hrs.)"
-    ]
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Specialty Contractor",
     "package_name": "Project Execution Enhanced",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Submittals",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "T&M Tickets",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Bidding"
+      "Drawings", "Specifications", "Submittals", "RFIs", "Photos", 
+      "Observations", "Daily Log", "Emails", "Forms", "Equipment", 
+      "Timesheets", "T&M Tickets", "Project Map", "Transmittals", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Incidents", "Bidding"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "T&M Tickets", "Punch List", "Inspections", "Bidding"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (44 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Specialty Contractor",
     "package_name": "Project Execution Premier",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Submittals",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "T&M Tickets",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Bidding",
-      "Coordination Issues",
-      "Models",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "Submittals", "RFIs", "Photos", 
+      "Observations", "Daily Log", "Emails", "Forms", "Equipment", 
+      "Timesheets", "T&M Tickets", "Project Map", "Transmittals", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Incidents", "Bidding", 
+      "Coordination Issues", "Models", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Models", 
+      "Coordination Issues", "Analytics"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (64 hrs.)"
-    ]
+    "included_features": ["Assist", "Training Center"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Specialty Contractor",
     "package_name": "Cost Management Enhanced",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
       "Project Status Snapshots"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (32 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (32 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Specialty Contractor",
     "package_name": "Cost Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
-      "Project Status Snapshots",
-      "Estimating",
-      "Bid Board",
-      "Drawings",
-      "Insights",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
+      "Project Status Snapshots", "Estimating", "Bid Board", "Drawings", 
+      "Insights", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (52 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Specialty Contractor",
     "package_name": "Resource Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Project Map",
-      "Timesheets",
-      "Crews",
-      "Equipment",
-      "T&M Tickets",
-      "Resource Tracking",
-      "Resource Planning",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Tracking", 
+      "Resource Planning", "Analytics"
+    ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", 
+      "Resource Planning", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": [
-      "Professional Services Implementation (35 hrs.)"
-    ]
+    "available_services": ["Professional Services Implementation (35 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner",
     "package_name": "Project Execution Essentials",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections"
+    ],
+    "procore_led_tools": [
+      "Drawings", "Observations", "Punch List", "Inspections", 
+      "Correspondence", "Schedule", "Action Plans"
     ],
     "included_features": [],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (25 hrs.)"
-    ]
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner",
     "package_name": "Project Execution Enhanced",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Submittals", "RFIs", "Daily Log", 
+      "Forms", "Project Map", "Transmittals", "Bidding"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (44 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner",
     "package_name": "Project Execution Premier",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding",
-      "Coordination Issues",
-      "Models",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Submittals", "RFIs", "Daily Log", 
+      "Forms", "Project Map", "Transmittals", "Bidding", 
+      "Coordination Issues", "Models", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding", "Models", "Coordination Issues", 
+      "Analytics"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (64 hrs.)"
-    ]
+    "included_features": ["Assist", "Training Center"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner",
     "package_name": "Cost Management Enhanced",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
       "Project Status Snapshots"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Prime Contracts", "Commitments", "Budget", "Change Events", 
+        "Invoicing", "Direct Costs"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (32 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (32 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner",
     "package_name": "Cost Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
-      "Project Status Snapshots",
-      "Estimating",
-      "Bid Board",
-      "Drawings",
-      "Insights",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
+      "Project Status Snapshots", "Estimating", "Bid Board", "Drawings", 
+      "Insights", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Prime Contracts", "Commitments", "Budget", "Change Events", 
+        "Invoicing", "Direct Costs", "Estimating", "Analytics"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (52 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner",
     "package_name": "Resource Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Project Map",
-      "Timesheets",
-      "Crews",
-      "Equipment",
-      "T&M Tickets",
-      "Resource Tracking",
-      "Resource Planning",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Tracking", 
+      "Resource Planning", "Analytics"
+    ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", 
+      "Resource Planning", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": [
-      "Professional Services Implementation (35 hrs.)"
-    ]
+    "available_services": ["Professional Services Implementation (35 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner Developer *Coming Soon",
     "package_name": "Project Execution Enhanced",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Drawings",
-      "Specifications",
-      "Submittals",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Instructions",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Bidding",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Drawings", 
+      "Specifications", "Submittals", "RFIs", "Photos", "Observations", 
+      "Daily Log", "Emails", "Forms", "Project Map", "Transmittals", 
+      "Instructions", "Schedule", "Correspondence", "Action Plans", 
+      "Meetings", "Punch List", "Inspections", "Bidding", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding", "Analytics"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (65 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (65 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner Developer *Coming Soon",
     "package_name": "Cost Management Enhanced",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Project Status Snapshots",
-      "Direct Costs",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", 
+      "Project Status Snapshots", "Direct Costs", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (65 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (65 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner Developer *Coming Soon",
     "package_name": "Project Execution Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Drawings",
-      "Specifications",
-      "Submittals",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Project Map",
-      "Transmittals",
-      "T&M Tickets",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Bidding",
-      "Coordination Issues",
-      "Models",
-      "Insights",
+      "Documents", "Directory", "Tasks", "Conversations", "Drawings", 
+      "Specifications", "Submittals", "RFIs", "Photos", "Observations", 
+      "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", 
+      "Project Map", "Transmittals", "T&M Tickets", "Schedule", 
+      "Correspondence", "Action Plans", "Meetings", "Punch List", 
+      "Inspections", "Incidents", "Bidding", "Coordination Issues", 
+      "Models", "Insights", "Analytics"
+    ],
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding", "Models", "Coordination Issues", 
       "Analytics"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center",
-      "Premier Support Bronze"
-    ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (64 hrs.)"
-    ]
+    "included_features": ["Assist", "Training Center", "Premier Support Bronze"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
     "region": "NAMER",
     "audience": "Owner Developer *Coming Soon",
     "package_name": "Cost Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Project Status Snapshots",
-      "Direct Costs",
-      "Estimating",
-      "Bid Board",
-      "Insights",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", 
+      "Project Status Snapshots", "Direct Costs", "Estimating", 
+      "Bid Board", "Insights", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs", "Estimating", 
+        "Analytics"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (65 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (65 hrs.)"]
   },
   {
     "region": "APAC",
     "audience": "Contractor",
     "package_name": "Project Execution Essentials",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Instructions"
+      "Drawings", "Specifications", "Photos", "Observations", "Daily Log", 
+      "Emails", "Forms", "Equipment", "Timesheets", "Punch List", 
+      "Inspections", "Incidents", "Instructions"
+    ],
+    "procore_led_tools": [
+      "Drawings", "Inspections", "Punch List", "Observations", 
+      "Daily Log", "Timesheets", "Equipment"
     ],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": [
-      "Professional Services Implementation (32 hrs.)"
-    ]
+    "available_services": ["Professional Services Implementation (32 hrs.)"]
   },
   {
     "region": "APAC",
     "audience": "Contractor",
     "package_name": "Project Execution Enhanced",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Bidding"
+      "Drawings", "Specifications", "Photos", "Observations", "Daily Log", 
+      "Emails", "Forms", "Equipment", "Timesheets", "Punch List", 
+      "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", 
+      "Project Map", "Transmittals", "Schedule", "Correspondence", 
+      "Action Plans", "Meetings", "Bidding"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding", "Analytics", "Equipment", "Timesheets", 
+      "Incidents", "Emails"
     ],
-    "available_add-ons": [
-      "Procore Pay",
-      "Resource Tracking",
-      "Resource Planning",
-      "Prequalifications",
-      "ERP Systems"
-    ],
-    "available_services": [
-      "Professional Services Implementation (52 hrs.)"
-    ]
+    "included_features": ["Assist"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
     "region": "APAC",
     "audience": "Contractor",
     "package_name": "Project Execution Enhanced w CDE",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Bidding",
-      "Documents"
+      "Drawings", "Specifications", "Photos", "Observations", "Daily Log", 
+      "Emails", "Forms", "Equipment", "Timesheets", "Punch List", 
+      "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", 
+      "Project Map", "Transmittals", "Schedule", "Correspondence", 
+      "Action Plans", "Meetings", "Bidding", "Documents"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding", "Analytics", "Equipment", "Timesheets", 
+      "Incidents", "Emails"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -887,37 +473,20 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Project Execution Premier",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Bidding",
-      "Coordination Issues",
-      "Models",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "Photos", "Observations", "Daily Log", 
+      "Emails", "Forms", "Equipment", "Timesheets", "Punch List", 
+      "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", 
+      "Project Map", "Transmittals", "Schedule", "Correspondence", 
+      "Action Plans", "Meetings", "Bidding", "Coordination Issues", 
+      "Models", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Models", 
+      "Coordination Issues", "Training Center", "Analytics"
     ],
+    "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -926,38 +495,20 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Project Execution Premier w CDE",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Emails",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Bidding",
-      "Documents",
-      "Coordination Issues",
-      "Models",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "Photos", "Observations", "Daily Log", 
+      "Emails", "Forms", "Equipment", "Timesheets", "Punch List", 
+      "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", 
+      "Project Map", "Transmittals", "Schedule", "Correspondence", 
+      "Action Plans", "Meetings", "Bidding", "Documents", 
+      "Coordination Issues", "Models", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Equipment", 
+      "Models", "Coordination Issues", "Analytics"
     ],
+    "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -966,21 +517,15 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Cost Management Enhanced",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
       "Project Status Snapshots"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -989,26 +534,16 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Cost Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
-      "Project Status Snapshots",
-      "Estimating",
-      "Bid Board",
-      "Drawings",
-      "Insights",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
+      "Project Status Snapshots", "Estimating", "Bid Board", "Drawings", 
+      "Insights", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1017,18 +552,13 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Resource Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Project Map",
-      "Timesheets",
-      "Crews",
-      "Equipment",
-      "T&M Tickets",
-      "Resource Tracking",
-      "Resource Planning",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Tracking", 
+      "Resource Planning", "Analytics"
+    ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", 
+      "Resource Planning", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1039,18 +569,13 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Essentials",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions"
+    ],
+    "procore_led_tools": [
+      "Drawings", "Observations", "Punch List", "Inspections", 
+      "Correspondence", "Schedule", "Action Plans"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1061,29 +586,16 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Enhanced",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", 
+      "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Correspondence", "Action Plans", "Bidding"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1092,30 +604,17 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Enhanced w CDE",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding",
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", 
+      "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", 
       "Documents"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Correspondence", "Action Plans", "Bidding"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1124,34 +623,19 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Premier",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding",
-      "Coordination Issues",
-      "Models",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", 
+      "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", 
+      "Coordination Issues", "Models", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Equipment", 
+      "Models", "Coordination Issues", "Analytics"
     ],
+    "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1160,35 +644,19 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Premier w CDE",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding",
-      "Documents",
-      "Coordination Issues",
-      "Models",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", 
+      "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", 
+      "Documents", "Coordination Issues", "Models", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Equipment", "Models", 
+      "Coordination Issues", "Analytics"
     ],
+    "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1197,21 +665,15 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Cost Management Enhanced",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
       "Project Status Snapshots"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1220,26 +682,16 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Cost Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
-      "Project Status Snapshots",
-      "Estimating",
-      "Bid Board",
-      "Drawings",
-      "Insights",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
+      "Project Status Snapshots", "Estimating", "Bid Board", "Drawings", 
+      "Insights", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1248,18 +700,13 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Resource Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Project Map",
-      "Timesheets",
-      "Crews",
-      "Equipment",
-      "T&M Tickets",
-      "Resource Tracking",
-      "Resource Planning",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Tracking", 
+      "Resource Planning", "Analytics"
+    ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", 
+      "Resource Planning", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1270,21 +717,13 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Project Execution Essentials",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Instructions",
-      "T&M Tickets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Models"
+      "Drawings", "Specifications", "RFIs", "Photos", "Observations", 
+      "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", 
+      "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models"
+    ],
+    "procore_led_tools": [
+      "Drawings", "Observations", "Daily Log", "Punch List", 
+      "Inspections", "Equipment", "Timesheets"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1295,34 +734,18 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Project Execution Enhanced",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Instructions",
-      "T&M Tickets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Models",
-      "Submittals",
-      "Emails",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Bidding"
+      "Drawings", "Specifications", "RFIs", "Photos", "Observations", 
+      "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", 
+      "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", 
+      "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", 
+      "Correspondence", "Action Plans", "Meetings", "Bidding"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1331,35 +754,18 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Project Execution Enhanced w PDM",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Instructions",
-      "T&M Tickets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Models",
-      "Submittals",
-      "Emails",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Bidding",
-      "Documents"
+      "Drawings", "Specifications", "RFIs", "Photos", "Observations", 
+      "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", 
+      "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", 
+      "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", 
+      "Correspondence", "Action Plans", "Meetings", "Bidding", "Documents"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1368,38 +774,20 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Project Execution Premier",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Instructions",
-      "T&M Tickets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Models",
-      "Submittals",
-      "Emails",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Bidding",
-      "Coordination Issues",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "RFIs", "Photos", "Observations", 
+      "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", 
+      "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", 
+      "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", 
+      "Correspondence", "Action Plans", "Meetings", "Bidding", 
+      "Coordination Issues", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Equipment", "Models", 
+      "Coordination Issues", "Analytics"
     ],
+    "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1408,39 +796,20 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Project Execution Premier w PDM",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "RFIs",
-      "Photos",
-      "Observations",
-      "Daily Log",
-      "Forms",
-      "Equipment",
-      "Timesheets",
-      "Instructions",
-      "T&M Tickets",
-      "Punch List",
-      "Inspections",
-      "Incidents",
-      "Models",
-      "Submittals",
-      "Emails",
-      "Project Map",
-      "Transmittals",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Bidding",
-      "Documents",
-      "Coordination Issues",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "RFIs", "Photos", "Observations", 
+      "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", 
+      "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", 
+      "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", 
+      "Correspondence", "Action Plans", "Meetings", "Bidding", 
+      "Documents", "Coordination Issues", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Equipment", "Models", 
+      "Coordination Issues", "Analytics"
     ],
+    "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1449,12 +818,12 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Cost Management Enhanced",
     "tools": [
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs"
+      "Prime Contracts", "Commitments", "Budget", "Change Events", 
+      "Invoicing", "Direct Costs"
+    ],
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1465,14 +834,12 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Cost Management Premier",
     "tools": [
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
-      "Estimating",
-      "Analytics"
+      "Prime Contracts", "Commitments", "Budget", "Change Events", 
+      "Invoicing", "Direct Costs", "Estimating", "Analytics"
+    ],
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1483,18 +850,13 @@ const packagingData = [
     "audience": "Contractor",
     "package_name": "Resource Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Project Map",
-      "Timesheets",
-      "Crews",
-      "Equipment",
-      "T&M Tickets",
-      "Resource Tracking",
-      "Resource Planning",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Tracking", 
+      "Resource Planning", "Analytics"
+    ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", 
+      "Resource Planning", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1505,18 +867,13 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Essentials",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions"
+    ],
+    "procore_led_tools": [
+      "Drawings", "Submittals", "Observations", "Punch List", 
+      "Inspections", "Correspondence", "Schedule"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1527,29 +884,17 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Enhanced",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions", "Submittals", 
+      "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1558,30 +903,18 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Enhanced w CDE",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding",
-      "Documents"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions", "Submittals", 
+      "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", 
+      "Bidding", "Documents"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Schedule", "Correspondence", "Action Plans", "Punch List", 
+      "Inspections", "Bidding"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1590,34 +923,19 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Premier",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding",
-      "Coordination Issues",
-      "Models",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions", "Submittals", 
+      "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", 
+      "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Equipment", 
+      "Models", "Coordination Issues", "Analytics"
     ],
+    "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1626,35 +944,20 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Project Execution Premier w CDE",
     "tools": [
-      "Drawings",
-      "Specifications",
-      "Photos",
-      "Observations",
-      "Emails",
-      "Schedule",
-      "Correspondence",
-      "Action Plans",
-      "Meetings",
-      "Punch List",
-      "Inspections",
-      "Instructions",
-      "Submittals",
-      "RFIs",
-      "Daily Log",
-      "Forms",
-      "Project Map",
-      "Transmittals",
-      "Bidding",
-      "Documents",
-      "Coordination Issues",
-      "Models",
-      "Analytics",
-      "Insights"
+      "Drawings", "Specifications", "Photos", "Observations", "Emails", 
+      "Schedule", "Correspondence", "Action Plans", "Meetings", 
+      "Punch List", "Inspections", "Instructions", "Submittals", 
+      "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", 
+      "Bidding", "Documents", "Coordination Issues", "Models", 
+      "Analytics", "Insights"
     ],
-    "included_features": [
-      "Assist",
-      "Training Center"
+    "procore_led_tools": [
+      "Drawings", "RFIs", "Submittals", "Observations", "Daily Log", 
+      "Timesheets", "Schedule", "Correspondence", "Action Plans", 
+      "Punch List", "Inspections", "Bidding", "Equipment", 
+      "Models", "Coordination Issues", "Analytics"
     ],
+    "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1663,21 +966,15 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Cost Management Enhanced",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
       "Project Status Snapshots"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1686,26 +983,16 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Cost Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Prime Contracts",
-      "Commitments",
-      "Budget",
-      "Change Events",
-      "Invoicing",
-      "Direct Costs",
-      "Project Status Snapshots",
-      "Estimating",
-      "Bid Board",
-      "Drawings",
-      "Insights",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", 
+      "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", 
+      "Project Status Snapshots", "Estimating", "Bid Board", "Drawings", 
+      "Insights", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+        "Budget", "Prime Contracts", "Commitments", "Change Events", 
+        "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1714,18 +1001,13 @@ const packagingData = [
     "audience": "Owner",
     "package_name": "Resource Management Premier",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Project Map",
-      "Timesheets",
-      "Crews",
-      "Equipment",
-      "T&M Tickets",
-      "Resource Tracking",
-      "Resource Planning",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Tracking", 
+      "Resource Planning", "Analytics"
+    ],
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", 
+      "Resource Planning", "Analytics"
     ],
     "included_features": [],
     "available_add-ons": [],
@@ -1736,21 +1018,11 @@ const packagingData = [
     "audience": "Resource Management",
     "package_name": "Resource Tracking (ACV)",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Assist",
-      "Project Map",
-      "Timesheets",
-      "Crews",
-      "Equipment",
-      "T&M Tickets",
-      "Resource Tracking"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Tracking"
     ],
-    "included_features": [
-      "Assist"
-    ],
+    "procore_led_tools": ["Timesheets", "Crews", "Equipment", "T&M Tickets"],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1759,18 +1031,11 @@ const packagingData = [
     "audience": "Resource Management",
     "package_name": "Resource Planning (ACV)",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Assist",
-      "Project Map",
-      "Equipment",
-      "Resource Planning"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Equipment", "Resource Planning"
     ],
-    "included_features": [
-      "Assist"
-    ],
+    "procore_led_tools": ["Equipment", "Resource Planning"],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   },
@@ -1779,23 +1044,15 @@ const packagingData = [
     "audience": "Resource Management",
     "package_name": "Resource Management -Premier (ACV)",
     "tools": [
-      "Documents",
-      "Directory",
-      "Tasks",
-      "Conversations",
-      "Assist",
-      "Project Map",
-      "Timesheets",
-      "Crews",
-      "Equipment",
-      "T&M Tickets",
-      "Resource Tracking",
-      "Resource Planning",
-      "Analytics"
+      "Documents", "Directory", "Tasks", "Conversations", "Project Map", 
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Tracking", 
+      "Resource Planning", "Analytics"
     ],
-    "included_features": [
-      "Assist"
+    "procore_led_tools": [
+      "Timesheets", "Crews", "Equipment", "T&M Tickets", 
+      "Resource Planning", "Analytics"
     ],
+    "included_features": ["Assist"],
     "available_add-ons": [],
     "available_services": []
   }
