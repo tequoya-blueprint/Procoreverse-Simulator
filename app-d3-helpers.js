@@ -1,5 +1,7 @@
 // --- app-d3-helpers.js ---
-// VERSION 9: Adds Double-Click Support for Manual Builder
+// VERSION: 12 (Full Verification)
+
+let clickTimeout = null;
 
 function generateHexagonPath(size) {
     const points = Array.from({length: 6}, (_, i) => {
@@ -12,36 +14,35 @@ function generateHexagonPath(size) {
 function drag(simulation) {
     function dragstarted(event, d) {
         if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
+        d.fx = d.x; d.fy = d.y;
         if (typeof hideTooltip === 'function') hideTooltip(); 
     }
-    
-    function dragged(event, d) {
-        d.fx = event.x;
-        d.fy = event.y;
-    }
-    
-    function dragended(event, d) {
-        if (!event.active) simulation.alphaTarget(0);
-    }
-    
-    return d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended);
+    function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+    function dragended(event, d) { if (!event.active) simulation.alphaTarget(0); }
+    return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
 }
 
 function nodeClicked(event, d) {
     event.stopPropagation();
     
+    // Prevent conflict if DblClick is pending
+    if (clickTimeout) return; 
+
+    // Timer: Wait 250ms to see if it's a single or double click
+    clickTimeout = setTimeout(() => {
+        clickTimeout = null; 
+        executeSingleClick(d);
+    }, 250); 
+}
+
+function executeSingleClick(d) {
     // 1. BLOCKED STATES
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview') return;
 
-    // 2. MANUAL BUILDER MODE (Select/Add)
+    // 2. MANUAL BUILDER MODE (Simple ADD)
     if (app.interactionState === 'manual_building') {
         if (typeof handleManualNodeClick === 'function') {
-            handleManualNodeClick(d);
+            handleManualNodeClick(d); 
         }
         return; 
     }
@@ -59,87 +60,58 @@ function nodeClicked(event, d) {
     }
 }
 
-// --- NEW FUNCTION: Double Click to Deselect/Remove ---
 function nodeDoubleClicked(event, d) {
-    event.stopPropagation(); // Prevent Zoom
+    event.stopPropagation();
     
+    // Cancel any pending single click
+    if (clickTimeout) {
+        clearTimeout(clickTimeout);
+        clickTimeout = null;
+    }
+
+    // MANUAL BUILDER MODE (REMOVE)
     if (app.interactionState === 'manual_building') {
         if (typeof handleManualNodeDoubleClick === 'function') {
-            handleManualNodeDoubleClick(d);
+            handleManualNodeDoubleClick(d); 
         }
     }
 }
 
 function nodeMouseOver(event, d) {
-    if (app.interactionState === 'tour' || 
-        app.interactionState === 'tour_preview' || 
-        app.interactionState === 'selected' || 
-        app.interactionState === 'manual_building') return; 
-    
+    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
     if (typeof showTooltip === 'function') showTooltip(event, d);
-    
-    if (app.interactionState === 'explore') {
-        applyHighlight(d);
-    }
+    if (app.interactionState === 'explore') applyHighlight(d);
 }
 
 function nodeMouseOut() {
-    if (app.interactionState === 'tour' || 
-        app.interactionState === 'tour_preview' || 
-        app.interactionState === 'selected' || 
-        app.interactionState === 'manual_building') return;
-    
+    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
     if (typeof hideTooltip === 'function') hideTooltip();
-    
-    if (app.interactionState === 'explore') {
-        resetHighlight();
-    }
+    if (app.interactionState === 'explore') resetHighlight();
 }
 
 function applyHighlight(d) {
     if (!app.simulation) return;
-
     const connectedNodeIds = new Set([d.id]);
     const connectedLinks = new Set();
-
     app.simulation.force("link").links().forEach(l => {
         if (l.source.id === d.id || l.target.id === d.id) {
-            connectedNodeIds.add(l.source.id);
-            connectedNodeIds.add(l.target.id);
-            connectedLinks.add(l);
+            connectedNodeIds.add(l.source.id); connectedNodeIds.add(l.target.id); connectedLinks.add(l);
         }
     });
-
     const opacity = 0.1; 
-    
-    app.node.transition().duration(300)
-        .style("opacity", n => connectedNodeIds.has(n.id) ? 1 : opacity);
-    
-    app.link.transition().duration(300)
-        .style("stroke-opacity", l => connectedLinks.has(l) ? 1 : opacity * 0.5)
-        .attr("marker-end", l => {
-            if (!connectedLinks.has(l)) return null;
-            return `url(#arrow-highlighted)`;
-        });
+    app.node.transition().duration(300).style("opacity", n => connectedNodeIds.has(n.id) ? 1 : opacity);
+    app.link.transition().duration(300).style("stroke-opacity", l => connectedLinks.has(l) ? 1 : opacity * 0.5)
+        .attr("marker-end", l => connectedLinks.has(l) ? `url(#arrow-highlighted)` : null);
 }
 
 function resetHighlight(hidePanel = true) {
-    if (!hidePanel && (app.interactionState === 'tour' || app.interactionState === 'tour_preview' || app.interactionState === 'selected' || app.interactionState === 'manual_building')) {
-        return; 
-    }
-
+    if (!hidePanel && ['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return; 
     app.interactionState = 'explore';
     app.selectedNode = null;
-    
-    if (app.node) {
-        app.node.classed("selected", false);
-        app.node.transition().duration(400).style("opacity", 1);
-    }
-    
+    if (app.node) { app.node.classed("selected", false); app.node.transition().duration(400).style("opacity", 1); }
     if (app.link) {
         app.link.classed("highlighted", false).classed("pulsing", false);
-        app.link.transition().duration(400)
-            .style("stroke-opacity", 0.6) 
+        app.link.transition().duration(400).style("stroke-opacity", 0.6) 
             .attr("marker-end", d => {
                 if (typeof legendData !== 'undefined') {
                      const legend = legendData.find(l => l.type_id === d.type);
@@ -148,19 +120,12 @@ function resetHighlight(hidePanel = true) {
                 return null;
             });
     }
-        
-    if (hidePanel) {
-        if (typeof hideInfoPanel === 'function') hideInfoPanel();
-    }
-    
+    if (hidePanel && typeof hideInfoPanel === 'function') hideInfoPanel();
     d3.select('#graph-container').classed('selection-active', false);
 }
 
 function resetZoom() {
-    if (app.svg && app.zoom) {
-        app.svg.transition().duration(1000).ease(d3.easeCubicInOut)
-            .call(app.zoom.transform, d3.zoomIdentity);
-    }
+    if (app.svg && app.zoom) app.svg.transition().duration(1000).ease(d3.easeCubicInOut).call(app.zoom.transform, d3.zoomIdentity);
 }
 
 function centerViewOnNode(d) {
@@ -168,6 +133,5 @@ function centerViewOnNode(d) {
     const scale = 1.5; 
     const x = app.width / 2 - d.x * scale;
     const y = app.height / 2 - d.y * scale;
-    app.svg.transition().duration(800).ease(d3.easeCubicInOut)
-        .call(app.zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+    app.svg.transition().duration(800).ease(d3.easeCubicInOut).call(app.zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
 }
