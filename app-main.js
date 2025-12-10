@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 37: Restored populateLegend (Fixes missing lines) + All New Features
+// VERSION 39: Updated Assist Icon to Sparkles
 
 // --- Global App State ---
 const app = {
@@ -128,7 +128,7 @@ function setupMarkers() {
         .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "var(--procore-orange)");
 }
 
-// --- LEGEND POPULATION (RESTORED) ---
+// --- LEGEND POPULATION ---
 function populateLegend() {
     const legendContainer = d3.select("#connection-legend");
     legendContainer.html(""); 
@@ -213,7 +213,6 @@ function ticked() {
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
 
-    // 1. Get Filters from Controls (Safe Fallback)
     const filters = (typeof getActiveFilters === 'function') 
         ? getActiveFilters() 
         : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
@@ -221,7 +220,6 @@ function updateGraph(isFilterChange = true) {
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
 
-    // 2. Filter Nodes
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
@@ -231,7 +229,6 @@ function updateGraph(isFilterChange = true) {
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     
-    // 3. Filter Links
     const filteredLinks = allLinks.filter(d => 
         nodeIds.has(d.source.id || d.source) && 
         nodeIds.has(d.target.id || d.target) &&
@@ -248,30 +245,27 @@ function updateGraph(isFilterChange = true) {
                     .on("mouseenter", nodeMouseOver) 
                     .on("mouseleave", nodeMouseOut) 
                     .on("click", nodeClicked)
-                    .on("dblclick", nodeDoubleClicked); // For Manual Builder
+                    .on("dblclick", nodeDoubleClicked); 
                 
-                // Base Hexagon
                 nodeGroup.append("path")
                     .attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)) 
                     .attr("fill", d => app.categories[d.group].color)
                     .style("color", d => app.categories[d.group].color);
                 
-                // Procore Led Ring (Purple Halo)
+                // Procore Led Ring
                 nodeGroup.append("circle")
                     .attr("class", "procore-led-ring")
                     .attr("r", app.baseNodeSize + 6)
                     .attr("fill", "none")
-                    .attr("stroke", "#9333ea") // Purple-600
+                    .attr("stroke", "#9333ea") 
                     .attr("stroke-width", 3)
-                    .attr("stroke-opacity", 0); // Hidden by default
+                    .attr("stroke-opacity", 0); 
 
-                // Label
                 nodeGroup.append("text")
                     .text(d => d.id)
                     .attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
 
                 // --- FEATURE BADGES ---
-                // Iterates to check for features array and adds icons
                 nodeGroup.each(function(d) {
                     const g = d3.select(this);
                     let badgeOffset = 14;
@@ -287,9 +281,9 @@ function updateGraph(isFilterChange = true) {
                         addBadge(g, "\uf3cd", "#4A4A4A", 14, 10, "Available on Mobile");
                     }
 
-                    // 3. Assist (Top Left)
+                    // 3. Assist (Top Left) - UPDATED TO SPARKLES
                     if (d.features && d.features.includes("assist")) {
-                        addBadge(g, "\uf005", "#eab308", -18, -14, "Enhanced with Assist AI"); 
+                        addBadge(g, "\uf0d0", "#eab308", -18, -14, "Enhanced with Assist AI"); 
                     }
                 });
                 
@@ -297,7 +291,6 @@ function updateGraph(isFilterChange = true) {
                 return nodeGroup;
             },
             update => {
-                // Update Procore Ring based on Filter State + Data
                 update.select(".procore-led-ring")
                     .transition().duration(300)
                     .attr("stroke-opacity", d => (filters.showProcoreLed && filters.procoreLedTools.has(d.id)) ? 0.8 : 0);
@@ -345,7 +338,6 @@ function updateGraph(isFilterChange = true) {
     resetHighlight(); 
 }
 
-// Badge Helper Function
 function addBadge(group, iconCode, color, x, y, tooltipText) {
     const badge = group.append("g")
         .attr("transform", `translate(${x}, ${y})`)
@@ -400,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(typeof initializeInfoPanel === 'function') initializeInfoPanel(); 
     if(typeof initializeTourControls === 'function') initializeTourControls(); 
     
-    populateLegend(); // Now explicitly called and defined
+    populateLegend(); // Fully restored
     updateGraph(false); 
 
     setTimeout(() => {
