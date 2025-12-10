@@ -1,7 +1,5 @@
 // --- app-d3-helpers.js ---
-// VERSION: 13 (Restored Utility Functions)
-
-let clickTimeout = null;
+// VERSION: FINAL (Instant Click, No Timer)
 
 function generateHexagonPath(size) {
     const points = Array.from({length: 6}, (_, i) => {
@@ -34,25 +32,14 @@ function drag(simulation) {
         .on("end", dragended);
 }
 
-// --- SINGLE CLICK LOGIC ---
+// --- INSTANT CLICK HANDLER ---
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // If double-click is already pending, do nothing
-    if (clickTimeout) return; 
-
-    // Start timer
-    clickTimeout = setTimeout(() => {
-        clickTimeout = null; 
-        executeSingleClick(d);
-    }, 250); 
-}
-
-function executeSingleClick(d) {
-    // 1. Blocked States
+    // 1. BLOCKED STATES
     if (app.interactionState === 'tour' || app.interactionState === 'tour_preview') return;
 
-    // 2. Manual Builder (ADD)
+    // 2. MANUAL BUILDER MODE (Instant Toggle)
     if (app.interactionState === 'manual_building') {
         if (typeof handleManualNodeClick === 'function') {
             handleManualNodeClick(d); 
@@ -60,7 +47,7 @@ function executeSingleClick(d) {
         return; 
     }
 
-    // 3. Standard Selection
+    // 3. STANDARD SELECTION (Instant)
     if (app.selectedNode === d) {
         resetHighlight();
     } else {
@@ -73,26 +60,14 @@ function executeSingleClick(d) {
     }
 }
 
-// --- DOUBLE CLICK LOGIC ---
+// --- DOUBLE CLICK HANDLER (DISABLED/NO-OP) ---
+// We remove the logic here to prevent conflict/stickiness.
 function nodeDoubleClicked(event, d) {
     event.stopPropagation();
-    
-    // Clear the pending single click
-    if (clickTimeout) {
-        clearTimeout(clickTimeout);
-        clickTimeout = null;
-    }
-
-    // Manual Builder (REMOVE)
-    if (app.interactionState === 'manual_building') {
-        if (typeof handleManualNodeDoubleClick === 'function') {
-            handleManualNodeDoubleClick(d); 
-        }
-    }
+    // Do nothing. Adding/Removing is handled by single click toggle in builder mode.
 }
 
 function nodeMouseOver(event, d) {
-    // Block hover during special states
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
     
     if (typeof showTooltip === 'function') showTooltip(event, d);
@@ -139,8 +114,8 @@ function applyHighlight(d) {
         });
 }
 
-// RESTORED: This was previously removed but is good for legacy calls
 function highlightConnection(element, d) {
+    // Legacy support for info panel hover effects
     if (!app.simulation) return;
     const { otherNodeId, type } = element.dataset;
     const specificLink = app.simulation.force("link").links().find(l => 
