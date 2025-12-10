@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 39: Updated Assist Icon to Sparkles
+// VERSION 40: Assist Sparkles Icon + Full Legend + Procore-Led Rings
 
 // --- Global App State ---
 const app = {
@@ -105,9 +105,13 @@ function setupMarkers() {
     const defs = app.svg.select("defs");
 
     const arrowColors = {
-        "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)",
-        "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor,
-        "feeds": "#4A4A4A", "syncs": "var(--procore-metal)"
+        "creates": "var(--procore-orange)", 
+        "converts-to": "var(--procore-orange)", 
+        "pushes-data-to": "var(--procore-orange)",
+        "pulls-data-from": app.defaultArrowColor, 
+        "attaches-links": app.defaultArrowColor,
+        "feeds": "#4A4A4A", 
+        "syncs": "var(--procore-metal)"
     };
 
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
@@ -118,14 +122,28 @@ function setupMarkers() {
             if (type && type.type_id && style.includes("one arrow")) {
                 defs.append("marker")
                     .attr("id", `arrow-${type.type_id}`)
-                    .attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto")
-                    .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", color);
+                    .attr("viewBox", "0 -5 10 10")
+                    .attr("refX", app.arrowRefX)
+                    .attr("markerWidth", 5)
+                    .attr("markerHeight", 5)
+                    .attr("orient", "auto")
+                    .append("path")
+                    .attr("d", "M0,-5L10,0L0,5")
+                    .attr("fill", color);
             }
         });
     }
 
-    defs.append("marker").attr("id", "arrow-highlighted").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto")
-        .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "var(--procore-orange)");
+    defs.append("marker")
+        .attr("id", "arrow-highlighted")
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", app.arrowRefX)
+        .attr("markerWidth", 5)
+        .attr("markerHeight", 5)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5")
+        .attr("fill", "var(--procore-orange)");
 }
 
 // --- LEGEND POPULATION ---
@@ -252,14 +270,14 @@ function updateGraph(isFilterChange = true) {
                     .attr("fill", d => app.categories[d.group].color)
                     .style("color", d => app.categories[d.group].color);
                 
-                // Procore Led Ring
+                // PROCORE LED RING
                 nodeGroup.append("circle")
                     .attr("class", "procore-led-ring")
                     .attr("r", app.baseNodeSize + 6)
                     .attr("fill", "none")
-                    .attr("stroke", "#9333ea") 
+                    .attr("stroke", "#9333ea") // Purple
                     .attr("stroke-width", 3)
-                    .attr("stroke-opacity", 0); 
+                    .attr("stroke-opacity", 0); // Hidden by default
 
                 nodeGroup.append("text")
                     .text(d => d.id)
@@ -281,7 +299,7 @@ function updateGraph(isFilterChange = true) {
                         addBadge(g, "\uf3cd", "#4A4A4A", 14, 10, "Available on Mobile");
                     }
 
-                    // 3. Assist (Top Left) - UPDATED TO SPARKLES
+                    // 3. Assist (Top Left) - UPDATED TO SPARKLES (f0d0)
                     if (d.features && d.features.includes("assist")) {
                         addBadge(g, "\uf0d0", "#eab308", -18, -14, "Enhanced with Assist AI"); 
                     }
@@ -338,6 +356,7 @@ function updateGraph(isFilterChange = true) {
     resetHighlight(); 
 }
 
+// Badge Helper Function
 function addBadge(group, iconCode, color, x, y, tooltipText) {
     const badge = group.append("g")
         .attr("transform", `translate(${x}, ${y})`)
@@ -392,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(typeof initializeInfoPanel === 'function') initializeInfoPanel(); 
     if(typeof initializeTourControls === 'function') initializeTourControls(); 
     
-    populateLegend(); // Fully restored
+    populateLegend(); // Now explicitly called
     updateGraph(false); 
 
     setTimeout(() => {
