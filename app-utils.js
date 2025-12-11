@@ -1,11 +1,12 @@
 // --- app-utils.js ---
-// VERSION 9: Final stable Accordion Logic (Synchronous height calculation).
+// VERSION: 57 (SMART ACCORDION & UTILITIES)
 
+// --- Tooltips ---
 function showTooltip(e, d) {
     const tooltip = d3.select("#tooltip");
     tooltip.html(`
         <div class="font-bold text-lg mb-1">${d.id}</div>
-        <div class="text-sm text-gray-300">${d.description}</div>
+        <div class="text-sm text-gray-300">${d.description || "No description."}</div>
     `)
     .style("left", (e.pageX + 20) + "px")
     .style("top", (e.pageY - 10) + "px")
@@ -16,99 +17,129 @@ function hideTooltip() {
     d3.select("#tooltip").classed("visible", false);
 }
 
+// --- Toasts ---
 function showToast(message, duration = 3000) {
     const t = d3.select("#toast-notification");
     t.text(message).classed("show", true);
     setTimeout(() => t.classed("show", false), duration);
 }
 
+// --- Layout Toggles ---
 function toggleLeftPanel() {
     const leftPanel = d3.select("#controls");
-    const leftPanelToggle = d3.select("#left-panel-toggle");
-    const leftPanelExpander = d3.select("#left-panel-expander");
-
-    const isCurrentlyCollapsed = leftPanel.classed("collapsed");
-    leftPanel.classed("collapsed", !isCurrentlyCollapsed);
-    leftPanelToggle.attr('title', !isCurrentlyCollapsed ? 'Expand Controls' : 'Collapse Panel');
-    leftPanelExpander.classed('hidden', isCurrentlyCollapsed);
+    const expander = d3.select("#left-panel-expander");
+    
+    // Check if currently hidden
+    const isHidden = leftPanel.classed("hidden") || leftPanel.style("opacity") === "0";
+    
+    if (isHidden) {
+        // Show Panel
+        leftPanel.classed("hidden", false)
+            .style("opacity", 0)
+            .style("transform", "translateX(-20px)")
+            .transition().duration(300)
+            .style("opacity", 1)
+            .style("transform", "translateX(0)");
+        expander.classed("hidden", true);
+    } else {
+        // Hide Panel
+        leftPanel.transition().duration(300)
+            .style("opacity", 0)
+            .style("transform", "translateX(-20px)")
+            .on("end", () => leftPanel.classed("hidden", true));
+        expander.classed("hidden", false);
+    }
 }
 
 /**
- * Toggles the state of an accordion item (Main Logic).
+ * SMART ACCORDION LOGIC
+ * Handles animation and overflow clipping to prevent ghosting.
  */
 function toggleAccordion(item) {
     const content = item.querySelector('.accordion-content');
     const isActive = item.classList.contains('active');
 
     if (!isActive) {
-        // OPENING SEQUENCE
+        // OPENING
+        // 1. Close siblings
+        const parent = item.parentElement;
+        parent.querySelectorAll('.accordion-item.active').forEach(sibling => {
+            if (sibling !== item) toggleAccordion(sibling); // Close others
+        });
+
+        // 2. Open this one
         item.classList.add('active');
-        content.style.maxHeight = content.scrollHeight + 20 + "px"; // Add buffer for padding
+        content.style.maxHeight = content.scrollHeight + 30 + "px"; // Add buffer
+        
+        // 3. Wait for animation, then allow overflow (for dropdowns)
+        setTimeout(() => {
+            if (item.classList.contains('active')) {
+                content.classList.add('overflow-visible');
+            }
+        }, 300); // Matches CSS transition time
+
     } else {
-        // CLOSING SEQUENCE
+        // CLOSING
+        // 1. Immediate clip (Fixes ghosting)
+        content.classList.remove('overflow-visible');
+        
+        // 2. Collapse
         content.style.maxHeight = 0;
         item.classList.remove('active');
     }
 }
 
 /**
- * Opens a specific accordion item by its ID (Used for Onboarding).
+ * Helper to force open an item (used in onboarding)
  */
 function openAccordionItemById(itemId) {
     const item = document.getElementById(itemId);
     if (!item || item.classList.contains('active')) return;
-
-    const content = item.querySelector('.accordion-content');
-    item.classList.add('active');
-    content.style.maxHeight = content.scrollHeight + 20 + "px"; // Add buffer
+    toggleAccordion(item);
 }
 
-// --- Onboarding (Interface Tour) Logic ---
+// --- Onboarding / Tour Logic ---
 let onboardingStep = 0;
 
 function startOnboarding(e) {
     if (e) e.stopPropagation();
-    if (app.interactionState !== 'explore') resetHighlight();
-    d3.select("#help-button").classed('initial-pulse', false);
+    if(typeof resetView === 'function') resetView();
+    
+    // Reset state
     onboardingStep = 0;
     nextOnboardingStep();
 }
 
 function nextOnboardingStep() {
-    hideTooltip();
-    switch (onboardingStep) {
-        case 0:
-            showOnboardingTooltip("graph-container", "Welcome to the Procoreverse Simulator! This map visualizes how all Procore tools connect and share data. You can zoom and drag the map.", "center");
-            break;
-        case 1:
-            showOnboardingTooltip("graph-container", "Hover over a tool (hexagon) to preview connections. Click a tool to lock the selection and view details in the right panel.", "center");
-            break;
-        case 2:
-            showOnboardingTooltip("search-container", "Looking for a specific tool? Use the search bar to find and center it instantly.", "right");
-            break;
-        case 3:
-            openAccordionItemById('tour-accordion');
-            showOnboardingTooltip("tour-container", "Use Guided Tours to visualize common construction workflows step-by-step.", "right");
-            break;
-        case 4:
-            showOnboardingTooltip("ai-workflow-builder-btn", "Try the AI Builder! Describe any workflow in plain English, and the AI will generate a custom tour for you.", "right");
-            break;
-        case 5:
-            openAccordionItemById('filter-accordion');
-            showOnboardingTooltip("filter-accordion", "Focus the map by filtering tools relevant to specific regional packages, personas, or audiences.", "right");
-            break;
-        case 6:
-            openAccordionItemById('view-options-accordion');
-            showOnboardingTooltip("view-options-accordion", "Toggle categories on or off to simplify the view and consult the connection legend here.", "right");
-            break;
-        default:
-            endOnboarding();
+    hideTooltip(); // Clear any existing
+    
+    const steps = [
+        { el: "graph-container", msg: "Welcome to the Procoreverse! This map visualizes how all Procore tools connect.", pos: "center" },
+        { el: "search-container", msg: "Find any tool instantly using the search bar.", pos: "right" },
+        { el: "tour-accordion", msg: "Use Process Maps to visualize common workflows like RFI to Budget.", pos: "right", action: "tour-accordion" },
+        { el: "ai-workflow-builder-btn", msg: "Try the AI Builder! Describe any workflow, and the AI will map it for you.", pos: "right" },
+        { el: "filter-accordion", msg: "Configure the scope: Select Regions, Audiences, and Packages.", pos: "right", action: "filter-accordion" },
+        { el: "scoping-ui-container", msg: "Use the SOW Generator to estimate implementation timelines and costs.", pos: "right" },
+        { el: "view-options-accordion", msg: "Use the Legend to understand connection types and colors.", pos: "right", action: "view-options-accordion" }
+    ];
+
+    if (onboardingStep >= steps.length) {
+        endOnboarding();
+        return;
     }
+
+    const step = steps[onboardingStep];
+    
+    // Handle auto-opening accordions
+    if (step.action) openAccordionItemById(step.action);
+
+    showOnboardingTooltip(step.el, step.msg, step.pos);
     onboardingStep++;
 }
 
 function endOnboarding() {
     hideTooltip();
+    showToast("You're ready to explore!", 3000);
 }
 
 function showOnboardingTooltip(elementId, message, position = 'right') {
@@ -121,19 +152,21 @@ function showOnboardingTooltip(elementId, message, position = 'right') {
     const h = window.innerHeight;
     let top, left;
 
-    if (position === 'right') {
-        top = rect.top + rect.height / 2;
-        left = rect.right + 20;
-    } else if (position === 'center') {
+    // Calculate Position
+    if (position === 'center') {
         top = h / 2;
         left = w / 2;
+    } else {
+        // Right side of element
+        top = rect.top + (rect.height / 2);
+        left = rect.right + 15;
     }
 
     const content = `
-        <div class="text-base leading-relaxed">${message}</div>
-        <div class="tooltip-buttons">
-            <button id="onboarding-skip">Skip Tour</button>
-            <button id="onboarding-next">Next</button>
+        <div class="text-base leading-relaxed mb-3">${message}</div>
+        <div class="flex justify-between items-center pt-2 border-t border-gray-700">
+            <button id="onboarding-skip" class="text-xs text-gray-400 hover:text-white">Skip</button>
+            <button id="onboarding-next" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded text-xs font-bold">Next</button>
         </div>`;
 
     tooltip.html(content)
@@ -141,12 +174,13 @@ function showOnboardingTooltip(elementId, message, position = 'right') {
         .style("left", `${left}px`)
         .classed("visible", true);
 
-    if (position === 'right') {
-        tooltip.style("transform", "translateY(-50%)");
-    } else if (position === 'center') {
+    // Corrections for alignment
+    if (position === 'center') {
         tooltip.style("transform", "translate(-50%, -50%)");
+    } else {
+        tooltip.style("transform", "translateY(-50%)");
     }
 
-    d3.select("#onboarding-next").on("click", nextOnboardingStep);
-    d3.select("#onboarding-skip").on("click", endOnboarding);
+    document.getElementById("onboarding-next").onclick = nextOnboardingStep;
+    document.getElementById("onboarding-skip").onclick = endOnboarding;
 }
