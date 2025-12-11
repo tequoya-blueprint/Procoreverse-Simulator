@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 43: Video-Ready (Includes Procore-Led Visual Dimming)
+// VERSION 43: Video-Ready (With Procore-Led Dimming)
 
 // --- Global App State ---
 const app = {
@@ -25,19 +25,17 @@ const app = {
     currentTour: null,
     currentStep: -1,
     apiKey: "AIzaSyCZx6YBE0qwuRd0Jl8HJQ580MUFbANtygA",
-    state: {
-        showProcoreLedOnly: false // Added State for Toggle
-    }
+    state: { showProcoreLedOnly: false }
 };
 
 // --- Color & Category Definitions ---
 function setupCategories() {
     const rootStyles = getComputedStyle(document.documentElement);
     const procoreColors = { 
-        orange: rootStyles.getPropertyValue('--procore-orange').trim(), 
-        lumber: rootStyles.getPropertyValue('--procore-lumber').trim(), 
-        earth: rootStyles.getPropertyValue('--procore-earth').trim(), 
-        metal: rootStyles.getPropertyValue('--procore-metal').trim() 
+        orange: rootStyles.getPropertyValue('--procore-orange').trim() || "#F36C23", 
+        lumber: rootStyles.getPropertyValue('--procore-lumber').trim() || "#D1C4E9", 
+        earth: rootStyles.getPropertyValue('--procore-earth').trim() || "#8D6E63", 
+        metal: rootStyles.getPropertyValue('--procore-metal').trim() || "#607D8B"
     };
 
     const colorMap = {
@@ -71,6 +69,8 @@ function setupCategories() {
 // --- D3 Simulation Setup ---
 function initializeSimulation() {
     const container = document.getElementById('graph-container');
+    if (!container) return; // Safety check
+    
     app.width = container.clientWidth;
     app.height = container.clientHeight;
 
@@ -149,45 +149,11 @@ function setupMarkers() {
         .attr("fill", "var(--procore-orange)");
 }
 
-// --- LEGEND POPULATION ---
-function populateLegend() {
-    const legendContainer = d3.select("#connection-legend");
-    legendContainer.html(""); 
-
-    const legendSVGs = {
-        "creates": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='4,3'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
-        "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='8,4'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
-        "syncs": "<svg width='24' height='10'><path d='M3,2 L9,5 L3,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path><line x1='6' y1='5' x2='18' y2='5' stroke='var(--procore-metal)' stroke-width='2'></line><path d='M21,2 L15,5 L21,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path></svg>",
-        "pushes-data-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
-        "pulls-data-from": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='2,4'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
-        "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='1,3'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
-        "feeds": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#4A4A4A' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='#4A4A4A' stroke-width='2' fill='none'></path></svg>"
-    };
-
-    if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
-        legendData.forEach(type => {
-            if (type && type.type_id) {
-                const svg = legendSVGs[type.type_id] || "<svg width='24' height='10'><line x1='0' y1='5' x2='24' y2='5' stroke='#a0a0a0' stroke-width='2'></line></svg>";
-
-                const item = legendContainer.append("label").attr("class", "flex items-start mb-2 cursor-pointer").attr("title", type.description);
-                
-                item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id)
-                    .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 mt-0.5 focus:ring-orange-500 legend-checkbox")
-                    .on("change", () => updateGraph(true)); 
-
-                item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
-                item.append("div").attr("class", "ml-2").html(`
-                    <span class="font-semibold">${type.label}</span>
-                    <span class="block text-xs text-gray-500 leading-snug">${type.description}</span>
-                `);
-            }
-        });
-    }
-}
-
 // --- Foci & Clustering ---
 function setFoci() {
     const container = document.getElementById('graph-container');
+    if(!container) return;
+    
     app.width = container.clientWidth;
     app.height = container.clientHeight;
     
@@ -230,7 +196,7 @@ function ticked() {
     if(app.node) app.node.attr("transform", d => `translate(${d.x || 0},${d.y || 0})`);
 }
 
-// --- Main Graph Update Function ---
+// --- Main Graph Update Function (DEFENSIVE) ---
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
 
@@ -278,7 +244,7 @@ function updateGraph(isFilterChange = true) {
                     .attr("class", "procore-led-ring")
                     .attr("r", app.baseNodeSize + 6)
                     .attr("fill", "none")
-                    .attr("stroke", "#F36C23") // Orange
+                    .attr("stroke", "#F36C23") 
                     .attr("stroke-width", 3)
                     .attr("stroke-opacity", 0); 
 
@@ -291,18 +257,13 @@ function updateGraph(isFilterChange = true) {
                     const g = d3.select(this);
                     let badgeOffset = 14;
 
-                    // 1. Procore Connect
                     if (d.id === "Drawings" || d.id === "RFIs" || (d.features && d.features.includes("connect"))) {
                         addBadge(g, "\uf0c1", "#2563EB", badgeOffset, -18, "Procore Connect");
                         badgeOffset += 12;
                     }
-
-                    // 2. Mobile (Bottom Right)
                     if (d.features && d.features.includes("mobile")) {
                         addBadge(g, "\uf3cd", "#4A4A4A", 14, 10, "Available on Mobile");
                     }
-
-                    // 3. Assist (Top Left) - Sparkles Emoji
                     if (d.features && d.features.includes("assist")) {
                         addEmojiBadge(g, "✨", -18, -14, "Enhanced with Assist AI"); 
                     }
@@ -312,7 +273,7 @@ function updateGraph(isFilterChange = true) {
                 return nodeGroup;
             },
             update => {
-                // VISUAL DIMMING LOGIC (Procore Led) - UPDATED HERE
+                // VISUAL DIMMING LOGIC
                 update.transition().duration(500)
                     .style("opacity", d => {
                         if (filters.showProcoreLed) {
@@ -364,11 +325,9 @@ function updateGraph(isFilterChange = true) {
             if (legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
             return null;
         })
-        // Link Dimming Logic
         .transition().duration(500)
         .style("opacity", d => {
             if (filters.showProcoreLed) {
-                // Only show links if BOTH source and target are in the Procore-Led set
                 const sourceId = d.source.id || d.source;
                 const targetId = d.target.id || d.target;
                 const isRelevant = filters.procoreLedTools.has(sourceId) && filters.procoreLedTools.has(targetId);
@@ -462,11 +421,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCategories();
     initializeSimulation(); 
     
+    // Safety check for dependent scripts
     if(typeof initializeControls === 'function') initializeControls(); 
     if(typeof initializeInfoPanel === 'function') initializeInfoPanel(); 
     if(typeof initializeTourControls === 'function') initializeTourControls(); 
+    if(typeof populateLegend === 'function') populateLegend(); 
     
-    populateLegend(); 
     updateGraph(false); 
 
     setTimeout(() => {
