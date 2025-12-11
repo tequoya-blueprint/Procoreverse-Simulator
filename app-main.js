@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 70 (HEX GRID + BLACK SPARKLE + HOVER FIXES)
+// VERSION: 71 (PERFECT FLAT-TOP LAYOUT + BADGE HIT BOXES)
 
 // --- Global App State ---
 const app = {
@@ -14,10 +14,9 @@ const app = {
     width: 0,
     height: 0,
     categories: {}, 
-    // categoryFoci is no longer used for positioning
     baseNodeSize: 25,
     nodeSizeCompany: 28,
-    hexGridRadius: 38, // Tuned for optimal spacing
+    hexGridRadius: 35, 
     arrowRefX: 34, 
     defaultArrowColor: "#a0a0a0",
     interactionState: 'explore', 
@@ -82,8 +81,6 @@ function nodeClicked(event, d) {
     if (app.state.showProcoreLedOnly) {
         const isStandardLed = filters.procoreLedTools.has(d.id);
         
-        // If the tool is NOT standard Procore Led (dimmed), clicking ADDS it to custom scope.
-        // If it IS standard Procore Led, it acts as normal (Info Panel).
         if (!isStandardLed) {
             if (typeof toggleCustomScopeItem === 'function') toggleCustomScopeItem(d.id);
             return; 
@@ -103,32 +100,29 @@ function nodeClicked(event, d) {
     }
 }
 
-// --- HEX GRID LOGIC ---
+// --- HEX GRID LOGIC (CORRECTED FLAT-TOP) ---
 function calculateHexGridPositions(nodes) {
-    // 1. Separate Center (Platform) vs. Others
     const centerNodes = nodes.filter(n => n.group === "Platform & Core");
     const otherNodes = nodes.filter(n => n.group !== "Platform & Core");
     
-    // Sort others by group to keep colors clustered
+    // Sort to keep groups clustered
     otherNodes.sort((a, b) => a.group.localeCompare(b.group) || a.id.localeCompare(b.id));
     
     const allSorted = [...centerNodes, ...otherNodes];
     const positions = new Map();
 
-    // Axial Coordinates (q, r) logic for spiral
-    // flat-topped neighbors directions
+    // Standard Flat-Top Neighbors Order
     const directions = [
         {q: +1, r: 0}, {q: 0, r: +1}, {q: -1, r: +1}, 
         {q: -1, r: 0}, {q: 0, r: -1}, {q: +1, r: -1}
     ];
 
-    // Spacing Multiplier: 1.5 ensures no overlap while keeping connections visible
-    const size = app.hexGridRadius * 1.5; 
+    // Increased size multiplier to 2.2 to strictly prevent overlap
+    const size = app.hexGridRadius * 2.2; 
 
     let i = 0;
     let layer = 0;
     
-    // Spiral algorithm
     while (i < allSorted.length) {
         if (layer === 0) {
             positions.set(allSorted[i].id, hexToPixel(0, 0, size));
@@ -156,9 +150,11 @@ function calculateHexGridPositions(nodes) {
 }
 
 function hexToPixel(q, r, size) {
-    // Flat-topped orientation
-    const x = size * (3./2 * q);
-    const y = size * (Math.sqrt(3)/2 * q + Math.sqrt(3) * r);
+    // CORRECT FORMULA FOR FLAT-TOPPED ORIENTATION
+    // x = size * 3/2 * q
+    // y = size * sqrt(3) * (r + q/2)
+    const x = size * (3/2 * q);
+    const y = size * Math.sqrt(3) * (r + q/2);
     return { x: x + app.width / 2, y: y + app.height / 2 };
 }
 
@@ -186,12 +182,12 @@ function initializeSimulation() {
         });
     app.svg.call(app.zoom);
 
-    // Initial Physics: Pull to grid
+    // Physics: Strong Pull to Grid, Zero Link Strength
     app.simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(d => d.id).strength(0)) 
-        .force("x", d3.forceX(d => d.gridX).strength(0.8)) 
-        .force("y", d3.forceY(d => d.gridY).strength(0.8)) 
-        .force("charge", d3.forceManyBody().strength(-100)) 
+        .force("x", d3.forceX(d => d.gridX).strength(0.95)) 
+        .force("y", d3.forceY(d => d.gridY).strength(0.95)) 
+        .force("charge", d3.forceManyBody().strength(-200)) 
         .on("tick", ticked);
 
     app.link = app.linkG.selectAll("path");
@@ -414,13 +410,21 @@ function updateGraph(isFilterChange = true) {
     resetHighlight(); 
 }
 
-// Badge Helpers
+// --- BADGE HELPERS (FIXED WITH HIT BOXES) ---
 function addBadge(group, iconCode, color, x, y, tooltipText) {
     const badge = group.append("g")
         .attr("transform", `translate(${x}, ${y})`)
-        .style("cursor", "help")
-        .style("pointer-events", "all"); // Enable pointer events for hover
-    
+        .style("cursor", "help");
+        
+    // Transparent Hit Box for reliable hover
+    badge.append("rect")
+        .attr("x", -6)
+        .attr("y", -6)
+        .attr("width", 12)
+        .attr("height", 12)
+        .attr("fill", "transparent")
+        .style("pointer-events", "all"); // Capture events
+
     badge.append("text")
         .attr("class", "fas")
         .text(iconCode)
@@ -429,8 +433,10 @@ function addBadge(group, iconCode, color, x, y, tooltipText) {
         .attr("fill", color)
         .attr("font-size", "10px") 
         .style("font-family", "'Font Awesome 6 Free'")
-        .style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))");
+        .style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))")
+        .style("pointer-events", "none"); // Let rect capture events
 
+    // Attach listener to the GROUP (which now has a hit rect)
     badge.on("mouseover", function(e) {
         e.stopPropagation(); 
         d3.select("#tooltip")
@@ -448,15 +454,24 @@ function addBadge(group, iconCode, color, x, y, tooltipText) {
 function addEmojiBadge(group, emoji, x, y, tooltipText) {
     const badge = group.append("g")
         .attr("transform", `translate(${x}, ${y})`)
-        .style("cursor", "help")
-        .style("pointer-events", "all"); // Enable pointer events for hover
-    
+        .style("cursor", "help");
+
+    // Transparent Hit Box for reliable hover
+    badge.append("rect")
+        .attr("x", -6)
+        .attr("y", -6)
+        .attr("width", 12)
+        .attr("height", 12)
+        .attr("fill", "transparent")
+        .style("pointer-events", "all");
+
     badge.append("text")
         .text(emoji)
         .attr("text-anchor", "middle")
         .attr("dy", 3) 
         .attr("font-size", "12px")
-        .style("font-weight", "bold"); // Bold for better visibility of black char
+        .style("font-weight", "bold")
+        .style("pointer-events", "none");
 
     badge.on("mouseover", function(e) {
         e.stopPropagation(); 
