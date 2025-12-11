@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 43: Video-Ready (With Procore-Led Dimming)
+// VERSION 43: Video-Ready (Includes Procore-Led Visual Dimming)
 
 // --- Global App State ---
 const app = {
@@ -69,7 +69,7 @@ function setupCategories() {
 // --- D3 Simulation Setup ---
 function initializeSimulation() {
     const container = document.getElementById('graph-container');
-    if (!container) return; // Safety check
+    if (!container) return; 
     
     app.width = container.clientWidth;
     app.height = container.clientHeight;
@@ -147,6 +147,42 @@ function setupMarkers() {
         .append("path")
         .attr("d", "M0,-5L10,0L0,5")
         .attr("fill", "var(--procore-orange)");
+}
+
+// --- LEGEND POPULATION ---
+function populateLegend() {
+    const legendContainer = d3.select("#connection-legend");
+    legendContainer.html(""); 
+
+    const legendSVGs = {
+        "creates": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='4,3'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='8,4'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "syncs": "<svg width='24' height='10'><path d='M3,2 L9,5 L3,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path><line x1='6' y1='5' x2='18' y2='5' stroke='var(--procore-metal)' stroke-width='2'></line><path d='M21,2 L15,5 L21,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path></svg>",
+        "pushes-data-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "pulls-data-from": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='2,4'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
+        "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='1,3'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
+        "feeds": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#4A4A4A' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='#4A4A4A' stroke-width='2' fill='none'></path></svg>"
+    };
+
+    if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
+        legendData.forEach(type => {
+            if (type && type.type_id) {
+                const svg = legendSVGs[type.type_id] || "<svg width='24' height='10'><line x1='0' y1='5' x2='24' y2='5' stroke='#a0a0a0' stroke-width='2'></line></svg>";
+
+                const item = legendContainer.append("label").attr("class", "flex items-start mb-2 cursor-pointer").attr("title", type.description);
+                
+                item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id)
+                    .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 mt-0.5 focus:ring-orange-500 legend-checkbox")
+                    .on("change", () => updateGraph(true)); 
+
+                item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
+                item.append("div").attr("class", "ml-2").html(`
+                    <span class="font-semibold">${type.label}</span>
+                    <span class="block text-xs text-gray-500 leading-snug">${type.description}</span>
+                `);
+            }
+        });
+    }
 }
 
 // --- Foci & Clustering ---
