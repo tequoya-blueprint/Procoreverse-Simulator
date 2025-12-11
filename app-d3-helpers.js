@@ -1,22 +1,15 @@
 // --- app-d3-helpers.js ---
-// VERSION: 70 (FULL EXPANSION + FLAT TOP FIX)
+// VERSION: 69 (FLAT-TOP FIX FOR NODES)
 
-/**
- * Generates a Hexagon Path (Flat-Top/Bottom orientation).
- * Starts at 0 degrees.
- */
 function generateHexagonPath(size) {
+    // Standard 0-degree start creates Flat-Top/Bottom orientation
     const points = Array.from({length: 6}, (_, i) => {
-        // Standard angle for flat-topped hex
         const a = (Math.PI / 180 * (60 * i)); 
         return [size * Math.cos(a), size * Math.sin(a)];
     });
     return "M" + points.map(p => p.join(",")).join("L") + "Z";
 }
 
-/**
- * Standard D3 Drag behavior.
- */
 function drag(simulation) {
     function dragstarted(event, d) {
         if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -32,8 +25,6 @@ function drag(simulation) {
     
     function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0);
-        // Note: keeping fx/fy set would pin the node. 
-        // We generally let them float in the grid force.
     }
     
     return d3.drag()
@@ -42,36 +33,21 @@ function drag(simulation) {
         .on("end", dragended);
 }
 
-/**
- * Central Node Click Handler.
- * Routes logic based on app state (Manual Builder vs Standard).
- */
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. MANUAL BUILDER ROUTING
     if (app.interactionState === 'manual_building') {
-        if (typeof handleManualNodeClick === 'function') {
-            handleManualNodeClick(d); 
-        }
+        if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
         return; 
     }
 
-    // 2. SCOPING MODE IS HANDLED IN APP-MAIN.JS
-    // This file contains the Fallback/Standard logic only.
-    
-    // 3. STANDARD SELECTION (Info Panel)
     if (app.selectedNode === d) {
         resetHighlight();
     } else {
         app.interactionState = 'selected';
         app.selectedNode = d;
         applyHighlight(d);
-        
-        if (typeof showInfoPanel === 'function') {
-            showInfoPanel(d);
-        }
-        
+        if (typeof showInfoPanel === 'function') showInfoPanel(d); 
         centerViewOnNode(d);
         d3.select('#graph-container').classed('selection-active', true);
     }
@@ -79,28 +55,20 @@ function nodeClicked(event, d) {
 
 function nodeDoubleClicked(event, d) {
     event.stopPropagation();
-    // No-op to avoid conflicts with single click
 }
 
 function nodeMouseOver(event, d) {
-    // Disable hover effects during active modes
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
     if (typeof showTooltip === 'function') showTooltip(event, d);
     if (app.interactionState === 'explore') applyHighlight(d);
 }
 
 function nodeMouseOut() {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
     if (typeof hideTooltip === 'function') hideTooltip();
     if (app.interactionState === 'explore') resetHighlight();
 }
 
-/**
- * Visual Highlight Logic.
- * Dims unconnected nodes.
- */
 function applyHighlight(d) {
     if (!app.simulation) return;
 
@@ -130,14 +98,9 @@ function applyHighlight(d) {
 
 function highlightConnection(element, d) {
     if (!app.simulation) return;
-    // Optional: Highlight specific connection link from UI hover
 }
 
-/**
- * Resets the graph to neutral state.
- */
 function resetHighlight(hidePanel = true) {
-    // Don't reset if we are in a special mode (unless forcing it)
     if (!hidePanel && ['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return; 
 
     app.interactionState = 'explore';
@@ -171,11 +134,9 @@ function resetHighlight(hidePanel = true) {
 
 function centerViewOnNode(d) {
     if (!d || d.x == null || d.y == null || !app.svg || !app.zoom) return;
-    
     const scale = 1.5; 
     const x = app.width / 2 - d.x * scale;
     const y = app.height / 2 - d.y * scale;
-    
     app.svg.transition().duration(800).ease(d3.easeCubicInOut)
         .call(app.zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
 }
