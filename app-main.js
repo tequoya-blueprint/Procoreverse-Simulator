@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 43: Video-Ready (Includes Procore-Led Visual Dimming logic)
+// VERSION 43: Video-Ready (Includes Procore-Led Visual Dimming)
 
 // --- Global App State ---
 const app = {
@@ -24,7 +24,10 @@ const app = {
     selectedNode: null,
     currentTour: null,
     currentStep: -1,
-    apiKey: "AIzaSyCZx6YBE0qwuRd0Jl8HJQ580MUFbANtygA" 
+    apiKey: "AIzaSyCZx6YBE0qwuRd0Jl8HJQ580MUFbANtygA",
+    state: {
+        showProcoreLedOnly: false // Added State for Toggle
+    }
 };
 
 // --- Color & Category Definitions ---
@@ -309,7 +312,7 @@ function updateGraph(isFilterChange = true) {
                 return nodeGroup;
             },
             update => {
-                // VISUAL DIMMING LOGIC (Procore Led)
+                // VISUAL DIMMING LOGIC (Procore Led) - UPDATED HERE
                 update.transition().duration(500)
                     .style("opacity", d => {
                         if (filters.showProcoreLed) {
