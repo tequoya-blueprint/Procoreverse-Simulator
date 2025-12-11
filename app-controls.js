@@ -1,53 +1,13 @@
 // --- app-controls.js ---
-// VERSION: 53 (BASELINE 46 + REVENUE INJECTION)
+// VERSION: 56 (FULL RESTORE + REVENUE ENGINE)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
-    admin: { 
-        showTours: true, 
-        showAiBuilder: true, 
-        showManualBuilder: true, 
-        showScoping: true, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'filter-accordion' 
-    },
-    enablement: { 
-        showTours: true, 
-        showAiBuilder: true, 
-        showManualBuilder: true, 
-        showScoping: false, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'tour-accordion' 
-    },
-    sales: { 
-        showTours: false, 
-        showAiBuilder: false, 
-        showManualBuilder: false, 
-        showScoping: false, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'filter-accordion' 
-    },
-    product: { 
-        showTours: true, 
-        showAiBuilder: true, 
-        showManualBuilder: true, 
-        showScoping: false, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'tour-accordion' 
-    },
-    services: { 
-        showTours: true, 
-        showAiBuilder: false, 
-        showManualBuilder: true, 
-        showScoping: true, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'filter-accordion' 
-    }
+    admin: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' },
+    enablement: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: false, showFilters: true, showLegend: true, defaultOpen: 'tour-accordion' },
+    sales: { showTours: false, showAiBuilder: false, showManualBuilder: false, showScoping: false, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' },
+    product: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: false, showFilters: true, showLegend: true, defaultOpen: 'tour-accordion' },
+    services: { showTours: true, showAiBuilder: false, showManualBuilder: true, showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' }
 };
 
 function getUrlParam(param) {
@@ -76,9 +36,9 @@ const audienceKeyToDataValuesMap = {
 
 // --- INITIALIZATION ---
 function initializeControls() {
-    // Safety check
+    // Data Check
     if (typeof packagingData === 'undefined') {
-        console.warn("Procoreverse: Packaging data missing. Controls initialized in safe mode.");
+        console.warn("Procoreverse: Packaging data missing.");
         return;
     }
 
@@ -93,13 +53,9 @@ function initializeControls() {
     populatePersonaFilter();
     populateServiceAddons(); // NEW: Revenue Dropdown
    
-    // Filter Event Listeners
+    // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
-    // Legacy dropdown listener (kept for safety)
-    d3.select("#package-filter").on("change", onPackageChange); 
-    
-    d3.select("#persona-filter").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
     
     // Procore-Led Toggle (Video Feature)
     const ledToggle = d3.select("#toggle-procore-led");
@@ -118,16 +74,14 @@ function initializeControls() {
     
     // Team Selector Logic
     const teamSelector = d3.select("#team-selector");
-    const initialTeam = getUrlParam('team') || 'admin'; 
-    
-    if (TEAM_CONFIG[initialTeam]) {
-        teamSelector.property('value', initialTeam);
-        setTimeout(() => applyTeamView(initialTeam), 100);
+    if (!teamSelector.empty()) {
+        const initialTeam = getUrlParam('team') || 'admin'; 
+        if (TEAM_CONFIG[initialTeam]) {
+            teamSelector.property('value', initialTeam);
+            setTimeout(() => applyTeamView(initialTeam), 100);
+        }
+        teamSelector.on("change", function() { applyTeamView(this.value); });
     }
-
-    teamSelector.on("change", function() {
-        applyTeamView(this.value);
-    });
 
     // Dismiss Search Results
     d3.select("body").on("click", (e) => {
@@ -324,6 +278,8 @@ function toggleAllCategories() {
 }
 
 function populateRegionFilter() {
+    if (typeof packagingData === 'undefined') return;
+    
     const regionFilter = d3.select("#region-filter");
     if (regionFilter.empty()) return;
 
@@ -331,7 +287,7 @@ function populateRegionFilter() {
     regions.sort().forEach(region => {
         let label = region;
         if (region === "EUR") label = "EMEA";
-        if (region === "NAMER") label = "NAM";
+        if (region === "NAMER") label = "NAMER"; // Fixed Label
         regionFilter.append("option").attr("value", region).text(label);
     });
 }
@@ -393,7 +349,7 @@ function onAudienceChange() {
                     .attr("class", "form-checkbox h-4 w-4 text-indigo-600 package-checkbox mr-2")
                     .on("change", () => {
                         updatePackageAddOns();
-                        updateActivePackageState(); // Sync for dimming
+                        if(typeof updateActivePackageState === 'function') updateActivePackageState(); 
                         if (typeof updateGraph === 'function') updateGraph(true);
                         calculateScoping();
                     });
@@ -432,7 +388,7 @@ function updateActivePackageState() {
     }
 }
 
-// Fallback helper for single-select mode (if ever needed)
+// Fallback helper for single-select mode (legacy support)
 function onPackageChange() {
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
@@ -455,7 +411,6 @@ function updatePackageAddOns() {
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
     
-    // Find all selected package names from checkboxes
     const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
     
     const allAddOns = new Set();
@@ -507,7 +462,6 @@ function updatePackageAddOns() {
         servicesContainer.classed('hidden', true);
     }
     
-    // Auto-grow Accordion
     refreshAccordionHeight();
 }
 
@@ -601,18 +555,17 @@ function populatePersonaFilter() {
 
 function populateCategoryFilters() {
     const filtersContainer = d3.select("#category-filters");
-    if(filtersContainer.empty()) return;
+    if(filtersContainer.empty() || typeof app === 'undefined' || !app.categories) return;
+    
     filtersContainer.html("");
-    if (typeof app !== 'undefined' && app.categories) {
-        Object.keys(app.categories).sort().forEach(cat => {
-            const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
-            label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat)
-                .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
-                .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
-            label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
-            label.append("span").attr("class", "text-gray-700").text(cat);
-        });
-    }
+    Object.keys(app.categories).sort().forEach(cat => {
+        const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
+        label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat)
+            .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
+            .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
+        label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
+        label.append("span").attr("class", "text-gray-700").text(cat);
+    });
 }
 
 function resetView() {
