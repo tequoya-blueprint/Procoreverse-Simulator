@@ -203,7 +203,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Analytics", "Equipment", "Timesheets", "Incidents", "Emails"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (50 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Project Execution Premier",
@@ -211,7 +211,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Models", "Coordination Issues", "Training Center", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Project Execution Premier w CDE",
@@ -219,7 +219,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (70 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Cost Management Enhanced",
@@ -227,7 +227,7 @@ const packagingData = [
     "procore_led_tools": ["Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Cost Management Premier",
@@ -235,7 +235,7 @@ const packagingData = [
     "procore_led_tools": ["Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Resource Management Premier",
@@ -243,7 +243,7 @@ const packagingData = [
     "procore_led_tools": ["Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Analytics"],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (35 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Essentials",
@@ -251,7 +251,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "Observations", "Punch List", "Inspections", "Correspondence", "Schedule", "Action Plans"],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Enhanced",
@@ -259,7 +259,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Correspondence", "Action Plans", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Enhanced w CDE",
@@ -267,7 +267,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Correspondence", "Action Plans", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (50 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Premier",
@@ -275,7 +275,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Premier w CDE",
@@ -283,7 +283,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (70 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Cost Management Enhanced",
@@ -291,7 +291,7 @@ const packagingData = [
     "procore_led_tools": ["Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Cost Management Premier",
@@ -307,7 +307,7 @@ const packagingData = [
     "procore_led_tools": ["Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Analytics"],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (35 hrs.)"]
   },
   // --- EUR ---
   {
@@ -316,7 +316,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "Observations", "Daily Log", "Punch List", "Inspections", "Equipment", "Timesheets"],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Project Execution Enhanced",
@@ -324,7 +324,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Project Execution Enhanced w PDM",
@@ -332,7 +332,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (50 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Project Execution Premier",
@@ -340,7 +340,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Project Execution Premier w PDM",
@@ -348,7 +348,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (70 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Cost Management Enhanced",
@@ -356,7 +356,7 @@ const packagingData = [
     "procore_led_tools": ["Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Cost Management Premier",
@@ -364,7 +364,7 @@ const packagingData = [
     "procore_led_tools": ["Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Resource Management Premier",
@@ -372,7 +372,7 @@ const packagingData = [
     "procore_led_tools": ["Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Analytics"],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (35 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Essentials",
@@ -380,7 +380,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "Submittals", "Observations", "Punch List", "Inspections", "Correspondence", "Schedule"],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Enhanced",
@@ -388,7 +388,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Enhanced w CDE",
@@ -396,7 +396,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (50 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Premier",
@@ -404,7 +404,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Premier w CDE",
@@ -412,7 +412,7 @@ const packagingData = [
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (70 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Cost Management Enhanced",
@@ -420,7 +420,7 @@ const packagingData = [
     "procore_led_tools": ["Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Cost Management Premier",
@@ -428,7 +428,7 @@ const packagingData = [
     "procore_led_tools": ["Budget", "Prime Contracts", "Commitments", "Change Events", "Change Orders", "Invoicing", "Direct Costs", "Estimating", "Analytics"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Resource Management Premier",
@@ -436,7 +436,7 @@ const packagingData = [
     "procore_led_tools": ["Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Analytics"],
     "included_features": [],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (35 hrs.)"]
   },
   // --- GLOBAL ---
   {
@@ -445,7 +445,7 @@ const packagingData = [
     "procore_led_tools": ["Timesheets", "Crews", "Equipment", "T&M Tickets"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
     "region": "Global", "audience": "Resource Management", "package_name": "Resource Planning (ACV)",
@@ -453,7 +453,7 @@ const packagingData = [
     "procore_led_tools": ["Equipment", "Resource Planning"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
     "region": "Global", "audience": "Resource Management", "package_name": "Resource Management -Premier (ACV)",
@@ -461,6 +461,6 @@ const packagingData = [
     "procore_led_tools": ["Timesheets", "Crews", "Equipment", "T&M Tickets", "Resource Planning", "Analytics"],
     "included_features": ["Assist"],
     "available_add-ons": [],
-    "available_services": []
+    "available_services": ["Professional Services Implementation (35 hrs.)"]
   }
 ];
