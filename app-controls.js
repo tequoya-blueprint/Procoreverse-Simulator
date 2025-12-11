@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 57 (FULL EXPANDED RESTORE + REVENUE ENGINE)
+// VERSION: 62 (FULL BASELINE RESTORE + REVENUE + NAMER FIX)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -59,7 +59,9 @@ function getUrlParam(param) {
 const audienceDataToKeyMap = {
     "Contractor": "GC", "General Contractor": "GC", "GC": "GC",
     "SC": "SC", "Specialty Contractor": "SC",
-    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O"
+    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O",
+    // Identity mapping for direct keys
+    "GC": "GC", "SC": "SC", "O": "O"
 };
 
 const audienceKeyToLabelMap = {
@@ -71,7 +73,7 @@ const audienceKeyToLabelMap = {
 const audienceKeyToDataValuesMap = {
     "GC": ["Contractor", "General Contractor", "GC"],
     "SC": ["SC", "Specialty Contractor"],
-    "O": ["Owners", "Owner", "Owner Developer *Coming Soon"]
+    "O": ["Owners", "Owner", "Owner Developer *Coming Soon", "O"]
 };
 
 // --- INITIALIZATION ---
@@ -98,6 +100,8 @@ function initializeControls() {
     d3.select("#audience-filter").on("change", onAudienceChange);
     // Legacy dropdown listener (kept for safety)
     d3.select("#package-filter").on("change", onPackageChange);
+    
+    d3.select("#persona-filter").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
     
     // Procore-Led Toggle (Video Feature)
     const ledToggle = d3.select("#toggle-procore-led");
@@ -204,7 +208,7 @@ function calculateScoping() {
         // Sum up hours from all checked packages
         d3.selectAll(".package-checkbox:checked").each(function() {
             const pkgName = this.value;
-            // FIXED REGION MATCHING LOGIC
+            // FIXED REGION MATCHING LOGIC (NAM/NAMER)
             const pkg = packagingData.find(p => 
                 (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
                 audienceDataKeys.includes(p.audience) && 
@@ -328,7 +332,7 @@ function populateRegionFilter() {
 
     const regions = new Set();
     packagingData.forEach(pkg => {
-        if (pkg.region === 'NAM') regions.add('NAMER'); // Normalize
+        if (pkg.region === 'NAM') regions.add('NAMER'); 
         else regions.add(pkg.region);
     });
 
@@ -419,30 +423,6 @@ function onAudienceChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-// Helper to sync global app state for dimming
-function updateActivePackageState() {
-    if (typeof app === 'undefined') return;
-    
-    const region = d3.select("#region-filter").property('value');
-    const audience = d3.select("#audience-filter").property('value');
-    const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-    
-    const firstChecked = d3.select(".package-checkbox:checked");
-    
-    if (!firstChecked.empty()) {
-        const pkgName = firstChecked.property("value");
-        // FIXED FILTER LOGIC
-        const pkg = packagingData.find(p => 
-            (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
-            audienceDataKeys.includes(p.audience) && 
-            p.package_name === pkgName
-        );
-        app.currentPackage = pkg;
-    } else {
-        app.currentPackage = null;
-    }
-}
-
 // Fallback helper for single-select mode (legacy support)
 function onPackageChange() {
     const region = d3.select("#region-filter").property('value');
@@ -473,7 +453,11 @@ function updatePackageAddOns() {
     const allServices = new Set();
     
     selectedPackageNames.forEach(pkgName => {
-        const pkg = packagingData.find(p => p.region === region && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
+        const pkg = packagingData.find(p => 
+            (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
+            audienceDataKeys.includes(p.audience) && 
+            p.package_name === pkgName
+        );
         if (pkg) {
             const addOns = pkg['available_add-ons'] || pkg['available_add_ons'] || pkg['add_ons'] || [];
             addOns.forEach(a => allAddOns.add(a));
@@ -545,7 +529,11 @@ function getActiveFilters() {
             packageTools = new Set();
             
             selectedPackageNames.forEach(pkgName => {
-                const pkg = packagingData.find(p => p.region === region && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
+                const pkg = packagingData.find(p => 
+                    (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
+                    audienceDataKeys.includes(p.audience) && 
+                    p.package_name === pkgName
+                );
                 if (pkg) {
                     // Add Tools
                     pkg.tools.forEach(t => packageTools.add(t));
@@ -612,17 +600,17 @@ function populatePersonaFilter() {
 
 function populateCategoryFilters() {
     const filtersContainer = d3.select("#category-filters");
+    if(filtersContainer.empty() || typeof app === 'undefined' || !app.categories) return;
+    
     filtersContainer.html("");
-    if (typeof app !== 'undefined' && app.categories) {
-        Object.keys(app.categories).sort().forEach(cat => {
-            const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
-            label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat)
-                .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
-                .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
-            label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
-            label.append("span").attr("class", "text-gray-700").text(cat);
-        });
-    }
+    Object.keys(app.categories).sort().forEach(cat => {
+        const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
+        label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat)
+            .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
+            .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
+        label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
+        label.append("span").attr("class", "text-gray-700").text(cat);
+    });
 }
 
 function resetView() {
@@ -686,4 +674,28 @@ function selectNodeFromSearch(d) {
     }
     d3.select("#search-input").property("value", "");
     d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
+}
+
+// Helper to sync global app state for dimming
+function updateActivePackageState() {
+    if (typeof app === 'undefined') return;
+    
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+    
+    const firstChecked = d3.select(".package-checkbox:checked");
+    
+    if (!firstChecked.empty()) {
+        const pkgName = firstChecked.property("value");
+        // FIXED FILTER LOGIC
+        const pkg = packagingData.find(p => 
+            (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
+            audienceDataKeys.includes(p.audience) && 
+            p.package_name === pkgName
+        );
+        app.currentPackage = pkg;
+    } else {
+        app.currentPackage = null;
+    }
 }
