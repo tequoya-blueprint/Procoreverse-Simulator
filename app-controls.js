@@ -1,13 +1,53 @@
 // --- app-controls.js ---
-// VERSION: 56 (FULL RESTORE + REVENUE ENGINE)
+// VERSION: 57 (FULL EXPANDED RESTORE + REVENUE ENGINE)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
-    admin: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' },
-    enablement: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: false, showFilters: true, showLegend: true, defaultOpen: 'tour-accordion' },
-    sales: { showTours: false, showAiBuilder: false, showManualBuilder: false, showScoping: false, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' },
-    product: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: false, showFilters: true, showLegend: true, defaultOpen: 'tour-accordion' },
-    services: { showTours: true, showAiBuilder: false, showManualBuilder: true, showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' }
+    admin: { 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: true, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'filter-accordion' 
+    },
+    enablement: { 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: false, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'tour-accordion' 
+    },
+    sales: { 
+        showTours: false, 
+        showAiBuilder: false, 
+        showManualBuilder: false, 
+        showScoping: false, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'filter-accordion' 
+    },
+    product: { 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: false, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'tour-accordion' 
+    },
+    services: { 
+        showTours: true, 
+        showAiBuilder: false, 
+        showManualBuilder: true, 
+        showScoping: true, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'filter-accordion' 
+    }
 };
 
 function getUrlParam(param) {
@@ -56,6 +96,8 @@ function initializeControls() {
     // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
+    // Legacy dropdown listener (kept for safety)
+    d3.select("#package-filter").on("change", onPackageChange);
     
     // Procore-Led Toggle (Video Feature)
     const ledToggle = d3.select("#toggle-procore-led");
@@ -162,8 +204,9 @@ function calculateScoping() {
         // Sum up hours from all checked packages
         d3.selectAll(".package-checkbox:checked").each(function() {
             const pkgName = this.value;
+            // FIXED REGION MATCHING LOGIC
             const pkg = packagingData.find(p => 
-                p.region === region && 
+                (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
                 audienceDataKeys.includes(p.audience) && 
                 p.package_name === pkgName
             );
@@ -283,11 +326,15 @@ function populateRegionFilter() {
     const regionFilter = d3.select("#region-filter");
     if (regionFilter.empty()) return;
 
-    const regions = [...new Set(packagingData.map(pkg => pkg.region))];
-    regions.sort().forEach(region => {
+    const regions = new Set();
+    packagingData.forEach(pkg => {
+        if (pkg.region === 'NAM') regions.add('NAMER'); // Normalize
+        else regions.add(pkg.region);
+    });
+
+    [...regions].sort().forEach(region => {
         let label = region;
         if (region === "EUR") label = "EMEA";
-        if (region === "NAMER") label = "NAMER"; // Fixed Label
         regionFilter.append("option").attr("value", region).text(label);
     });
 }
@@ -308,10 +355,15 @@ function onRegionChange() {
     
     if (region !== "all") {
         const availableAudiences = new Set();
-        packagingData.filter(pkg => pkg.region === region).forEach(pkg => {
+        
+        // FIXED FILTER LOGIC
+        packagingData.filter(pkg => 
+            pkg.region === region || (region === 'NAMER' && pkg.region === 'NAM')
+        ).forEach(pkg => {
             const audKey = audienceDataToKeyMap[pkg.audience];
             if (audKey) availableAudiences.add(audKey);
         });
+
         [...availableAudiences].sort().forEach(audKey => {
              audienceFilter.append("option").attr("value", audKey).text(audienceKeyToLabelMap[audKey]);
         });
@@ -331,8 +383,10 @@ function onAudienceChange() {
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
     
     if (region !== 'all' && audience !== 'all') {
+        // FIXED FILTER LOGIC
         const packages = packagingData.filter(pkg =>
-            pkg.region === region && audienceDataKeys.includes(pkg.audience)
+            (pkg.region === region || (region === 'NAMER' && pkg.region === 'NAM')) && 
+            audienceDataKeys.includes(pkg.audience)
         );
         
         if (packages.length > 0) {
@@ -377,8 +431,9 @@ function updateActivePackageState() {
     
     if (!firstChecked.empty()) {
         const pkgName = firstChecked.property("value");
+        // FIXED FILTER LOGIC
         const pkg = packagingData.find(p => 
-            p.region === region && 
+            (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
             audienceDataKeys.includes(p.audience) && 
             p.package_name === pkgName
         );
@@ -411,6 +466,7 @@ function updatePackageAddOns() {
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
     
+    // Find all selected package names from checkboxes
     const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
     
     const allAddOns = new Set();
@@ -462,6 +518,7 @@ function updatePackageAddOns() {
         servicesContainer.classed('hidden', true);
     }
     
+    // Auto-grow Accordion
     refreshAccordionHeight();
 }
 
@@ -555,17 +612,17 @@ function populatePersonaFilter() {
 
 function populateCategoryFilters() {
     const filtersContainer = d3.select("#category-filters");
-    if(filtersContainer.empty() || typeof app === 'undefined' || !app.categories) return;
-    
     filtersContainer.html("");
-    Object.keys(app.categories).sort().forEach(cat => {
-        const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
-        label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat)
-            .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
-            .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
-        label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
-        label.append("span").attr("class", "text-gray-700").text(cat);
-    });
+    if (typeof app !== 'undefined' && app.categories) {
+        Object.keys(app.categories).sort().forEach(cat => {
+            const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
+            label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat)
+                .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
+                .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
+            label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
+            label.append("span").attr("class", "text-gray-700").text(cat);
+        });
+    }
 }
 
 function resetView() {
@@ -582,9 +639,9 @@ function resetView() {
     if(typeof app !== 'undefined') app.state.showProcoreLedOnly = false;
     
     d3.selectAll("#category-filters input").property("checked", true);
-    toggleAllConnections(); 
     d3.selectAll(".legend-checkbox").property("checked", true);
     allCategoriesChecked = true;
+    
     clearPackageDetails();
     if (typeof updateGraph === 'function') updateGraph(false);
     if (typeof resetZoom === 'function') resetZoom();
