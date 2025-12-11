@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 65 (PHASE 1: ROLE CONFIG + SCOPING LOGIC)
+// VERSION: 70 (CUSTOM SCOPE VISIBLE LIST + FULL EXPANSION)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -87,6 +87,7 @@ function initializeControls() {
         return;
     }
 
+    // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {
             if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement);
@@ -97,11 +98,14 @@ function initializeControls() {
     populatePersonaFilter();
     populateServiceAddons(); 
    
+    // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange); 
     
-    d3.select("#persona-filter").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
+    d3.select("#persona-filter").on("change", () => {
+        if (typeof updateGraph === 'function') updateGraph(true)
+    });
     
     // Procore-Led Toggle
     const ledToggle = d3.select("#toggle-procore-led");
@@ -129,17 +133,20 @@ function initializeControls() {
         teamSelector.on("change", function() { applyTeamView(this.value); });
     }
 
+    // Dismiss Search Results
     d3.select("body").on("click", (e) => {
         if (e.target && !document.getElementById('search-container').contains(e.target)) {
             d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
         }
     });
 
+    // Control Buttons
     d3.select("#reset-view").on("click", resetView);
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 
+    // Scoping Calculator Listeners
     const inputs = ['slider-maturity', 'slider-data', 'slider-change', 'onsite-input', 'addon-select'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
@@ -149,7 +156,7 @@ function initializeControls() {
     });
 }
 
-// --- NEW: Custom Scope Manager ---
+// --- CUSTOM SCOPE MANAGER ---
 function toggleCustomScopeItem(nodeId) {
     if (!app || !app.customScope) return;
 
@@ -185,7 +192,7 @@ function populateServiceAddons() {
         .attr("value", d => d.cost);
 }
 
-// --- SCOPING CALCULATOR (PHASE 1 LOGIC) ---
+// --- SCOPING CALCULATOR (WITH VISUAL LIST) ---
 function calculateScoping() {
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
@@ -197,13 +204,17 @@ function calculateScoping() {
     const data = parseFloat(sliderData.value);
     const change = parseFloat(sliderChange.value);
 
+    // Update Label Text
     const valMat = document.getElementById('val-maturity');
     if(valMat) valMat.innerText = mat + "x";
+    
     const valData = document.getElementById('val-data');
     if(valData) valData.innerText = data + "x";
+    
     const valChange = document.getElementById('val-change');
     if(valChange) valChange.innerText = change + "x";
 
+    // 1. Calculate Base Hours from Selected Packages
     let baseHours = 0;
     let addOnCount = 0;
     
@@ -223,19 +234,50 @@ function calculateScoping() {
             
             if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
                 const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
-                if (match) baseHours += parseInt(match[1], 10);
+                if (match) {
+                    baseHours += parseInt(match[1], 10);
+                }
             }
         });
         
         addOnCount = d3.selectAll("#add-ons-checkboxes input:checked").size();
     }
 
-    // --- PHASE 1: CUSTOM SCOPE CALCULATION ---
-    // Rule: Each custom tool adds 5 hours of implementation effort.
+    // 2. Custom Scope Calculation
     const customToolCount = app.customScope ? app.customScope.size : 0;
     const customHours = customToolCount * 5; 
     const totalHoursRaw = baseHours + customHours;
 
+    // --- VISUAL LIST UPDATE ---
+    let listContainer = document.getElementById('custom-scope-list-container');
+    
+    // Create container if it doesn't exist (robust check)
+    if (!listContainer) {
+        const revenueContainer = document.getElementById('revenue-container');
+        if(revenueContainer) {
+            listContainer = document.createElement('div');
+            listContainer.id = 'custom-scope-list-container';
+            listContainer.className = "mt-3 pt-2 border-t border-gray-200 text-xs";
+            // Insert it after the revenue inputs
+            revenueContainer.parentNode.insertBefore(listContainer, revenueContainer.nextSibling);
+        }
+    }
+    
+    // Update content
+    if (listContainer) {
+        if (customToolCount > 0) {
+            const items = Array.from(app.customScope).join(", ");
+            listContainer.innerHTML = `
+                <div class="font-bold text-gray-500 mb-1">Custom Scope (${customToolCount} tools):</div>
+                <div class="text-indigo-600 leading-snug font-semibold">${items}</div>
+            `;
+            listContainer.style.display = 'block';
+        } else {
+            listContainer.style.display = 'none';
+        }
+    }
+
+    // Update Base Scope UI
     const baseLabel = document.getElementById('base-tools-count');
     if (baseLabel) {
         let labelText = `${baseHours} Hrs`;
@@ -249,6 +291,7 @@ function calculateScoping() {
         }
     }
 
+    // 3. Timeline Calculation
     const PREP_FACTOR = 1.5; 
     const CONSULTING_VELOCITY = 3; 
     
@@ -261,6 +304,7 @@ function calculateScoping() {
     const calcWeeks = document.getElementById('calc-weeks');
     if(calcWeeks) calcWeeks.innerText = finalWeeks;
 
+    // 4. Revenue Calculation
     const hourlyRate = 250; 
     const implementationCost = (totalEffortHours * combinedMultiplier) * hourlyRate;
     
@@ -284,9 +328,7 @@ function applyTeamView(team) {
     const config = TEAM_CONFIG[team];
     if (!config) return;
 
-    const tourAccordion = d3.select("#tour-accordion");
-    tourAccordion.style("display", config.showTours ? "block" : "none");
-    
+    d3.select("#tour-accordion").style("display", config.showTours ? "block" : "none");
     d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
     d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none");
     
@@ -295,8 +337,7 @@ function applyTeamView(team) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
-    const scopingContainer = d3.select("#scoping-ui-container");
-    scopingContainer.classed("hidden", !config.showScoping);
+    d3.select("#scoping-ui-container").classed("hidden", !config.showScoping);
 
     document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
     
@@ -309,6 +350,7 @@ function applyTeamView(team) {
 }
 
 // --- UI HELPER FUNCTIONS ---
+
 function toggleAllConnections() {
     const checkboxes = d3.selectAll(".legend-checkbox");
     if (checkboxes.empty()) return;
@@ -326,6 +368,7 @@ function toggleAllCategories() {
 
 function populateRegionFilter() {
     if (typeof packagingData === 'undefined') return;
+    
     const regionFilter = d3.select("#region-filter");
     if (regionFilter.empty()) return;
 
