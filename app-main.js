@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 67 (HEXAGONAL GRID + SCOPING + SPARKLE FIX)
+// VERSION: 70 (HEX GRID + BLACK SPARKLE + HOVER FIXES)
 
 // --- Global App State ---
 const app = {
@@ -17,7 +17,7 @@ const app = {
     // categoryFoci is no longer used for positioning
     baseNodeSize: 25,
     nodeSizeCompany: 28,
-    hexGridRadius: 35, // Grid spacing
+    hexGridRadius: 38, // Tuned for optimal spacing
     arrowRefX: 34, 
     defaultArrowColor: "#a0a0a0",
     interactionState: 'explore', 
@@ -81,6 +81,9 @@ function nodeClicked(event, d) {
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { procoreLedTools: new Set() };
     if (app.state.showProcoreLedOnly) {
         const isStandardLed = filters.procoreLedTools.has(d.id);
+        
+        // If the tool is NOT standard Procore Led (dimmed), clicking ADDS it to custom scope.
+        // If it IS standard Procore Led, it acts as normal (Info Panel).
         if (!isStandardLed) {
             if (typeof toggleCustomScopeItem === 'function') toggleCustomScopeItem(d.id);
             return; 
@@ -119,7 +122,8 @@ function calculateHexGridPositions(nodes) {
         {q: -1, r: 0}, {q: 0, r: -1}, {q: +1, r: -1}
     ];
 
-    const size = app.hexGridRadius * 1.8; // Spacing multiplier
+    // Spacing Multiplier: 1.5 ensures no overlap while keeping connections visible
+    const size = app.hexGridRadius * 1.5; 
 
     let i = 0;
     let layer = 0;
@@ -297,6 +301,7 @@ function updateGraph(isFilterChange = true) {
                     .attr("fill", d => app.categories[d.group].color)
                     .style("color", d => app.categories[d.group].color);
                 
+                // Procore Led Ring (Orange Halo) & Custom Scope Ring (Blue Halo)
                 nodeGroup.append("circle")
                     .attr("class", "procore-led-ring")
                     .attr("r", app.baseNodeSize + 6)
@@ -312,18 +317,19 @@ function updateGraph(isFilterChange = true) {
                 nodeGroup.each(function(d) {
                     const g = d3.select(this);
                     let badgeOffset = 14;
+                    // Procore Connect (Link)
                     if (d.id === "Drawings" || d.id === "RFIs" || (d.features && d.features.includes("connect"))) {
                         addBadge(g, "\uf0c1", "#2563EB", badgeOffset, -18, "Procore Connect");
                         badgeOffset += 12;
                     }
+                    // Mobile (Phone)
                     if (d.features && d.features.includes("mobile")) {
                         addBadge(g, "\uf3cd", "#4A4A4A", 14, 10, "Available on Mobile");
                     }
+                    // Assist AI (Black Sparkle)
                     if (d.features && d.features.includes("assist")) {
-                        const orangeGroups = ["Project Management", "Financial Management", "Project Execution", "Project Map"];
-                        const isOrange = orangeGroups.includes(d.group);
-                        const contrastColor = isOrange ? "#FFFFFF" : "#FFD700"; 
-                        addBadge(g, "\uf005", contrastColor, -18, -14, "Enhanced with Assist AI");
+                        // Use ✦ (Black Four-Point Star) as requested
+                        addEmojiBadge(g, "✦", -18, -14, "Enhanced with Assist AI");
                     }
                 });
                 
@@ -347,11 +353,13 @@ function updateGraph(isFilterChange = true) {
                         }
                         return null;
                     });
+                
                 update.select(".procore-led-ring")
                     .transition().duration(300)
                     .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                     .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                     .attr("stroke-opacity", d => (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0);
+                
                 return update;
             },
             exit => exit.transition().duration(300).style("opacity", 0).remove()
@@ -408,34 +416,84 @@ function updateGraph(isFilterChange = true) {
 
 // Badge Helpers
 function addBadge(group, iconCode, color, x, y, tooltipText) {
-    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`).style("cursor", "help");
-    badge.append("text").attr("class", "fas").text(iconCode).attr("text-anchor", "middle").attr("dy", 3).attr("fill", color).attr("font-size", "10px").style("font-family", "'Font Awesome 6 Free'").style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))");
-    badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: ${color};">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
-         .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
+    const badge = group.append("g")
+        .attr("transform", `translate(${x}, ${y})`)
+        .style("cursor", "help")
+        .style("pointer-events", "all"); // Enable pointer events for hover
+    
+    badge.append("text")
+        .attr("class", "fas")
+        .text(iconCode)
+        .attr("text-anchor", "middle")
+        .attr("dy", 3) 
+        .attr("fill", color)
+        .attr("font-size", "10px") 
+        .style("font-family", "'Font Awesome 6 Free'")
+        .style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))");
+
+    badge.on("mouseover", function(e) {
+        e.stopPropagation(); 
+        d3.select("#tooltip")
+            .html(`<div class="font-bold text-xs" style="color: ${color};">${tooltipText}</div>`)
+            .style("left", (e.pageX + 10) + "px")
+            .style("top", (e.pageY - 10) + "px")
+            .classed("visible", true);
+    })
+    .on("mouseout", function(e) {
+        e.stopPropagation();
+        d3.select("#tooltip").classed("visible", false);
+    });
 }
+
 function addEmojiBadge(group, emoji, x, y, tooltipText) {
-    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`).style("cursor", "help");
-    badge.append("text").text(emoji).attr("text-anchor", "middle").attr("dy", 3).attr("font-size", "12px");
-    badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: #eab308;">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
-         .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
+    const badge = group.append("g")
+        .attr("transform", `translate(${x}, ${y})`)
+        .style("cursor", "help")
+        .style("pointer-events", "all"); // Enable pointer events for hover
+    
+    badge.append("text")
+        .text(emoji)
+        .attr("text-anchor", "middle")
+        .attr("dy", 3) 
+        .attr("font-size", "12px")
+        .style("font-weight", "bold"); // Bold for better visibility of black char
+
+    badge.on("mouseover", function(e) {
+        e.stopPropagation(); 
+        d3.select("#tooltip")
+            .html(`<div class="font-bold text-xs" style="color: #4A4A4A;">${tooltipText}</div>`)
+            .style("left", (e.pageX + 10) + "px")
+            .style("top", (e.pageY - 10) + "px")
+            .classed("visible", true);
+    })
+    .on("mouseout", function(e) {
+        e.stopPropagation();
+        d3.select("#tooltip").classed("visible", false);
+    });
 }
 
 window.addEventListener('resize', () => { 
     app.width = document.getElementById('graph-container').clientWidth; 
     app.height = document.getElementById('graph-container').clientHeight;
-    // Recalculate grid positions on resize
     if(app.simulation) updateGraph(false);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
     setupCategories();
     initializeSimulation(); 
+    
     if(typeof initializeControls === 'function') initializeControls(); 
     if(typeof initializeInfoPanel === 'function') initializeInfoPanel(); 
     if(typeof initializeTourControls === 'function') initializeTourControls(); 
     if(typeof populateLegend === 'function') populateLegend(); 
+    
     updateGraph(false); 
-    setTimeout(() => { document.getElementById('loading-overlay')?.classList.add('hidden'); }, 1500);
+
+    setTimeout(() => {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+    }, 1500);
+
     const helpButton = d3.select("#help-button");
     if (helpButton.node() && !localStorage.getItem('procoreverseV2_Visited')) {
         helpButton.classed('initial-pulse', true);
