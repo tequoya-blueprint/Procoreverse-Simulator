@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 43: Video-Ready (Includes Procore-Led Visual Dimming)
+// VERSION: 54 (FIXED: app.link Selection vs Transition Error)
 
 // --- Global App State ---
 const app = {
@@ -232,7 +232,7 @@ function ticked() {
     if(app.node) app.node.attr("transform", d => `translate(${d.x || 0},${d.y || 0})`);
 }
 
-// --- Main Graph Update Function (DEFENSIVE) ---
+// --- Main Graph Update Function (FIXED ASSIGNMENT) ---
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
 
@@ -334,6 +334,7 @@ function updateGraph(isFilterChange = true) {
         );
 
     // --- D3 Data Join: Links ---
+    // STEP 1: Assign Selection
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`)
         .join("path")
         .attr("class", d => `link ${d.type}`) 
@@ -360,8 +361,10 @@ function updateGraph(isFilterChange = true) {
             if (!legend) return null;
             if (legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
             return null;
-        })
-        .transition().duration(500)
+        });
+
+    // STEP 2: Apply Transition (Without Overwriting app.link Selection)
+    app.link.transition().duration(500)
         .style("opacity", d => {
             if (filters.showProcoreLed) {
                 const sourceId = d.source.id || d.source;
