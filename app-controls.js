@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 46 (PART 1 - FULL RESTORE)
+// VERSION: 47 (VIDEO-READY: Merged & Revenue Logic Added)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -85,6 +85,7 @@ function initializeControls() {
 
     populateRegionFilter();
     populatePersonaFilter();
+    populateServiceAddons(); // NEW: Populate the SOW dropdown
    
     // Filter Event Listeners
     d3.select("#region-filter").on("change", onRegionChange);
@@ -127,23 +128,44 @@ function initializeControls() {
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 
-    // Scoping Calculator Listeners (Safe Mode)
+    // Scoping Calculator Listeners
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
+    const onsiteInput = document.getElementById('onsite-count'); // NEW
+    const addonSelect = document.getElementById('service-addon-select'); // NEW
 
     if(sliderMaturity) sliderMaturity.addEventListener('input', calculateScoping);
     if(sliderData) sliderData.addEventListener('input', calculateScoping);
     if(sliderChange) sliderChange.addEventListener('input', calculateScoping);
+    if(onsiteInput) onsiteInput.addEventListener('input', calculateScoping); // NEW
+    if(addonSelect) addonSelect.addEventListener('change', calculateScoping); // NEW
 }
 
-// --- SCOPING CALCULATOR (With 1.5x Prep Factor) ---
+// --- NEW: Populate Service Add-ons Dropdown ---
+function populateServiceAddons() {
+    const addons = [
+        { name: "None", cost: 0 },
+        { name: "Analytics Implementation (10 hrs)", cost: 2500 },
+        { name: "ERP Integration Support (20 hrs)", cost: 5000 },
+        { name: "Custom Reporting (5 hrs)", cost: 1250 },
+        { name: "Legacy Data Migration", cost: 15000 }
+    ];
+    
+    const select = d3.select("#service-addon-select");
+    select.html("");
+    select.selectAll("option").data(addons).enter()
+        .append("option")
+        .text(d => d.name)
+        .attr("value", d => d.cost);
+}
+
+// --- SCOPING CALCULATOR (Revenue Engine) ---
 function calculateScoping() {
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
     
-    // Safety check to prevent crashes if HTML is missing
     if (!sliderMaturity || !sliderData || !sliderChange) return;
 
     const mat = parseFloat(sliderMaturity.value);
@@ -170,7 +192,6 @@ function calculateScoping() {
     if (region !== 'all' && audience !== 'all') {
         const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
         
-        // Sum up hours from all checked packages
         d3.selectAll(".package-checkbox:checked").each(function() {
             const pkgName = this.value;
             const pkg = packagingData.find(p => 
@@ -180,19 +201,16 @@ function calculateScoping() {
             );
             
             if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
-                // Regex to extract "25" from "Professional Services Implementation (25 hrs.)"
                 const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
                 if (match) {
                     baseHours += parseInt(match[1], 10);
                 }
             }
         });
-        
-        // Count Checked Add-Ons
         addOnCount = d3.selectAll("#add-ons-checkboxes input:checked").size();
     }
 
-    // Update UI Label
+    // Update Base Label
     const baseLabel = document.getElementById('base-tools-count');
     if (baseLabel) {
         if (baseHours > 0) {
@@ -202,27 +220,34 @@ function calculateScoping() {
         }
     }
 
-    // 2. Perform Calculation
-    if (baseHours === 0) {
-        const calcWeeks = document.getElementById('calc-weeks');
-        if(calcWeeks) calcWeeks.innerText = "0";
-        return;
-    }
-
-    // --- FORMULA UPDATE: PREP FACTOR 1.5x ---
-    const PREP_FACTOR = 1.5; // 1 Hour Delivery + 0.5 Hour Prep
-    const CONSULTING_VELOCITY = 3; // Hours of engagement per week per consultant
+    // 2. Perform Timeline Calculation (Weeks)
+    const PREP_FACTOR = 1.5; 
+    const CONSULTING_VELOCITY = 3; 
     
-    // Logic: (Base Hours * Prep Factor) / Weekly Velocity
     const totalEffortHours = baseHours * PREP_FACTOR;
     const baseWeeks = (totalEffortHours / CONSULTING_VELOCITY) + (addOnCount * 2); 
     
-    // Apply Multipliers (Average of the 3 sliders)
     const combinedMultiplier = (mat + data + change) / 3; 
     const finalWeeks = Math.round(baseWeeks * combinedMultiplier);
 
     const calcWeeks = document.getElementById('calc-weeks');
     if(calcWeeks) calcWeeks.innerText = finalWeeks;
+
+    // 3. Perform Revenue Calculation (Dollars) - NEW
+    const hourlyRate = 250; // Blended Rate
+    const implementationCost = (totalEffortHours * combinedMultiplier) * hourlyRate;
+    
+    const onsiteCount = parseInt(document.getElementById('onsite-count')?.value || 0);
+    const onsiteCost = onsiteCount * 7500;
+    
+    const serviceAddonCost = parseInt(document.getElementById('service-addon-select')?.value || 0);
+    
+    const totalSOW = implementationCost + onsiteCost + serviceAddonCost;
+    
+    const sowDisplay = document.getElementById('sow-dollar-total');
+    if(sowDisplay) {
+        sowDisplay.innerText = "$" + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+    }
 }
 
 // --- TEAM VIEW MANAGER ---
@@ -230,25 +255,20 @@ function applyTeamView(team) {
     const config = TEAM_CONFIG[team];
     if (!config) return;
 
-    // Toggle Process Maps
     const tourAccordion = d3.select("#tour-accordion");
     tourAccordion.style("display", config.showTours ? "block" : "none");
     
-    // Toggle AI Builder
     d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
     d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none");
     
-    // Toggle Manual Builder
     const manualBtn = d3.select("#manual-workflow-builder-btn");
     if (!manualBtn.empty()) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
-    // Toggle Scoping Calculator (Embedded)
     const scopingContainer = d3.select("#scoping-ui-container");
     scopingContainer.classed("hidden", !config.showScoping);
 
-    // Set Default Open Section
     document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
     
     const target = document.getElementById(config.defaultOpen);
@@ -291,11 +311,9 @@ function onRegionChange() {
     const region = d3.select(this).property("value");
     const audienceFilter = d3.select("#audience-filter");
     
-    // Reset subordinate filters
     audienceFilter.property("value", "all").property("disabled", region === "all");
     audienceFilter.html('<option value="all">All Audiences</option>');
     
-    // Hide Package Checkboxes area on reset
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
     
@@ -333,7 +351,6 @@ function onAudienceChange() {
         if (packages.length > 0) {
             packageArea.classed("hidden", false);
             
-            // Create Checkboxes for Multi-Select
             packages.sort((a, b) => a.package_name.localeCompare(b.package_name)).forEach(pkg => {
                 const label = packageList.append("label")
                     .attr("class", "flex items-center cursor-pointer py-1 hover:bg-gray-100 rounded px-1");
@@ -358,10 +375,9 @@ function onAudienceChange() {
     }
     if (typeof updateGraph === 'function') updateGraph(true);
 }
-// --- app-controls.js (PART 2) ---
 
-// Fallback helper for single-select mode (if ever needed)
 function onPackageChange() {
+    // Fallback logic
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const pkgName = d3.select("#package-filter").property('value');
@@ -383,7 +399,6 @@ function updatePackageAddOns() {
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
     
-    // Find all selected package names from checkboxes
     const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
     
     const allAddOns = new Set();
@@ -399,7 +414,6 @@ function updatePackageAddOns() {
         }
     });
     
-    // Render Add-ons
     const addOnsContainer = d3.select("#add-ons-container");
     const addOnsCheckboxes = d3.select("#add-ons-checkboxes");
     addOnsCheckboxes.html("");
@@ -420,7 +434,6 @@ function updatePackageAddOns() {
         addOnsContainer.classed('hidden', true);
     }
     
-    // Render Services (Reference only)
     const servicesContainer = d3.select("#package-services-container");
     const servicesList = d3.select("#package-services-list");
     servicesList.html("");
@@ -435,7 +448,6 @@ function updatePackageAddOns() {
         servicesContainer.classed('hidden', true);
     }
     
-    // Auto-grow Accordion
     refreshAccordionHeight();
 }
 
@@ -447,14 +459,12 @@ function getActiveFilters() {
     const activeCategories = d3.selectAll("#category-filters input:checked").nodes().map(el => el.value);
     const activeConnectionTypes = d3.selectAll(".legend-checkbox:checked").nodes().map(el => el.value);
     
-    // Safety check for toggle
     const toggleNode = d3.select("#toggle-procore-led").node();
     const showProcoreLed = toggleNode ? toggleNode.checked : false;
 
     let packageTools = null;
     let procoreLedTools = new Set();
     
-    // Multi-Package Logic
     if (region !== 'all' && audience !== 'all') {
         const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
         
@@ -464,17 +474,13 @@ function getActiveFilters() {
             selectedPackageNames.forEach(pkgName => {
                 const pkg = packagingData.find(p => p.region === region && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
                 if (pkg) {
-                    // Add Tools
                     pkg.tools.forEach(t => packageTools.add(t));
-                    
-                    // Add Procore Led
                     if (pkg.procore_led_tools) {
                         pkg.procore_led_tools.forEach(t => procoreLedTools.add(t));
                     }
                 }
             });
             
-            // Add checked Add-ons to tools list
             const selectedAddOns = d3.selectAll("#add-ons-checkboxes input:checked").nodes().map(el => el.value);
             selectedAddOns.forEach(addOn => packageTools.add(addOn));
         }
@@ -502,7 +508,7 @@ function clearPackageDetails() {
 function refreshAccordionHeight() {
     const content = document.querySelector('#packaging-container').closest('.accordion-content');
     if (content && content.parentElement.classList.contains('active')) {
-        content.style.maxHeight = "1200px"; // Force plenty of room
+        content.style.maxHeight = "1200px"; 
     }
 }
 
@@ -539,7 +545,6 @@ function populateCategoryFilters() {
     }
 }
 
-// Fallback helper for legacy dropdown
 function populateAddOnsAndServices(packageInfo) {
     const addOnsContainer = d3.select("#add-ons-container");
     const addOnsCheckboxes = d3.select("#add-ons-checkboxes");
@@ -570,13 +575,9 @@ function resetView() {
     d3.select("#region-filter").property('value', 'all');
     d3.select("#audience-filter").property('value', 'all').property("disabled", true).html('<option value="all">All Audiences</option>');
     d3.select("#persona-filter").property('value', 'all');
-    
-    // Clear Checkboxes
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
-    
     d3.select("#toggle-procore-led").property("checked", false);
-    
     d3.selectAll("#category-filters input").property("checked", true);
     toggleAllConnections(); 
     d3.selectAll(".legend-checkbox").property("checked", true);
@@ -611,7 +612,7 @@ function selectNodeFromSearch(d) {
     if (typeof stopTour === 'function') stopTour();
     const isVisible = app.simulation.nodes().some(n => n.id === d.id);
     if (!isVisible) {
-        showToast(`"${d.id}" is hidden by filters. Resetting view.`, 3000);
+        if(typeof showToast === 'function') showToast(`"${d.id}" is hidden by filters. Resetting view.`, 3000);
         resetView();
     }
     setTimeout(() => {
