@@ -1,13 +1,53 @@
 // --- app-controls.js ---
-// VERSION: 52 (FINAL VIDEO BUILD)
+// VERSION: 53 (BASELINE 46 + REVENUE INJECTION)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
-    admin: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' },
-    enablement: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: false, showFilters: true, showLegend: true, defaultOpen: 'tour-accordion' },
-    sales: { showTours: false, showAiBuilder: false, showManualBuilder: false, showScoping: false, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' },
-    product: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: false, showFilters: true, showLegend: true, defaultOpen: 'tour-accordion' },
-    services: { showTours: true, showAiBuilder: false, showManualBuilder: true, showScoping: true, showFilters: true, showLegend: true, defaultOpen: 'filter-accordion' }
+    admin: { 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: true, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'filter-accordion' 
+    },
+    enablement: { 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: false, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'tour-accordion' 
+    },
+    sales: { 
+        showTours: false, 
+        showAiBuilder: false, 
+        showManualBuilder: false, 
+        showScoping: false, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'filter-accordion' 
+    },
+    product: { 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: false, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'tour-accordion' 
+    },
+    services: { 
+        showTours: true, 
+        showAiBuilder: false, 
+        showManualBuilder: true, 
+        showScoping: true, 
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'filter-accordion' 
+    }
 };
 
 function getUrlParam(param) {
@@ -22,7 +62,12 @@ const audienceDataToKeyMap = {
     "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O"
 };
 
-const audienceKeyToLabelMap = { "GC": "General Contractor", "SC": "Specialty Contractor", "O": "Owner" };
+const audienceKeyToLabelMap = {
+    "GC": "General Contractor",
+    "SC": "Specialty Contractor",
+    "O": "Owner"
+};
+
 const audienceKeyToDataValuesMap = {
     "GC": ["Contractor", "General Contractor", "GC"],
     "SC": ["SC", "Specialty Contractor"],
@@ -31,7 +76,11 @@ const audienceKeyToDataValuesMap = {
 
 // --- INITIALIZATION ---
 function initializeControls() {
-    if (typeof packagingData === 'undefined') return;
+    // Safety check
+    if (typeof packagingData === 'undefined') {
+        console.warn("Procoreverse: Packaging data missing. Controls initialized in safe mode.");
+        return;
+    }
 
     // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
@@ -42,40 +91,47 @@ function initializeControls() {
 
     populateRegionFilter();
     populatePersonaFilter();
-    populateServiceAddons(); 
+    populateServiceAddons(); // NEW: Revenue Dropdown
    
-    // Filter Listeners
+    // Filter Event Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
+    // Legacy dropdown listener (kept for safety)
+    d3.select("#package-filter").on("change", onPackageChange); 
     
-    // Procore Led Toggle
-    const procoreToggle = d3.select("#toggle-procore-led");
-    if (!procoreToggle.empty()) {
-        procoreToggle.on("change", function() {
-            if(app) app.state.showProcoreLedOnly = this.checked;
+    d3.select("#persona-filter").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
+    
+    // Procore-Led Toggle (Video Feature)
+    const ledToggle = d3.select("#toggle-procore-led");
+    if (!ledToggle.empty()) {
+        ledToggle.on("change", function() {
+            if (typeof app !== 'undefined') app.state.showProcoreLedOnly = this.checked;
             if (typeof updateGraph === 'function') updateGraph(true);
         });
     }
    
+    populateCategoryFilters();
     d3.select("#toggle-categories").on("click", toggleAllCategories);
     d3.select("#toggle-legend").on("click", toggleAllConnections);
+
     d3.select("#search-input").on("input", handleSearchInput);
     
-    // Team Selector
+    // Team Selector Logic
     const teamSelector = d3.select("#team-selector");
-    if (!teamSelector.empty()) {
-        const initialTeam = getUrlParam('team') || 'admin'; 
-        if (TEAM_CONFIG[initialTeam]) {
-            teamSelector.property('value', initialTeam);
-            setTimeout(() => applyTeamView(initialTeam), 100);
-        }
-        teamSelector.on("change", function() { applyTeamView(this.value); });
+    const initialTeam = getUrlParam('team') || 'admin'; 
+    
+    if (TEAM_CONFIG[initialTeam]) {
+        teamSelector.property('value', initialTeam);
+        setTimeout(() => applyTeamView(initialTeam), 100);
     }
 
-    // Global Click Handler
+    teamSelector.on("change", function() {
+        applyTeamView(this.value);
+    });
+
+    // Dismiss Search Results
     d3.select("body").on("click", (e) => {
-        const searchContainer = document.getElementById('search-container');
-        if (searchContainer && e.target && !searchContainer.contains(e.target)) {
+        if (e.target && !document.getElementById('search-container').contains(e.target)) {
             d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
         }
     });
@@ -86,7 +142,7 @@ function initializeControls() {
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 
-    // Scoping Calculator Listeners (Defensive)
+    // Scoping Calculator Listeners (Safe Mode)
     const inputs = ['slider-maturity', 'slider-data', 'slider-change', 'onsite-input', 'addon-select'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
@@ -96,7 +152,7 @@ function initializeControls() {
     });
 }
 
-// --- NEW: Populate Add-ons Dropdown ---
+// --- NEW: Populate Service Add-ons ---
 function populateServiceAddons() {
     const addons = [
         { name: "None", cost: 0 },
@@ -116,65 +172,88 @@ function populateServiceAddons() {
         .attr("value", d => d.cost);
 }
 
-// --- SCOPING & REVENUE CALCULATOR ---
+// --- SCOPING CALCULATOR (With Revenue Logic) ---
 function calculateScoping() {
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
     
+    // Safety check to prevent crashes if HTML is missing
     if (!sliderMaturity || !sliderData || !sliderChange) return;
 
     const mat = parseFloat(sliderMaturity.value);
     const data = parseFloat(sliderData.value);
     const change = parseFloat(sliderChange.value);
 
-    // Update Text
+    // Update Label Text in UI
     const valMat = document.getElementById('val-maturity');
     if(valMat) valMat.innerText = mat + "x";
+    
     const valData = document.getElementById('val-data');
     if(valData) valData.innerText = data + "x";
+    
     const valChange = document.getElementById('val-change');
     if(valChange) valChange.innerText = change + "x";
 
-    // 1. Calculate Base Hours
+    // 1. Calculate Base Hours from Selected Packages
     let baseHours = 0;
-    const regionFilter = d3.select("#region-filter");
-    const audienceFilter = d3.select("#audience-filter");
+    let addOnCount = 0;
     
-    if (!regionFilter.empty() && !audienceFilter.empty()) {
-        const region = regionFilter.property('value');
-        const audience = audienceFilter.property('value');
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    
+    if (region !== 'all' && audience !== 'all') {
+        const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
         
-        if (region !== 'all' && audience !== 'all') {
-            const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-            d3.selectAll(".package-checkbox:checked").each(function() {
-                const pkgName = this.value;
-                const pkg = packagingData.find(p => p.region === region && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
-                
-                if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
-                    const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
-                    if (match) baseHours += parseInt(match[1], 10);
+        // Sum up hours from all checked packages
+        d3.selectAll(".package-checkbox:checked").each(function() {
+            const pkgName = this.value;
+            const pkg = packagingData.find(p => 
+                p.region === region && 
+                audienceDataKeys.includes(p.audience) && 
+                p.package_name === pkgName
+            );
+            
+            if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
+                // Regex to extract "25" from "Professional Services Implementation (25 hrs.)"
+                const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
+                if (match) {
+                    baseHours += parseInt(match[1], 10);
                 }
-            });
+            }
+        });
+        
+        // Count Checked Add-Ons
+        addOnCount = d3.selectAll("#add-ons-checkboxes input:checked").size();
+    }
+
+    // Update UI Label
+    const baseLabel = document.getElementById('base-tools-count');
+    if (baseLabel) {
+        if (baseHours > 0) {
+            baseLabel.parentElement.innerHTML = `Base Scope: <span id="base-tools-count" class="font-bold text-gray-700">${baseHours} Hrs</span> + ${addOnCount} Add-ons`;
+        } else {
+            baseLabel.innerText = "0 Hrs";
         }
     }
 
-    // Update Base Label
-    const baseLabel = document.getElementById('base-tools-count');
-    if (baseLabel) baseLabel.innerText = baseHours + " Hrs";
-
-    // 2. Timeline Calculation
-    const PREP_FACTOR = 1.5; 
-    const CONSULTING_VELOCITY = 3; 
+    // 2. Perform Calculation (Timeline)
+    // --- FORMULA UPDATE: PREP FACTOR 1.5x ---
+    const PREP_FACTOR = 1.5; // 1 Hour Delivery + 0.5 Hour Prep
+    const CONSULTING_VELOCITY = 3; // Hours of engagement per week per consultant
+    
+    // Logic: (Base Hours * Prep Factor) / Weekly Velocity
     const totalEffortHours = baseHours * PREP_FACTOR;
-    const baseWeeks = (totalEffortHours / CONSULTING_VELOCITY); 
+    const baseWeeks = (totalEffortHours / CONSULTING_VELOCITY) + (addOnCount * 2); 
+    
+    // Apply Multipliers (Average of the 3 sliders)
     const combinedMultiplier = (mat + data + change) / 3; 
     const finalWeeks = Math.round(baseWeeks * combinedMultiplier);
 
     const calcWeeks = document.getElementById('calc-weeks');
     if(calcWeeks) calcWeeks.innerText = finalWeeks;
 
-    // 3. Revenue Calculation
+    // 3. Perform Calculation (Revenue) - NEW FOR VIDEO
     const hourlyRate = 250; 
     const implementationCost = (totalEffortHours * combinedMultiplier) * hourlyRate;
     
@@ -198,14 +277,27 @@ function applyTeamView(team) {
     const config = TEAM_CONFIG[team];
     if (!config) return;
 
-    d3.select("#tour-accordion").style("display", config.showTours ? "block" : "none");
+    // Toggle Process Maps
+    const tourAccordion = d3.select("#tour-accordion");
+    tourAccordion.style("display", config.showTours ? "block" : "none");
+    
+    // Toggle AI Builder
     d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
     d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none");
+    
+    // Toggle Manual Builder
     const manualBtn = d3.select("#manual-workflow-builder-btn");
-    if (!manualBtn.empty()) manualBtn.style("display", config.showManualBuilder ? "block" : "none");
-    d3.select("#scoping-ui-container").classed("hidden", !config.showScoping);
+    if (!manualBtn.empty()) {
+        manualBtn.style("display", config.showManualBuilder ? "block" : "none");
+    }
 
+    // Toggle Scoping Calculator (Embedded)
+    const scopingContainer = d3.select("#scoping-ui-container");
+    scopingContainer.classed("hidden", !config.showScoping);
+
+    // Set Default Open Section
     document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
+    
     const target = document.getElementById(config.defaultOpen);
     if (target) {
         target.classList.add('active');
@@ -214,7 +306,8 @@ function applyTeamView(team) {
     }
 }
 
-// --- HELPER FUNCTIONS ---
+// --- UI HELPER FUNCTIONS ---
+
 function toggleAllConnections() {
     const checkboxes = d3.selectAll(".legend-checkbox");
     if (checkboxes.empty()) return;
@@ -231,7 +324,6 @@ function toggleAllCategories() {
 }
 
 function populateRegionFilter() {
-    if (typeof packagingData === 'undefined') return;
     const regionFilter = d3.select("#region-filter");
     if (regionFilter.empty()) return;
 
@@ -248,11 +340,14 @@ function onRegionChange() {
     const region = d3.select(this).property("value");
     const audienceFilter = d3.select("#audience-filter");
     
+    // Reset subordinate filters
     audienceFilter.property("value", "all").property("disabled", region === "all");
     audienceFilter.html('<option value="all">All Audiences</option>');
     
+    // Hide Package Checkboxes area on reset
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
+    
     clearPackageDetails();
     
     if (region !== "all") {
@@ -286,6 +381,8 @@ function onAudienceChange() {
         
         if (packages.length > 0) {
             packageArea.classed("hidden", false);
+            
+            // Create Checkboxes for Multi-Select
             packages.sort((a, b) => a.package_name.localeCompare(b.package_name)).forEach(pkg => {
                 const label = packageList.append("label")
                     .attr("class", "flex items-center cursor-pointer py-1 hover:bg-gray-100 rounded px-1");
@@ -296,6 +393,7 @@ function onAudienceChange() {
                     .attr("class", "form-checkbox h-4 w-4 text-indigo-600 package-checkbox mr-2")
                     .on("change", () => {
                         updatePackageAddOns();
+                        updateActivePackageState(); // Sync for dimming
                         if (typeof updateGraph === 'function') updateGraph(true);
                         calculateScoping();
                     });
@@ -311,13 +409,53 @@ function onAudienceChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-function onPackageChange() { return; } 
+// Helper to sync global app state for dimming
+function updateActivePackageState() {
+    if (typeof app === 'undefined') return;
+    
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+    
+    const firstChecked = d3.select(".package-checkbox:checked");
+    
+    if (!firstChecked.empty()) {
+        const pkgName = firstChecked.property("value");
+        const pkg = packagingData.find(p => 
+            p.region === region && 
+            audienceDataKeys.includes(p.audience) && 
+            p.package_name === pkgName
+        );
+        app.currentPackage = pkg;
+    } else {
+        app.currentPackage = null;
+    }
+}
+
+// Fallback helper for single-select mode (if ever needed)
+function onPackageChange() {
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    const pkgName = d3.select("#package-filter").property('value');
+    clearPackageDetails();
+    if (region !== 'all' && audience !== 'all' && pkgName !== 'all') {
+        const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+        const packageInfo = packagingData.find(pkg =>
+            pkg.region === region && audienceDataKeys.includes(pkg.audience) && pkg.package_name === pkgName
+        );
+        if (packageInfo) populateAddOnsAndServices(packageInfo);
+    }
+    refreshAccordionHeight();
+    if (typeof updateGraph === 'function') updateGraph(true);
+    calculateScoping();
+}
 
 function updatePackageAddOns() {
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
     
+    // Find all selected package names from checkboxes
     const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
     
     const allAddOns = new Set();
@@ -333,6 +471,7 @@ function updatePackageAddOns() {
         }
     });
     
+    // Render Add-ons
     const addOnsContainer = d3.select("#add-ons-container");
     const addOnsCheckboxes = d3.select("#add-ons-checkboxes");
     addOnsCheckboxes.html("");
@@ -353,6 +492,7 @@ function updatePackageAddOns() {
         addOnsContainer.classed('hidden', true);
     }
     
+    // Render Services (Reference only)
     const servicesContainer = d3.select("#package-services-container");
     const servicesList = d3.select("#package-services-list");
     servicesList.html("");
@@ -367,6 +507,7 @@ function updatePackageAddOns() {
         servicesContainer.classed('hidden', true);
     }
     
+    // Auto-grow Accordion
     refreshAccordionHeight();
 }
 
@@ -378,25 +519,34 @@ function getActiveFilters() {
     const activeCategories = d3.selectAll("#category-filters input:checked").nodes().map(el => el.value);
     const activeConnectionTypes = d3.selectAll(".legend-checkbox:checked").nodes().map(el => el.value);
     
+    // Safety check for toggle
     const toggleNode = d3.select("#toggle-procore-led").node();
     const showProcoreLed = toggleNode ? toggleNode.checked : false;
 
     let packageTools = null;
     let procoreLedTools = new Set();
     
+    // Multi-Package Logic
     if (region !== 'all' && audience !== 'all') {
         const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
+        
         if (selectedPackageNames.length > 0) {
             packageTools = new Set();
+            
             selectedPackageNames.forEach(pkgName => {
                 const pkg = packagingData.find(p => p.region === region && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
                 if (pkg) {
+                    // Add Tools
                     pkg.tools.forEach(t => packageTools.add(t));
+                    
+                    // Add Procore Led
                     if (pkg.procore_led_tools) {
                         pkg.procore_led_tools.forEach(t => procoreLedTools.add(t));
                     }
                 }
             });
+            
+            // Add checked Add-ons to tools list
             const selectedAddOns = d3.selectAll("#add-ons-checkboxes input:checked").nodes().map(el => el.value);
             selectedAddOns.forEach(addOn => packageTools.add(addOn));
         }
@@ -424,7 +574,7 @@ function clearPackageDetails() {
 function refreshAccordionHeight() {
     const content = document.querySelector('#packaging-container').closest('.accordion-content');
     if (content && content.parentElement.classList.contains('active')) {
-        content.style.maxHeight = "1200px"; 
+        content.style.maxHeight = "1200px"; // Force plenty of room
     }
 }
 
@@ -435,9 +585,11 @@ function populatePersonaFilter() {
 
     personaFilter.html('<option value="all">All Personas</option>');
     const allPersonas = new Set();
-    nodesData.forEach(node => {
-        if (node.personas) node.personas.forEach(p => allPersonas.add(p));
-    });
+    if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
+        nodesData.forEach(node => {
+            if (node.personas) node.personas.forEach(p => allPersonas.add(p));
+        });
+    }
     [...allPersonas].sort().forEach(p => {
         const personaMap = {
             "pm": "Project Manager (GC)", "super": "Superintendent (GC)", "fm": "Financial Manager (GC)",
@@ -449,35 +601,37 @@ function populatePersonaFilter() {
 
 function populateCategoryFilters() {
     const filtersContainer = d3.select("#category-filters");
-    if(filtersContainer.empty() || typeof app === 'undefined' || !app.categories) return;
-    
+    if(filtersContainer.empty()) return;
     filtersContainer.html("");
-    Object.keys(app.categories).sort().forEach(cat => {
-        const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
-        label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat)
-            .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
-            .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
-        label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
-        label.append("span").attr("class", "text-gray-700").text(cat);
-    });
+    if (typeof app !== 'undefined' && app.categories) {
+        Object.keys(app.categories).sort().forEach(cat => {
+            const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
+            label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat)
+                .attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500")
+                .on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
+            label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
+            label.append("span").attr("class", "text-gray-700").text(cat);
+        });
+    }
 }
 
 function resetView() {
     if (typeof stopTour === 'function') stopTour();
-    
     d3.select("#region-filter").property('value', 'all');
     d3.select("#audience-filter").property('value', 'all').property("disabled", true).html('<option value="all">All Audiences</option>');
     d3.select("#persona-filter").property('value', 'all');
     
+    // Clear Checkboxes
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
+    
     d3.select("#toggle-procore-led").property("checked", false);
-    if(app) app.state.showProcoreLedOnly = false;
+    if(typeof app !== 'undefined') app.state.showProcoreLedOnly = false;
     
     d3.selectAll("#category-filters input").property("checked", true);
+    toggleAllConnections(); 
     d3.selectAll(".legend-checkbox").property("checked", true);
     allCategoriesChecked = true;
-    
     clearPackageDetails();
     if (typeof updateGraph === 'function') updateGraph(false);
     if (typeof resetZoom === 'function') resetZoom();
@@ -507,17 +661,19 @@ function handleSearchInput() {
 
 function selectNodeFromSearch(d) {
     if (typeof stopTour === 'function') stopTour();
-    const isVisible = app.simulation.nodes().some(n => n.id === d.id);
-    if (!isVisible) {
-        if(typeof showToast === 'function') showToast(`"${d.id}" is hidden by filters. Resetting view.`, 3000);
-        resetView();
-    }
-    setTimeout(() => {
-        const nodeData = app.simulation.nodes().find(n => n.id === d.id);
-        if (nodeData) {
-            if (typeof nodeClicked === 'function') nodeClicked(new Event('click'), nodeData);
+    if(typeof app !== 'undefined' && app.simulation) {
+        const isVisible = app.simulation.nodes().some(n => n.id === d.id);
+        if (!isVisible) {
+            if(typeof showToast === 'function') showToast(`"${d.id}" is hidden by filters. Resetting view.`, 3000);
+            resetView();
         }
-    }, isVisible ? 0 : 600);
+        setTimeout(() => {
+            const nodeData = app.simulation.nodes().find(n => n.id === d.id);
+            if (nodeData) {
+                if (typeof nodeClicked === 'function') nodeClicked(new Event('click'), nodeData);
+            }
+        }, isVisible ? 0 : 600);
+    }
     d3.select("#search-input").property("value", "");
     d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
 }
