@@ -1,9 +1,10 @@
 // --- app-tours.js ---
-// VERSION: FINAL (Instant Toggle + Directional Candidates)
+// VERSION: 56 (BASELINE + AI SIMULATION LOADER)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
     const packageGroup = d3.select("#package-tours");
+    const aiGroup = d3.select("#ai-tours"); // Selector for AI optgroup
     
     // Load Standard Tours
     if (typeof tours !== 'undefined' && tours.platform) {
@@ -11,6 +12,17 @@ function initializeTourControls() {
     }
     if (typeof tours !== 'undefined' && tours.packages) {
         Object.entries(tours.packages).forEach(([id, tour]) => packageGroup.append("option").attr("value", id).text(tour.name));
+    }
+
+    // --- NEW: Load Static AI Simulations (from world_data.py) ---
+    // This allows the "Agentic Workflow" to appear in the list for the video
+    if (typeof tours !== 'undefined' && tours.ai) {
+        Object.entries(tours.ai).forEach(([id, tour]) => {
+            // Check if this tour was already loaded by localStorage to avoid duplicates
+            if (aiGroup.select(`option[value="${id}"]`).empty()) {
+                aiGroup.append("option").attr("value", id).text("✨ " + tour.name);
+            }
+        });
     }
 
     loadSavedTours();
@@ -61,7 +73,9 @@ function loadSavedTours() {
             if (!tours.ai) tours.ai = {};
             Object.entries(parsedTours).forEach(([id, tour]) => {
                 tours.ai[id] = tour;
-                aiGroup.append("option").attr("value", id).text(tour.name);
+                if(aiGroup.select(`option[value="${id}"]`).empty()) {
+                    aiGroup.append("option").attr("value", id).text(tour.name);
+                }
             });
         } catch (e) { console.error(e); }
     }
