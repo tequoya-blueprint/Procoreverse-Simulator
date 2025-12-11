@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION 42: Sparkles Emoji, No Badge Circles, Full Legend, Procore-Led Rings
+// VERSION 43: Video-Ready (Includes Procore-Led Visual Dimming logic)
 
 // --- Global App State ---
 const app = {
@@ -309,9 +309,25 @@ function updateGraph(isFilterChange = true) {
                 return nodeGroup;
             },
             update => {
+                // VISUAL DIMMING LOGIC (Procore Led)
+                update.transition().duration(500)
+                    .style("opacity", d => {
+                        if (filters.showProcoreLed) {
+                            return filters.procoreLedTools.has(d.id) ? 1.0 : 0.1;
+                        }
+                        return 1.0;
+                    })
+                    .style("filter", d => {
+                        if (filters.showProcoreLed && filters.procoreLedTools.has(d.id)) {
+                            return "drop-shadow(0 0 5px rgba(243, 108, 35, 0.5))";
+                        }
+                        return null;
+                    });
+
                 update.select(".procore-led-ring")
                     .transition().duration(300)
                     .attr("stroke-opacity", d => (filters.showProcoreLed && filters.procoreLedTools.has(d.id)) ? 0.8 : 0);
+                
                 return update;
             },
             exit => exit.transition().duration(300).style("opacity", 0).remove()
@@ -344,6 +360,18 @@ function updateGraph(isFilterChange = true) {
             if (!legend) return null;
             if (legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
             return null;
+        })
+        // Link Dimming Logic
+        .transition().duration(500)
+        .style("opacity", d => {
+            if (filters.showProcoreLed) {
+                // Only show links if BOTH source and target are in the Procore-Led set
+                const sourceId = d.source.id || d.source;
+                const targetId = d.target.id || d.target;
+                const isRelevant = filters.procoreLedTools.has(sourceId) && filters.procoreLedTools.has(targetId);
+                return isRelevant ? 0.6 : 0.05;
+            }
+            return 0.6;
         });
 
     app.simulation.nodes(filteredNodes);
@@ -362,15 +390,13 @@ function addBadge(group, iconCode, color, x, y, tooltipText) {
         .attr("transform", `translate(${x}, ${y})`)
         .style("cursor", "help");
     
-    // Removed <circle> to hide white background
-    
     badge.append("text")
         .attr("class", "fas")
         .text(iconCode)
         .attr("text-anchor", "middle")
         .attr("dy", 3) 
         .attr("fill", color)
-        .attr("font-size", "10px") // Slightly smaller for cleanliness
+        .attr("font-size", "10px") 
         .style("font-family", "'Font Awesome 6 Free'");
 
     badge.on("mouseover", function(event) {
