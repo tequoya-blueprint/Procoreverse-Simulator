@@ -477,3 +477,25 @@ body {
     border: 1px solid #c7d2fe; /* border-indigo-200 */
     line-height: 1.6;
 }
+
+/* Ensure panels float above graph */
+.panel {
+    z-index: 50; /* Higher than graph (0) */
+    background-color: white; /* Ensure transparency doesn't show graph lines */
+}
+
+/* Fix Accordion Overflow Clipping */
+.accordion-content {
+    overflow: visible !important; /* Allow dropdowns to spill out if needed */
+}
+
+/* Ensure Dropdowns (Select elements) are on top */
+select {
+    position: relative;
+    z-index: 60;
+}
+
+/* Ensure Tooltip is topmost */
+#tooltip {
+    z-index: 1000;
+}
