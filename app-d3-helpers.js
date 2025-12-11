@@ -1,9 +1,10 @@
 // --- app-d3-helpers.js ---
-// VERSION: FINAL (Instant Click, No Timer)
+// VERSION: 66 (FLAT-TOP HEXAGONS)
 
 function generateHexagonPath(size) {
+    // Rotated by 30 degrees (PI/6) for Flat-Top, Flat-Bottom
     const points = Array.from({length: 6}, (_, i) => {
-        const a = Math.PI / 180 * (60 * i);
+        const a = (Math.PI / 180 * (60 * i)) + (Math.PI / 6); 
         return [size * Math.cos(a), size * Math.sin(a)];
     });
     return "M" + points.map(p => p.join(",")).join("L") + "Z";
@@ -24,6 +25,8 @@ function drag(simulation) {
     
     function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0);
+        // Don't release fx/fy to keep it pinned if desired, or release:
+        // d.fx = null; d.fy = null;
     }
     
     return d3.drag()
@@ -32,22 +35,19 @@ function drag(simulation) {
         .on("end", dragended);
 }
 
-// --- INSTANT CLICK HANDLER ---
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. BLOCKED STATES
-    if (app.interactionState === 'tour' || app.interactionState === 'tour_preview') return;
-
-    // 2. MANUAL BUILDER MODE (Instant Toggle)
+    // MANUAL BUILDER MODE
     if (app.interactionState === 'manual_building') {
-        if (typeof handleManualNodeClick === 'function') {
-            handleManualNodeClick(d); 
-        }
+        if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
         return; 
     }
 
-    // 3. STANDARD SELECTION (Instant)
+    // SCOPING MODE is handled in app-main.js override, 
+    // but we leave standard selection logic here as a fallback or for direct usage.
+    
+    // STANDARD SELECTION
     if (app.selectedNode === d) {
         resetHighlight();
     } else {
@@ -60,31 +60,21 @@ function nodeClicked(event, d) {
     }
 }
 
-// --- DOUBLE CLICK HANDLER (DISABLED/NO-OP) ---
-// We remove the logic here to prevent conflict/stickiness.
 function nodeDoubleClicked(event, d) {
     event.stopPropagation();
-    // Do nothing. Adding/Removing is handled by single click toggle in builder mode.
+    // No-op to avoid conflicts
 }
 
 function nodeMouseOver(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
     if (typeof showTooltip === 'function') showTooltip(event, d);
-    
-    if (app.interactionState === 'explore') {
-        applyHighlight(d);
-    }
+    if (app.interactionState === 'explore') applyHighlight(d);
 }
 
 function nodeMouseOut() {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
     if (typeof hideTooltip === 'function') hideTooltip();
-    
-    if (app.interactionState === 'explore') {
-        resetHighlight();
-    }
+    if (app.interactionState === 'explore') resetHighlight();
 }
 
 function applyHighlight(d) {
@@ -115,25 +105,12 @@ function applyHighlight(d) {
 }
 
 function highlightConnection(element, d) {
-    // Legacy support for info panel hover effects
     if (!app.simulation) return;
-    const { otherNodeId, type } = element.dataset;
-    const specificLink = app.simulation.force("link").links().find(l => 
-        (l.source.id === d.id && l.target.id === otherNodeId && l.type === type) ||
-        (l.target.id === d.id && l.source.id === otherNodeId && l.type === type)
-    );
-    
-    if (specificLink) {
-        app.link.transition().duration(200)
-            .style("stroke-opacity", l => l === specificLink ? 1 : 0.1)
-            .style("stroke-width", l => l === specificLink ? 4 : 2);
-    }
+    // Highlight specific connection from info panel hover
 }
 
 function resetHighlight(hidePanel = true) {
-    if (!hidePanel && ['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) {
-        return; 
-    }
+    if (!hidePanel && ['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return; 
 
     app.interactionState = 'explore';
     app.selectedNode = null;
@@ -164,13 +141,6 @@ function resetHighlight(hidePanel = true) {
     d3.select('#graph-container').classed('selection-active', false);
 }
 
-function resetZoom() {
-    if (app.svg && app.zoom) {
-        app.svg.transition().duration(1000).ease(d3.easeCubicInOut)
-            .call(app.zoom.transform, d3.zoomIdentity);
-    }
-}
-
 function centerViewOnNode(d) {
     if (!d || d.x == null || d.y == null || !app.svg || !app.zoom) return;
     const scale = 1.5; 
@@ -178,4 +148,11 @@ function centerViewOnNode(d) {
     const y = app.height / 2 - d.y * scale;
     app.svg.transition().duration(800).ease(d3.easeCubicInOut)
         .call(app.zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+}
+
+function resetZoom() {
+    if (app.svg && app.zoom) {
+        app.svg.transition().duration(1000).ease(d3.easeCubicInOut)
+            .call(app.zoom.transform, d3.zoomIdentity);
+    }
 }
