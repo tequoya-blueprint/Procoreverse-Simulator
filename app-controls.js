@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 51 (SAFE MODE: Defensive Coding & Revenue Logic)
+// VERSION: 52 (FINAL VIDEO BUILD)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -31,11 +31,7 @@ const audienceKeyToDataValuesMap = {
 
 // --- INITIALIZATION ---
 function initializeControls() {
-    // Safety check for data
-    if (typeof packagingData === 'undefined') {
-        console.warn("Procoreverse Data: Packaging data not found. Controls disabled.");
-        return;
-    }
+    if (typeof packagingData === 'undefined') return;
 
     // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
@@ -48,12 +44,9 @@ function initializeControls() {
     populatePersonaFilter();
     populateServiceAddons(); 
    
-    // Filter Event Listeners (with safety checks)
-    const regionFilter = d3.select("#region-filter");
-    if (!regionFilter.empty()) regionFilter.on("change", onRegionChange);
-
-    const audienceFilter = d3.select("#audience-filter");
-    if (!audienceFilter.empty()) audienceFilter.on("change", onAudienceChange);
+    // Filter Listeners
+    d3.select("#region-filter").on("change", onRegionChange);
+    d3.select("#audience-filter").on("change", onAudienceChange);
     
     // Procore Led Toggle
     const procoreToggle = d3.select("#toggle-procore-led");
@@ -64,7 +57,6 @@ function initializeControls() {
         });
     }
    
-    // Visual toggles
     d3.select("#toggle-categories").on("click", toggleAllCategories);
     d3.select("#toggle-legend").on("click", toggleAllConnections);
     d3.select("#search-input").on("input", handleSearchInput);
@@ -88,21 +80,18 @@ function initializeControls() {
         }
     });
 
-    // Button Listeners
+    // Control Buttons
     d3.select("#reset-view").on("click", resetView);
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 
-    // --- SCOPING CALCULATOR LISTENERS (DEFENSIVE) ---
-    // This loop checks if the element exists BEFORE adding the listener
+    // Scoping Calculator Listeners (Defensive)
     const inputs = ['slider-maturity', 'slider-data', 'slider-change', 'onsite-input', 'addon-select'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if(el) {
             el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', calculateScoping);
-        } else {
-            console.log(`Note: Scoping element #${id} missing from HTML. Calculator may be partial.`);
         }
     });
 }
@@ -129,7 +118,6 @@ function populateServiceAddons() {
 
 // --- SCOPING & REVENUE CALCULATOR ---
 function calculateScoping() {
-    // Get Elements safely
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
@@ -140,13 +128,11 @@ function calculateScoping() {
     const data = parseFloat(sliderData.value);
     const change = parseFloat(sliderChange.value);
 
-    // Update Text (Check existence first)
+    // Update Text
     const valMat = document.getElementById('val-maturity');
     if(valMat) valMat.innerText = mat + "x";
-    
     const valData = document.getElementById('val-data');
     if(valData) valData.innerText = data + "x";
-    
     const valChange = document.getElementById('val-change');
     if(valChange) valChange.innerText = change + "x";
 
@@ -180,7 +166,6 @@ function calculateScoping() {
     // 2. Timeline Calculation
     const PREP_FACTOR = 1.5; 
     const CONSULTING_VELOCITY = 3; 
-    
     const totalEffortHours = baseHours * PREP_FACTOR;
     const baseWeeks = (totalEffortHours / CONSULTING_VELOCITY); 
     const combinedMultiplier = (mat + data + change) / 3; 
@@ -247,7 +232,6 @@ function toggleAllCategories() {
 
 function populateRegionFilter() {
     if (typeof packagingData === 'undefined') return;
-    
     const regionFilter = d3.select("#region-filter");
     if (regionFilter.empty()) return;
 
@@ -269,7 +253,6 @@ function onRegionChange() {
     
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
-    
     clearPackageDetails();
     
     if (region !== "all") {
@@ -303,7 +286,6 @@ function onAudienceChange() {
         
         if (packages.length > 0) {
             packageArea.classed("hidden", false);
-            
             packages.sort((a, b) => a.package_name.localeCompare(b.package_name)).forEach(pkg => {
                 const label = packageList.append("label")
                     .attr("class", "flex items-center cursor-pointer py-1 hover:bg-gray-100 rounded px-1");
@@ -329,7 +311,7 @@ function onAudienceChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-function onPackageChange() { return; } // No-op for legacy safety
+function onPackageChange() { return; } 
 
 function updatePackageAddOns() {
     const region = d3.select("#region-filter").property('value');
