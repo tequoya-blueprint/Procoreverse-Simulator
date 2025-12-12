@@ -834,4 +834,132 @@ function updateActivePackageState() {
     } else {
         app.currentPackage = null;
     }
+    // --- [APPEND TO app-controls.js] ---
+
+// --- CUSTOMER STACK & GAP ANALYSIS MANAGER ---
+
+// 1. Initialize State Logic
+// We ensure app state exists before modifying it to prevent race conditions
+if (typeof app !== 'undefined') {
+    if (!app.state) app.state = {};
+    if (!app.state.myStack) app.state.myStack = new Set();
+    app.state.isBuildingStack = false;
+}
+
+// 2. Toggle "Builder Mode"
+function toggleStackBuilderMode() {
+    // Toggle the boolean state
+    app.state.isBuildingStack = !app.state.isBuildingStack;
+    
+    // UI: Find or Create the Builder Button
+    let btn = d3.select("#stack-builder-btn");
+    if (btn.empty()) {
+        // Fallback: If button isn't in HTML, inject it above the filters
+        const container = d3.select("#packaging-container"); 
+        if (!container.empty()) {
+            btn = container.insert("button", ":first-child")
+                .attr("id", "stack-builder-btn")
+                .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 border");
+        }
+    }
+
+    const status = d3.select("#toast-notification"); 
+    
+    if (app.state.isBuildingStack) {
+        // --- ACTIVATE BUILDER MODE ---
+        app.interactionState = 'building_stack';
+        
+        // Update Button Visuals (Active State)
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
+           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
+           .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
+        
+        // Notification
+        if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
+        
+        // Visual: Dim everything slightly to make "Green" selections pop
+        d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
+        
+        // Visual: Re-highlight any previously selected tools
+        highlightOwnedNodes();
+        
+    } else {
+        // --- DEACTIVATE BUILDER MODE ---
+        app.interactionState = 'explore';
+        
+        // Update Button Visuals (Inactive State)
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
+           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
+           .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
+        
+        // Trigger a full graph update to render the "Gap Analysis" (Green vs Orange)
+        if (typeof updateGraph === 'function') updateGraph(true);
+        
+        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
+            showToast("Stack Saved! Select a Package to see the Upsell Gap.", 3000);
+        }
+    }
+}
+
+// 3. Handle Node Selection in Builder Mode
+function toggleStackItem(d) {
+    if (!app.state.myStack) app.state.myStack = new Set();
+    
+    // Toggle logic: Add if missing, remove if present
+    if (app.state.myStack.has(d.id)) {
+        app.state.myStack.delete(d.id);
+    } else {
+        app.state.myStack.add(d.id);
+    }
+    // Immediate visual feedback
+    highlightOwnedNodes();
+}
+
+// 4. Visual Feedback Loop (Builder Mode Only)
+function highlightOwnedNodes() {
+    if (!app.node) return;
+    
+    app.node.transition().duration(200)
+        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) // Dim unowned
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") // Green Glow
+        .select("path")
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") // Green Stroke
+        .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
+}
+
+// 5. Calculate the "Gap" (The Upsell)
+function getGapAnalysis() {
+    const filters = getActiveFilters(); // Standard filter function
+    const targetPackageTools = filters.packageTools || new Set();
+    
+    const owned = app.state.myStack || new Set();
+    const gap = new Set();
+    
+    // Logic: Gap = Tools in Selected Package MINUS Owned Tools
+    if (targetPackageTools.size > 0) {
+        targetPackageTools.forEach(toolId => {
+            if (!owned.has(toolId)) {
+                gap.add(toolId);
+            }
+        });
+    }
+    
+    return { owned, gap, target: targetPackageTools };
+}
+
+// 6. Init Helper (Run once on load)
+setTimeout(() => {
+    // Check if the button needs to be created on load
+    const existingBtn = d3.select("#stack-builder-btn");
+    if (existingBtn.empty()) {
+         const container = d3.select("#packaging-container"); 
+         if (!container.empty()) {
+            container.insert("button", ":first-child")
+                .attr("id", "stack-builder-btn")
+                .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
+                .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
+                .on("click", toggleStackBuilderMode);
+         }
+    }
+}, 1000);
 }
