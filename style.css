@@ -1,5 +1,6 @@
 /* --- style.css --- */
-/* VERSION: 59 (FULL BASELINE + OVERLAP FIXES) */
+/* --- style.css --- */
+/* VERSION: 115 (FIXED PULSE MARGINS) */
 
 :root {
     /* Core Procore Colors */
@@ -9,8 +10,8 @@
     --procore-metal: #566578;
 
     /* UI Colors */
-    --procore-black: #111827; /* Slightly softened black for better contrast */
-    --procore-stone: #F5F1EE; /* Lighter stone for background */
+    --procore-black: #111827; 
+    --procore-stone: #F5F1EE; 
     --procore-white: #FFFFFF;
     --text-color: #1a1a1a;
     --panel-bg: #FFFFFF;
@@ -30,11 +31,9 @@ body {
 }
 
 /* --- VISUAL POLISH & BACKGROUND --- */
-/* Subtle blueprint/grid background */
 #graph-container {
     position: relative;
     background-color: var(--procore-stone);
-    /* Subtle radial gradient for focus */
     background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, rgba(236, 224, 214, 0) 100%);
     z-index: 0;
 }
@@ -43,7 +42,6 @@ body {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    /* Softer grid lines */
     background-image:
         linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
@@ -53,7 +51,6 @@ body {
     z-index: -1;
 }
 
-/* Fade grid when selection is active for better focus */
 #graph-container.selection-active::before {
     opacity: 0.3;
 }
@@ -63,7 +60,6 @@ body {
     z-index: 1;
 }
 
-/* Custom scrollbars */
 .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
@@ -72,15 +68,13 @@ body {
 /* --- GRAPH STYLING --- */
 .node path {
     stroke: var(--procore-white);
-    stroke-width: 2px; /* Thinner stroke for a cleaner look */
+    stroke-width: 2px; 
     cursor: pointer;
     transition: transform 0.2s var(--transition-bounce), filter 0.3s ease, opacity 0.3s ease, stroke-width 0.3s ease;
-    /* Subtle shadow for depth */
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     will-change: transform, filter;
 }
 
-/* Bouncy hover effect */
 .node:hover path {
     transform: scale(1.1);
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
@@ -89,7 +83,6 @@ body {
 .node.selected path {
     stroke: var(--procore-black);
     stroke-width: 3px;
-    /* Glow effect using the node's color (set via JS 'color' style) */
     filter: drop-shadow(0 0 15px currentColor);
 }
 
@@ -99,7 +92,6 @@ body {
     font-weight: 600;
     fill: var(--procore-black);
     text-anchor: middle;
-    /* Text outline for readability */
     paint-order: stroke;
     stroke: var(--procore-white);
     stroke-width: 4px;
@@ -113,11 +105,10 @@ body {
     font-size: 13px;
 }
 
-/* Link Styling & Data Flow Animation */
 .link {
     fill: none;
     stroke: #a0a0a0;
-    stroke-opacity: 0.6; /* Lower default opacity */
+    stroke-opacity: 0.6; 
     transition: stroke-opacity 0.4s ease, stroke 0.4s ease, stroke-width 0.4s ease;
     will-change: stroke-opacity, stroke, stroke-width;
 }
@@ -126,7 +117,6 @@ body {
     stroke: var(--procore-orange);
     stroke-opacity: 1;
     stroke-width: 3px;
-    /* SMOOTHER DATA FLOW ANIMATION */
     stroke-dasharray: 10 5;
     animation: data-flow 0.9s linear infinite;
 }
@@ -134,7 +124,6 @@ body {
     
 .link.create { stroke-dasharray: 4, 3; }
 
-/* Pulsing effect for tours */
 .link.pulsing {
     stroke: var(--procore-orange) !important;
     stroke-opacity: 1 !important;
@@ -148,17 +137,15 @@ body {
 /* --- UI ELEMENTS (PANELS) --- */
 .panel {
     background-color: var(--panel-bg);
-    /* Modern, diffuse shadow */
     box-shadow: var(--shadow-soft);
-    border-radius: 16px; /* More rounded corners */
+    border-radius: 16px; 
     border: 1px solid rgba(0,0,0,0.05);
     transition: transform 0.4s var(--transition-smooth), opacity 0.4s ease;
-    z-index: 50; /* Ensure this floats above the graph */
+    z-index: 50; 
     display: flex;
     flex-direction: column;
 }
 
-/* --- Panel Collapse Logic --- */
 #controls {
     opacity: 1;
 }
@@ -177,7 +164,6 @@ body {
     box-shadow: var(--shadow-medium);
 }
     
-/* Primary Button Styling */
 .btn-primary {
     background-color: var(--procore-orange);
     color: white;
@@ -201,36 +187,35 @@ body {
     box-shadow: none;
 }
 
-/* Input/Select styling standardization */
 .input-style {
     display: block; 
     width: 100%;
-    padding: 0.75rem; /* p-3 */
-    border: 1px solid #e5e7eb; /* border-gray-200 */
-    border-radius: 0.5rem; /* rounded-lg */
-    font-size: 0.875rem; /* text-sm */
-    background-color: #f9fafb; /* bg-gray-50 */
+    padding: 0.75rem; 
+    border: 1px solid #e5e7eb; 
+    border-radius: 0.5rem; 
+    font-size: 0.875rem; 
+    background-color: #f9fafb; 
     transition: all 0.15s ease-in-out;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
 }
 .input-style:focus {
     outline: none;
-    border-color: #f97316; /* border-orange-500 */
+    border-color: #f97316; 
     background-color: white;
     box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 
-/* --- ACCORDION STYLES (THE FIX FOR BLEED-THROUGH) --- */
+/* --- ACCORDION STYLES --- */
 .accordion-item {
     border-bottom: 1px solid rgba(0,0,0,0.08);
-    background-color: white; /* Ensure it's opaque */
+    background-color: white; 
     position: relative;
-    z-index: 1; /* Default stack */
+    z-index: 1; 
 }
 
 .accordion-item.active {
-    z-index: 100; /* Float above other items when active so dropdowns show */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Slight lift */
+    z-index: 100; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
     border-radius: 8px;
     margin: 8px 0;
     border: 1px solid #f3f4f6;
@@ -245,22 +230,20 @@ body {
     font-weight: 600;
     color: var(--text-color);
     transition: color 0.2s;
-    background-color: white; /* Solid background */
+    background-color: white; 
 }
 .accordion-header:hover {
     color: var(--procore-orange);
 }
 
 .accordion-content {
-    /* BASE STATE: Collapsed & Hidden */
     max-height: 0;
-    overflow: hidden; /* This stops the bleed-through! */
+    overflow: hidden; 
     padding-bottom: 0;
     transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out, opacity 0.3s ease;
     opacity: 0;
 }
 
-/* JS toggles this class after animation to allow dropdowns */
 .accordion-content.overflow-visible {
     overflow: visible; 
 }
@@ -270,7 +253,6 @@ body {
     padding-bottom: 1rem;
     padding-left: 0.5rem;
     padding-right: 0.5rem;
-    /* max-height is set via JS */
 }
 
 .accordion-icon {
@@ -282,7 +264,7 @@ body {
 
 /* --- Search Results --- */
 #search-results {
-    position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; /* Ensure above everything */
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; 
     max-height: 250px; overflow-y: auto;
     transition: opacity 0.2s ease, transform 0.2s ease;
     transform-origin: top center;
@@ -298,7 +280,6 @@ body {
 }
 .search-item:hover { background-color: #f5f5f5; cursor: pointer; }
 
-/* Legend/Color block utility */
 .legend-color {
     width: 14px; height: 14px;
     border-radius: 4px; margin-right: 8px;
@@ -315,7 +296,7 @@ body {
     padding: 12px 18px;
     border-radius: 10px;
     box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-    z-index: 9999; /* Topmost */
+    z-index: 9999; 
     max-width: 320px;
     font-size: 14px;
     opacity: 0;
@@ -329,7 +310,6 @@ body {
     transform: translateY(0);
 }
 
-/* Onboarding Tooltip buttons */
 .tooltip-buttons { margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px; }
 .tooltip-buttons button {
     background: #444; color: white; border: none; padding: 6px 12px;
@@ -345,16 +325,24 @@ body {
     position: fixed; top: 20px; left: 50%; transform: translate(-50%, -150%);
     background-color: var(--procore-black); color: white; padding: 14px 28px;
     border-radius: 99px; box-shadow: var(--shadow-medium); z-index: 9999;
-    transition: transform 0.5s var(--transition-bounce); /* Bouncy entrance */
+    transition: transform 0.5s var(--transition-bounce); 
     font-size: 14px; font-weight: 500;
 }
 #toast-notification.show { transform: translate(-50%, 0); }
 
-/* Initial pulse animation for help button */
+/* --- HELP BUTTON GLOW FIX --- */
+#help-button {
+    /* Ensure breathing room for the glow animation */
+    margin-top: 12px;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 10;
+}
+
 .initial-pulse { animation: pulse-ring 2.5s infinite; }
 @keyframes pulse-ring {
     0% { box-shadow: 0 0 0 0 rgba(255, 82, 0, 0.7); }
-    70% { box-shadow: 0 0 0 15px rgba(255, 82, 0, 0); }
+    70% { box-shadow: 0 0 0 12px rgba(255, 82, 0, 0); } /* Reduced to 12px to prevent clipping */
     100% { box-shadow: 0 0 0 0 rgba(255, 82, 0, 0); }
 }
     
@@ -368,7 +356,6 @@ body {
 }
 #loading-overlay.hidden { opacity: 0; pointer-events: none; }
 
-/* Modern Multi-Layer Spinner */
 .spinner {
     width: 60px;
     height: 60px;
@@ -454,16 +441,15 @@ body {
 .blinking-cursor { animation: blink 1s step-end infinite; }
 @keyframes blink { 50% { border-color: transparent; } }
 
-/* Utility for Indigo Buttons (AI) */
 .btn-indigo {
-    background-color: #4f46e5; /* bg-indigo-600 */
+    background-color: #4f46e5; 
     color: white;
-    font-weight: 500; /* font-medium */
-    padding: 0.75rem 1rem; /* py-3 px-4 */
-    border-radius: 0.5rem; /* rounded-lg */
-    font-size: 0.875rem; /* text-sm */
+    font-weight: 500; 
+    padding: 0.75rem 1rem; 
+    border-radius: 0.5rem; 
+    font-size: 0.875rem; 
     transition: all 0.15s ease-in-out;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
     display: flex;
     align-items: center;
     justify-content: center;
@@ -471,26 +457,25 @@ body {
     cursor: pointer;
 }
 .btn-indigo:hover {
-    background-color: #4338ca; /* hover:bg-indigo-700 */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* hover:shadow-lg */
+    background-color: #4338ca; 
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); 
 }
 .btn-indigo:disabled {
     opacity: 0.7;
     cursor: not-allowed;
 }
 
-/* Specific styling for info panel elements */
 #info-connections li {
-    border-bottom: 1px solid #f3f4f6; /* border-gray-100 */
+    border-bottom: 1px solid #f3f4f6; 
     padding-bottom: 1rem;
     cursor: pointer;
     transition: background-color 0.2s;
-    padding: 0.5rem; /* p-2 */
-    margin: -0.5rem; /* -m-2 */
-    border-radius: 0.5rem; /* rounded-lg */
+    padding: 0.5rem; 
+    margin: -0.5rem; 
+    border-radius: 0.5rem; 
 }
 #info-connections li:hover {
-    background-color: #f9fafb; /* hover:bg-gray-50 */
+    background-color: #f9fafb; 
 }
 #info-connections li:last-child {
     border-bottom: none;
@@ -499,10 +484,10 @@ body {
 #ai-explanation-content {
     margin-top: 1rem;
     font-size: 0.875rem;
-    color: #1f2937; /* text-gray-700 */
-    padding: 1.25rem; /* p-5 */
-    background-color: #eef2ff; /* bg-indigo-50 */
-    border-radius: 0.75rem; /* rounded-xl */
-    border: 1px solid #c7d2fe; /* border-indigo-200 */
+    color: #1f2937; 
+    padding: 1.25rem; 
+    background-color: #eef2ff; 
+    border-radius: 0.75rem; 
+    border: 1px solid #c7d2fe; 
     line-height: 1.6;
 }
