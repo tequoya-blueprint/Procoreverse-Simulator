@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 95 (SOW EXPORT + PRINT LOGIC)
+// VERSION: 100 (2-COL LAYOUT + HEIGHT FIX)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -77,15 +77,15 @@ const audienceKeyToDataValuesMap = {
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
 const SOW_QUESTIONS = [
-    { id: "q-erp", label: "ERP Connector Required?", type: "cost", hrs: 20, cost: 5000 },
-    { id: "q-analytics", label: "Purchasing Analytics?", type: "cost", hrs: 10, cost: 2500 },
-    { id: "q-integration", label: "Custom Integration?", type: "cost", hrs: 15, cost: 5000 },
-    { id: "q-reports", label: "Custom Reports?", type: "cost", hrs: 8, cost: 1500 },
-    { id: "q-ras", label: "RAS / Data Pop Assistance?", type: "cost", hrs: 40, cost: 6000 },
-    { id: "q-pdf", label: "Custom PDF Exports?", type: "cost", hrs: 6, cost: 1200 },
-    { id: "q-sop", label: "SOP Documentation Help?", type: "cost", hrs: 20, cost: 3000 },
-    { id: "q-admin", label: "Dedicated Admin Available?", type: "risk", factor: -0.2, target: "change" }, 
-    { id: "q-financials", label: "Complex Financials?", type: "risk", factor: 0.3, target: "data" } 
+    { id: "q-erp", label: "ERP Connector", type: "cost", hrs: 20, cost: 5000 },
+    { id: "q-analytics", label: "Analytics", type: "cost", hrs: 10, cost: 2500 },
+    { id: "q-integration", label: "Custom Integration", type: "cost", hrs: 15, cost: 5000 },
+    { id: "q-reports", label: "Custom Reports", type: "cost", hrs: 8, cost: 1500 },
+    { id: "q-ras", label: "RAS / Data Pop", type: "cost", hrs: 40, cost: 6000 },
+    { id: "q-pdf", label: "Custom PDFs", type: "cost", hrs: 6, cost: 1200 },
+    { id: "q-sop", label: "SOP Docs", type: "cost", hrs: 20, cost: 3000 },
+    { id: "q-admin", label: "Dedicated Admin", type: "risk", factor: -0.2, target: "change" }, 
+    { id: "q-financials", label: "Complex Finance", type: "risk", factor: 0.3, target: "data" } 
 ];
 
 // --- INITIALIZATION ---
@@ -181,39 +181,53 @@ function renderSOWQuestionnaire() {
 
     revenueContainer.html("");
 
-    const onsiteDiv = revenueContainer.append("div").attr("class", "mb-3 pb-3 border-b border-gray-200");
-    onsiteDiv.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
-    onsiteDiv.append("input")
+    // --- ONSITE & SERVICES CONTAINER ---
+    // We group them to keep the spacing tight and hierarchy clear
+    const settingsGroup = revenueContainer.append("div").attr("class", "mb-3 pb-3 border-b border-gray-200");
+    
+    // 1. Onsite Input
+    const onsiteRow = settingsGroup.append("div").attr("class", "mb-3");
+    onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
+    onsiteRow.append("input")
         .attr("type", "number")
         .attr("id", "onsite-input")
         .attr("value", "0")
         .attr("min", "0")
-        .attr("class", "w-full p-1 text-sm border rounded text-center bg-white")
+        .attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500")
         .on("input", calculateScoping);
 
-    const questionsDiv = revenueContainer.append("div").attr("class", "grid grid-cols-1 gap-1");
-    questionsDiv.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-1").text("Service Qualifiers");
+    // 2. Service Qualifiers (2 Columns)
+    settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2 mt-3").text("Service Qualifiers");
+    
+    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2");
 
     SOW_QUESTIONS.forEach(q => {
-        const label = questionsDiv.append("label").attr("class", "flex items-center justify-between text-xs py-1 cursor-pointer hover:bg-gray-100 rounded px-1");
-        const leftSide = label.append("div").attr("class", "flex items-center");
-        leftSide.append("input")
+        const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 -ml-1");
+        
+        label.append("input")
             .attr("type", "checkbox")
             .attr("id", q.id)
-            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mr-2 focus:ring-indigo-500")
+            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500")
             .on("change", calculateScoping);
-        leftSide.append("span").attr("class", "text-gray-700 font-medium").text(q.label);
+        
+        const textCol = label.append("div").attr("class", "ml-2 flex flex-col");
+        textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight").text(q.label);
+        
+        // Cost Badge (Mini)
         if (q.type === 'cost') {
-             label.append("span").attr("class", "text-[9px] text-gray-400 bg-gray-50 px-1 rounded border border-gray-100").text("+$" + (q.cost/1000) + "k");
+             textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
         }
     });
 
     // --- PRINT BUTTON ---
     revenueContainer.append("button")
         .attr("id", "print-sow-btn")
-        .attr("class", "w-full mt-4 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 rounded text-xs flex items-center justify-center transition shadow-sm")
+        .attr("class", "w-full mt-2 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 rounded text-xs flex items-center justify-center transition shadow-sm")
         .html('<i class="fas fa-print mr-2"></i> Print SOW Estimate')
         .on("click", generateSOWPrintView);
+
+    // Force accordion update immediately after rendering
+    setTimeout(refreshAccordionHeight, 50);
 }
 
 // --- SCOPING CALCULATOR ---
@@ -344,6 +358,9 @@ function calculateScoping() {
         onsite: onsiteCount,
         multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) }
     };
+
+    // Ensure resizing happens if list grows
+    refreshAccordionHeight();
 }
 
 // --- PRINT SOW LOGIC ---
@@ -689,9 +706,10 @@ function clearPackageDetails() {
 }
 
 function refreshAccordionHeight() {
+    // Dynamic recalculation of the container height to prevent overflow
     const content = document.querySelector('#packaging-container').closest('.accordion-content');
     if (content && content.parentElement.classList.contains('active')) {
-        content.style.maxHeight = "1500px"; 
+        content.style.maxHeight = content.scrollHeight + "px";
     }
 }
 
