@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 60 (VISUAL POLISH + AI SIMULATION)
+// VERSION: 60 (VISUAL POLISH + AI SIMULATION) - UNCOMPRESSED
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
