@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 75 (FULL EXPANSION + CUSTOM SCOPE UI)
+// VERSION: 80 (FULL CUSTOM SCOPE LIST)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
