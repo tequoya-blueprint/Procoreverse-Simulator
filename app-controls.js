@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 112 (UNCOMPRESSED)
+// VERSION: 115 (AI BUILDER ENABLED FOR SERVICES) - UNCOMPRESSED
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -41,7 +41,7 @@ const TEAM_CONFIG = {
     },
     services: { 
         showTours: true, 
-        showAiBuilder: false, 
+        showAiBuilder: true, // UPDATED: Enabled for Prof. Services
         showManualBuilder: true, 
         showScoping: true, 
         showFilters: true, 
@@ -199,7 +199,6 @@ function renderSOWQuestionnaire() {
     // 2. Service Qualifiers
     settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
     
-    // Updated Grid: gap-x-2 for narrower panel
     const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2 w-full");
 
     SOW_QUESTIONS.forEach(q => {
