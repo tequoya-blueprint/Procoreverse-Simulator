@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 102 (FIXED GRID SPACING)
+// VERSION: 105 (LAYOUT CONTAINER FIX)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -179,10 +179,14 @@ function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
     if(revenueContainer.empty()) return;
 
+    // --- CRITICAL FIX: RESET CONTAINER CLASS ---
+    // The original HTML defines this as 'grid grid-cols-2', which constrains our content
+    // into a single column. We must override this to 'block w-full'.
+    revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
     revenueContainer.html("");
 
     // --- ONSITE & SERVICES CONTAINER ---
-    const settingsGroup = revenueContainer.append("div").attr("class", "mb-1");
+    const settingsGroup = revenueContainer.append("div").attr("class", "mb-1 w-full");
     
     // 1. Onsite Input
     const onsiteRow = settingsGroup.append("div").attr("class", "mb-3 border-b border-gray-100 pb-3");
@@ -198,25 +202,20 @@ function renderSOWQuestionnaire() {
     // 2. Service Qualifiers (2 Columns, Full Width)
     settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
     
-    // UPDATED GRID CLASSES: w-full to span width, gap-x-4 for separation
-    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-4 gap-y-2 w-full");
+    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-3 gap-y-2 w-full");
 
     SOW_QUESTIONS.forEach(q => {
-        // UPDATED ITEM CLASSES: items-center for alignment, no negative margins
-        const label = gridDiv.append("label").attr("class", "flex items-center cursor-pointer hover:bg-gray-100 rounded p-1");
+        const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 w-full");
         
         label.append("input")
             .attr("type", "checkbox")
             .attr("id", q.id)
-            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded flex-shrink-0 focus:ring-indigo-500")
+            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500")
             .on("change", calculateScoping);
         
         const textCol = label.append("div").attr("class", "ml-2 flex flex-col min-w-0");
-        
-        // Truncate text if absolutely necessary, but layout should permit it now
         textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight truncate").text(q.label).attr("title", q.label);
         
-        // Cost Badge (Mini)
         if (q.type === 'cost') {
              textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
         }
@@ -225,7 +224,7 @@ function renderSOWQuestionnaire() {
     // --- PRINT BUTTON MOVED TO TOTAL BOX ---
     const totalBox = d3.select("#sow-total").select(function() { return this.parentNode; });
     if (!totalBox.empty()) {
-        totalBox.select("#print-sow-mini-btn").remove(); // Clean up old if exists
+        totalBox.select("#print-sow-mini-btn").remove(); 
         
         totalBox.append("button")
             .attr("id", "print-sow-mini-btn")
@@ -234,7 +233,6 @@ function renderSOWQuestionnaire() {
             .on("click", generateSOWPrintView);
     }
 
-    // Force accordion update immediately after rendering
     setTimeout(refreshAccordionHeight, 50);
 }
 
@@ -353,7 +351,6 @@ function calculateScoping() {
         sowDisplay.innerText = "$" + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
     }
 
-    // Store calculations in app state for the print function
     app.currentSOW = {
         totalHours: totalHoursRaw,
         weeks: finalWeeks,
