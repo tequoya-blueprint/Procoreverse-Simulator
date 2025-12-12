@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 100 (2-COL LAYOUT + HEIGHT FIX)
+// VERSION: 101 (COMPACT PRINT BUTTON)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -182,11 +182,10 @@ function renderSOWQuestionnaire() {
     revenueContainer.html("");
 
     // --- ONSITE & SERVICES CONTAINER ---
-    // We group them to keep the spacing tight and hierarchy clear
-    const settingsGroup = revenueContainer.append("div").attr("class", "mb-3 pb-3 border-b border-gray-200");
+    const settingsGroup = revenueContainer.append("div").attr("class", "mb-1");
     
     // 1. Onsite Input
-    const onsiteRow = settingsGroup.append("div").attr("class", "mb-3");
+    const onsiteRow = settingsGroup.append("div").attr("class", "mb-3 border-b border-gray-100 pb-3");
     onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
     onsiteRow.append("input")
         .attr("type", "number")
@@ -197,9 +196,9 @@ function renderSOWQuestionnaire() {
         .on("input", calculateScoping);
 
     // 2. Service Qualifiers (2 Columns)
-    settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2 mt-3").text("Service Qualifiers");
+    settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
     
-    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2");
+    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-1");
 
     SOW_QUESTIONS.forEach(q => {
         const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 -ml-1");
@@ -219,12 +218,18 @@ function renderSOWQuestionnaire() {
         }
     });
 
-    // --- PRINT BUTTON ---
-    revenueContainer.append("button")
-        .attr("id", "print-sow-btn")
-        .attr("class", "w-full mt-2 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 rounded text-xs flex items-center justify-center transition shadow-sm")
-        .html('<i class="fas fa-print mr-2"></i> Print SOW Estimate')
-        .on("click", generateSOWPrintView);
+    // --- PRINT BUTTON MOVED TO TOTAL BOX ---
+    // We check if the print button already exists in the total box to prevent duplicates
+    const totalBox = d3.select("#sow-total").select(function() { return this.parentNode; });
+    if (!totalBox.empty()) {
+        totalBox.select("#print-sow-mini-btn").remove(); // Clean up old if exists
+        
+        totalBox.append("button")
+            .attr("id", "print-sow-mini-btn")
+            .attr("class", "w-full mt-3 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold py-1.5 rounded text-[11px] flex items-center justify-center transition shadow-sm border border-indigo-600")
+            .html('<i class="fas fa-print mr-2"></i> Print Estimate')
+            .on("click", generateSOWPrintView);
+    }
 
     // Force accordion update immediately after rendering
     setTimeout(refreshAccordionHeight, 50);
@@ -358,8 +363,7 @@ function calculateScoping() {
         onsite: onsiteCount,
         multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) }
     };
-
-    // Ensure resizing happens if list grows
+    
     refreshAccordionHeight();
 }
 
@@ -706,7 +710,6 @@ function clearPackageDetails() {
 }
 
 function refreshAccordionHeight() {
-    // Dynamic recalculation of the container height to prevent overflow
     const content = document.querySelector('#packaging-container').closest('.accordion-content');
     if (content && content.parentElement.classList.contains('active')) {
         content.style.maxHeight = content.scrollHeight + "px";
