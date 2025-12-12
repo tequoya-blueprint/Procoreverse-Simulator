@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 101 (COMPACT PRINT BUTTON)
+// VERSION: 102 (FIXED GRID SPACING)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -195,22 +195,26 @@ function renderSOWQuestionnaire() {
         .attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500")
         .on("input", calculateScoping);
 
-    // 2. Service Qualifiers (2 Columns)
+    // 2. Service Qualifiers (2 Columns, Full Width)
     settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
     
-    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-1");
+    // UPDATED GRID CLASSES: w-full to span width, gap-x-4 for separation
+    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-4 gap-y-2 w-full");
 
     SOW_QUESTIONS.forEach(q => {
-        const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 -ml-1");
+        // UPDATED ITEM CLASSES: items-center for alignment, no negative margins
+        const label = gridDiv.append("label").attr("class", "flex items-center cursor-pointer hover:bg-gray-100 rounded p-1");
         
         label.append("input")
             .attr("type", "checkbox")
             .attr("id", q.id)
-            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500")
+            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded flex-shrink-0 focus:ring-indigo-500")
             .on("change", calculateScoping);
         
-        const textCol = label.append("div").attr("class", "ml-2 flex flex-col");
-        textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight").text(q.label);
+        const textCol = label.append("div").attr("class", "ml-2 flex flex-col min-w-0");
+        
+        // Truncate text if absolutely necessary, but layout should permit it now
+        textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight truncate").text(q.label).attr("title", q.label);
         
         // Cost Badge (Mini)
         if (q.type === 'cost') {
@@ -219,7 +223,6 @@ function renderSOWQuestionnaire() {
     });
 
     // --- PRINT BUTTON MOVED TO TOTAL BOX ---
-    // We check if the print button already exists in the total box to prevent duplicates
     const totalBox = d3.select("#sow-total").select(function() { return this.parentNode; });
     if (!totalBox.empty()) {
         totalBox.select("#print-sow-mini-btn").remove(); // Clean up old if exists
