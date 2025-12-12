@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 105 (LAYOUT CONTAINER FIX)
+// VERSION: 110 (DEFAULT OPEN LEGEND)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -10,7 +10,7 @@ const TEAM_CONFIG = {
         showScoping: true, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'filter-accordion' 
+        defaultOpen: 'view-options-accordion' // UPDATED
     },
     enablement: { 
         showTours: true, 
@@ -19,7 +19,7 @@ const TEAM_CONFIG = {
         showScoping: false, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'tour-accordion' 
+        defaultOpen: 'view-options-accordion' // UPDATED
     },
     sales: { 
         showTours: false, 
@@ -28,7 +28,7 @@ const TEAM_CONFIG = {
         showScoping: false, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'filter-accordion' 
+        defaultOpen: 'view-options-accordion' // UPDATED
     },
     product: { 
         showTours: true, 
@@ -37,7 +37,7 @@ const TEAM_CONFIG = {
         showScoping: false, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'tour-accordion' 
+        defaultOpen: 'view-options-accordion' // UPDATED
     },
     services: { 
         showTours: true, 
@@ -46,7 +46,7 @@ const TEAM_CONFIG = {
         showScoping: true, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'filter-accordion' 
+        defaultOpen: 'view-options-accordion' // UPDATED
     }
 };
 
@@ -179,9 +179,6 @@ function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
     if(revenueContainer.empty()) return;
 
-    // --- CRITICAL FIX: RESET CONTAINER CLASS ---
-    // The original HTML defines this as 'grid grid-cols-2', which constrains our content
-    // into a single column. We must override this to 'block w-full'.
     revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
     revenueContainer.html("");
 
