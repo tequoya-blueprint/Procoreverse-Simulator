@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 110 (DEFAULT OPEN LEGEND)
+// VERSION: 112 (UNCOMPRESSED)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -10,7 +10,7 @@ const TEAM_CONFIG = {
         showScoping: true, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'view-options-accordion' // UPDATED
+        defaultOpen: 'view-options-accordion' 
     },
     enablement: { 
         showTours: true, 
@@ -19,7 +19,7 @@ const TEAM_CONFIG = {
         showScoping: false, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'view-options-accordion' // UPDATED
+        defaultOpen: 'view-options-accordion' 
     },
     sales: { 
         showTours: false, 
@@ -28,7 +28,7 @@ const TEAM_CONFIG = {
         showScoping: false, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'view-options-accordion' // UPDATED
+        defaultOpen: 'view-options-accordion' 
     },
     product: { 
         showTours: true, 
@@ -37,7 +37,7 @@ const TEAM_CONFIG = {
         showScoping: false, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'view-options-accordion' // UPDATED
+        defaultOpen: 'view-options-accordion' 
     },
     services: { 
         showTours: true, 
@@ -46,7 +46,7 @@ const TEAM_CONFIG = {
         showScoping: true, 
         showFilters: true, 
         showLegend: true, 
-        defaultOpen: 'view-options-accordion' // UPDATED
+        defaultOpen: 'view-options-accordion' 
     }
 };
 
@@ -196,10 +196,11 @@ function renderSOWQuestionnaire() {
         .attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500")
         .on("input", calculateScoping);
 
-    // 2. Service Qualifiers (2 Columns, Full Width)
+    // 2. Service Qualifiers
     settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
     
-    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-3 gap-y-2 w-full");
+    // Updated Grid: gap-x-2 for narrower panel
+    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2 w-full");
 
     SOW_QUESTIONS.forEach(q => {
         const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 w-full");
