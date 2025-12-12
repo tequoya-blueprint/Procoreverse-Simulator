@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 90 (SOW QUESTIONNAIRE & CALCULATOR OVERHAUL)
+// VERSION: 95 (SOW EXPORT + PRINT LOGIC)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -84,17 +84,15 @@ const SOW_QUESTIONS = [
     { id: "q-ras", label: "RAS / Data Pop Assistance?", type: "cost", hrs: 40, cost: 6000 },
     { id: "q-pdf", label: "Custom PDF Exports?", type: "cost", hrs: 6, cost: 1200 },
     { id: "q-sop", label: "SOP Documentation Help?", type: "cost", hrs: 20, cost: 3000 },
-    { id: "q-admin", label: "Dedicated Admin Available?", type: "risk", factor: -0.2, target: "change" }, // Reduces Change Management Risk
-    { id: "q-financials", label: "Complex Financials?", type: "risk", factor: 0.3, target: "data" } // Increases Data Complexity
+    { id: "q-admin", label: "Dedicated Admin Available?", type: "risk", factor: -0.2, target: "change" }, 
+    { id: "q-financials", label: "Complex Financials?", type: "risk", factor: 0.3, target: "data" } 
 ];
 
 // --- INITIALIZATION ---
 function initializeControls() {
-    // Initialize Custom Scope State
     if (typeof app !== 'undefined') {
         app.customScope = new Set();
     }
-
     if (typeof packagingData === 'undefined') {
         console.warn("Procoreverse: Packaging data missing.");
         return;
@@ -109,8 +107,6 @@ function initializeControls() {
 
     populateRegionFilter();
     populatePersonaFilter();
-    
-    // INJECT THE NEW SOW QUESTIONNAIRE
     renderSOWQuestionnaire();
    
     // Filter Listeners
@@ -137,7 +133,6 @@ function initializeControls() {
 
     d3.select("#search-input").on("input", handleSearchInput);
     
-    // Team Selector Logic
     const teamSelector = d3.select("#team-selector");
     if (!teamSelector.empty()) {
         const initialTeam = getUrlParam('team') || 'admin'; 
@@ -148,33 +143,27 @@ function initializeControls() {
         teamSelector.on("change", function() { applyTeamView(this.value); });
     }
 
-    // Dismiss Search Results
     d3.select("body").on("click", (e) => {
         if (e.target && !document.getElementById('search-container').contains(e.target)) {
             d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
         }
     });
 
-    // Control Buttons
     d3.select("#reset-view").on("click", resetView);
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
 
-    // Scoping Calculator Listeners (Sliders + Onsite Input)
     const inputs = ['slider-maturity', 'slider-data', 'slider-change', 'onsite-input'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
-        if(el) {
-            el.addEventListener('input', calculateScoping);
-        }
+        if(el) el.addEventListener('input', calculateScoping);
     });
 }
 
 // --- CUSTOM SCOPE MANAGER ---
 function toggleCustomScopeItem(nodeId) {
     if (!app || !app.customScope) return;
-
     if (app.customScope.has(nodeId)) {
         app.customScope.delete(nodeId);
         if(typeof showToast === 'function') showToast(`Removed ${nodeId} from Custom Scope`);
@@ -182,8 +171,6 @@ function toggleCustomScopeItem(nodeId) {
         app.customScope.add(nodeId);
         if(typeof showToast === 'function') showToast(`Added ${nodeId} to Custom Scope`);
     }
-    
-    // Update visuals (false = don't reset view)
     if (typeof updateGraph === 'function') updateGraph(false); 
     calculateScoping();
 }
@@ -192,10 +179,8 @@ function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
     if(revenueContainer.empty()) return;
 
-    // 1. Clear existing generic inputs (except onsite)
     revenueContainer.html("");
 
-    // 2. Re-add Onsite Input (Top)
     const onsiteDiv = revenueContainer.append("div").attr("class", "mb-3 pb-3 border-b border-gray-200");
     onsiteDiv.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
     onsiteDiv.append("input")
@@ -206,13 +191,11 @@ function renderSOWQuestionnaire() {
         .attr("class", "w-full p-1 text-sm border rounded text-center bg-white")
         .on("input", calculateScoping);
 
-    // 3. Add Questionnaire Container
     const questionsDiv = revenueContainer.append("div").attr("class", "grid grid-cols-1 gap-1");
     questionsDiv.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-1").text("Service Qualifiers");
 
     SOW_QUESTIONS.forEach(q => {
         const label = questionsDiv.append("label").attr("class", "flex items-center justify-between text-xs py-1 cursor-pointer hover:bg-gray-100 rounded px-1");
-        
         const leftSide = label.append("div").attr("class", "flex items-center");
         leftSide.append("input")
             .attr("type", "checkbox")
@@ -220,14 +203,18 @@ function renderSOWQuestionnaire() {
             .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mr-2 focus:ring-indigo-500")
             .on("change", calculateScoping);
         leftSide.append("span").attr("class", "text-gray-700 font-medium").text(q.label);
-        
-        // Optional: Tooltip or badge for cost
         if (q.type === 'cost') {
              label.append("span").attr("class", "text-[9px] text-gray-400 bg-gray-50 px-1 rounded border border-gray-100").text("+$" + (q.cost/1000) + "k");
         }
     });
-}
 
+    // --- PRINT BUTTON ---
+    revenueContainer.append("button")
+        .attr("id", "print-sow-btn")
+        .attr("class", "w-full mt-4 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 rounded text-xs flex items-center justify-center transition shadow-sm")
+        .html('<i class="fas fa-print mr-2"></i> Print SOW Estimate')
+        .on("click", generateSOWPrintView);
+}
 
 // --- SCOPING CALCULATOR ---
 function calculateScoping() {
@@ -241,7 +228,6 @@ function calculateScoping() {
     let data = parseFloat(sliderData.value);
     let change = parseFloat(sliderChange.value);
 
-    // --- 1. APPLY RISK MODIFIERS FROM QUESTIONNAIRE ---
     SOW_QUESTIONS.filter(q => q.type === 'risk').forEach(q => {
         const checkbox = document.getElementById(q.id);
         if (checkbox && checkbox.checked) {
@@ -250,26 +236,19 @@ function calculateScoping() {
         }
     });
 
-    // Update Label Text (Visual Feedback)
     const valMat = document.getElementById('val-maturity');
     if(valMat) valMat.innerText = mat.toFixed(1) + "x";
-    
     const valData = document.getElementById('val-data');
     if(valData) valData.innerText = data.toFixed(1) + "x";
-    
     const valChange = document.getElementById('val-change');
     if(valChange) valChange.innerText = change.toFixed(1) + "x";
 
-    // --- 2. BASE HOURS FROM PACKAGES ---
     let baseHours = 0;
-    let addOnCount = 0;
-    
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     
     if (region !== 'all' && audience !== 'all') {
         const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-        
         d3.selectAll(".package-checkbox:checked").each(function() {
             const pkgName = this.value;
             const pkg = packagingData.find(p => 
@@ -277,19 +256,13 @@ function calculateScoping() {
                 audienceDataKeys.includes(p.audience) && 
                 p.package_name === pkgName
             );
-            
             if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
                 const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
-                if (match) {
-                    baseHours += parseInt(match[1], 10);
-                }
+                if (match) baseHours += parseInt(match[1], 10);
             }
         });
-        
-        addOnCount = d3.selectAll("#add-ons-checkboxes input:checked").size();
     }
 
-    // --- 3. CUSTOM SCOPE & ADD-ONS ---
     const customToolCount = app.customScope ? app.customScope.size : 0;
     const customScopeHours = customToolCount * 5; 
     
@@ -306,7 +279,6 @@ function calculateScoping() {
 
     const totalHoursRaw = baseHours + customScopeHours + servicesHours;
 
-    // --- VISUAL LIST UPDATE ---
     let listContainer = document.getElementById('custom-scope-list-container');
     if (!listContainer) {
         const revenueContainer = document.getElementById('revenue-container');
@@ -323,43 +295,31 @@ function calculateScoping() {
         if (customToolCount > 0) {
             content += `<div class="mb-1"><span class="font-bold text-gray-500">Custom Tools:</span> <span class="text-indigo-600 font-semibold">${Array.from(app.customScope).join(", ")}</span></div>`;
         }
-        
-        // List active services
         const activeServices = SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label);
         if (activeServices.length > 0) {
              content += `<div class="mb-1"><span class="font-bold text-gray-500">Services:</span> <span class="text-gray-700">${activeServices.join(", ")}</span></div>`;
         }
-        
         listContainer.innerHTML = content;
         listContainer.style.display = content ? 'block' : 'none';
     }
 
-    // Update Base Scope UI
     const baseLabel = document.getElementById('base-tools-count');
     if (baseLabel) {
         baseLabel.parentElement.innerHTML = `Total Scope: <span id="base-tools-count" class="font-bold text-gray-700">${totalHoursRaw} Hrs</span>`;
     }
 
-    // --- 4. TIMELINE CALCULATION ---
     const PREP_FACTOR = 1.5; 
-    const CONSULTING_VELOCITY = 3.5; // Slightly faster velocity for larger projects
-    
+    const CONSULTING_VELOCITY = 3.5; 
+    const combinedMultiplier = (mat + data + change) / 3; 
     const totalEffortHours = totalHoursRaw * PREP_FACTOR;
     const baseWeeks = (totalEffortHours / CONSULTING_VELOCITY); 
-    
-    const combinedMultiplier = (mat + data + change) / 3; 
     const finalWeeks = Math.round(baseWeeks * combinedMultiplier);
 
     const calcWeeks = document.getElementById('calc-weeks');
     if(calcWeeks) calcWeeks.innerText = finalWeeks;
 
-    // --- 5. REVENUE CALCULATION ---
     const hourlyRate = 250; 
-    // Multipliers affect implementation effort, services are usually fixed cost or time & materials
-    // For simplicity, we apply multiplier to base hours, and keep service costs flat + contingency
-    
     const implementationCost = (baseHours + customScopeHours) * PREP_FACTOR * combinedMultiplier * hourlyRate;
-    
     const onsiteInput = document.getElementById('onsite-input');
     const onsiteCount = parseInt(onsiteInput ? onsiteInput.value : 0) || 0;
     const onsiteCost = onsiteCount * 7500;
@@ -370,6 +330,98 @@ function calculateScoping() {
     if(sowDisplay) {
         sowDisplay.innerText = "$" + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
     }
+
+    // Store calculations in app state for the print function
+    app.currentSOW = {
+        totalHours: totalHoursRaw,
+        weeks: finalWeeks,
+        totalCost: totalSOW,
+        region: region,
+        audience: audience,
+        packages: d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value),
+        customTools: Array.from(app.customScope || []),
+        services: SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label),
+        onsite: onsiteCount,
+        multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) }
+    };
+}
+
+// --- PRINT SOW LOGIC ---
+function generateSOWPrintView() {
+    if (!app.currentSOW) {
+        alert("Please configure a scope first.");
+        return;
+    }
+    const sow = app.currentSOW;
+    const today = new Date().toLocaleDateString();
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        alert("Please allow popups to print the SOW.");
+        return;
+    }
+
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Procore Services Estimate</title>
+        <style>
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.5; }
+            .header { border-bottom: 2px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
+            .title { font-size: 14px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+            h2 { font-size: 18px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; color: #555; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
+            .item { margin-bottom: 8px; font-size: 14px; }
+            .label { font-weight: bold; color: #555; display: inline-block; width: 140px; }
+            .total-box { background: #f9f9f9; padding: 20px; border-radius: 8px; text-align: right; margin-top: 40px; border: 1px solid #eee; }
+            .total-cost { font-size: 32px; font-weight: 800; color: #111; margin-top: 5px; }
+            .disclaimer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="logo">PROCORE</div>
+            <div class="title">Services Estimate • ${today}</div>
+        </div>
+        
+        <div class="grid">
+            <div>
+                <h2>Client Profile</h2>
+                <div class="item"><span class="label">Region:</span> ${sow.region}</div>
+                <div class="item"><span class="label">Audience:</span> ${sow.audience}</div>
+                <div class="item"><span class="label">Timeline Risk:</span> Mat: ${sow.multipliers.mat}, Data: ${sow.multipliers.data}, Chg: ${sow.multipliers.change}</div>
+            </div>
+            <div>
+                 <h2>Project Scope</h2>
+                 <div class="item"><span class="label">Packages:</span> ${sow.packages.length > 0 ? sow.packages.join(", ") : "None"}</div>
+                 <div class="item"><span class="label">Custom Tools:</span> ${sow.customTools.length > 0 ? sow.customTools.join(", ") : "None"}</div>
+                 <div class="item"><span class="label">Add-on Services:</span> ${sow.services.length > 0 ? sow.services.join(", ") : "None"}</div>
+                 <div class="item"><span class="label">On-Site Visits:</span> ${sow.onsite}</div>
+            </div>
+        </div>
+
+        <div class="total-box">
+            <div style="font-size: 12px; text-transform: uppercase; color: #888; font-weight: bold;">Estimated Implementation Investment</div>
+            <div class="total-cost">$${sow.totalCost.toLocaleString()}</div>
+            <div style="font-size: 14px; color: #666; margin-top: 5px;">Est. Timeline: ${sow.weeks} Weeks</div>
+        </div>
+
+        <div class="disclaimer">
+            This document is a rough order of magnitude (ROM) estimate for simulation purposes only. <br>
+            It does not constitute a binding contract or formal Statement of Work. Pricing is subject to change.
+        </div>
+
+        <script>
+            window.print();
+        </script>
+    </body>
+    </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
 }
 
 // --- TEAM VIEW MANAGER ---
@@ -399,7 +451,6 @@ function applyTeamView(team) {
 }
 
 // --- UI HELPER FUNCTIONS ---
-
 function toggleAllConnections() {
     const checkboxes = d3.selectAll(".legend-checkbox");
     if (checkboxes.empty()) return;
@@ -417,7 +468,6 @@ function toggleAllCategories() {
 
 function populateRegionFilter() {
     if (typeof packagingData === 'undefined') return;
-    
     const regionFilter = d3.select("#region-filter");
     if (regionFilter.empty()) return;
 
@@ -467,7 +517,6 @@ function onAudienceChange() {
     const audience = d3.select(this).property("value");
     const packageArea = d3.select("#package-selection-area");
     const packageList = d3.select("#package-checkboxes");
-    
     packageList.html("");
     clearPackageDetails();
     
@@ -495,7 +544,6 @@ function onAudienceChange() {
                         if (typeof updateGraph === 'function') updateGraph(true);
                         calculateScoping();
                     });
-                
                 label.append("span").text(pkg.package_name);
             });
         } else {
@@ -528,7 +576,6 @@ function updatePackageAddOns() {
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-    
     const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
     
     const allAddOns = new Set();
@@ -600,10 +647,8 @@ function getActiveFilters() {
     
     if (region !== 'all' && audience !== 'all') {
         const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
-        
         if (selectedPackageNames.length > 0) {
             packageTools = new Set();
-            
             selectedPackageNames.forEach(pkgName => {
                 const pkg = packagingData.find(p => 
                     (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
@@ -617,7 +662,6 @@ function getActiveFilters() {
                     }
                 }
             });
-            
             const selectedAddOns = d3.selectAll("#add-ons-checkboxes input:checked").nodes().map(el => el.value);
             selectedAddOns.forEach(addOn => packageTools.add(addOn));
         }
@@ -639,9 +683,8 @@ function clearPackageDetails() {
     d3.select("#package-services-list").html("");
     d3.select("#add-ons-container").classed('hidden', true);
     d3.select("#package-services-container").classed('hidden', true);
-    
     if (app && app.customScope) app.customScope.clear();
-    
+    d3.selectAll(".sow-question").property("checked", false);
     calculateScoping();
 }
 
@@ -676,7 +719,6 @@ function populatePersonaFilter() {
 function populateCategoryFilters() {
     const filtersContainer = d3.select("#category-filters");
     if(filtersContainer.empty() || typeof app === 'undefined' || !app.categories) return;
-    
     filtersContainer.html("");
     Object.keys(app.categories).sort().forEach(cat => {
         const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
@@ -704,7 +746,6 @@ function resetView() {
     d3.selectAll(".legend-checkbox").property("checked", true);
     allCategoriesChecked = true;
     
-    // Clear SOW Questions
     d3.selectAll(".sow-question").property("checked", false);
     
     clearPackageDetails();
@@ -759,11 +800,9 @@ function selectNodeFromSearch(d) {
 
 function updateActivePackageState() {
     if (typeof app === 'undefined') return;
-    
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-    
     const firstChecked = d3.select(".package-checkbox:checked");
     
     if (!firstChecked.empty()) {
