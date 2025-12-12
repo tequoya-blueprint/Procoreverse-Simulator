@@ -1,5 +1,6 @@
 // --- app-main.js ---
-// VERSION: 80 (SEMANTIC CLUSTER FIX + NO OVERLAP)
+// --- app-main.js ---
+// VERSION: 110 (LEGEND ALIGNMENT FIX)
 
 const app = {
     simulation: null,
@@ -16,7 +17,6 @@ const app = {
     categoryFoci: {}, 
     baseNodeSize: 25,
     nodeSizeCompany: 28,
-    // Increased collision radius to prevent overlap
     nodeCollisionRadius: 60, 
     arrowRefX: 34, 
     defaultArrowColor: "#a0a0a0",
@@ -75,7 +75,6 @@ function setHexFoci() {
     const radius = Math.min(app.width, app.height) * 0.38; 
 
     // Arrangement: Platform Center, others in a Hexagon Ring
-    // Angles: -90 (Top), -30 (Top Right), 30 (Bottom Right), 90 (Bottom), 150 (Bottom Left), 210 (Top Left)
     const layoutMap = {
         "Platform & Core": { angle: 0, dist: 0 },
         "Preconstruction": { angle: -90, dist: 1 },       
@@ -84,8 +83,6 @@ function setHexFoci() {
         "Construction Intelligence": { angle: 90, dist: 1 }, 
         "Resource Management": { angle: 150, dist: 1 },   
         "Quality & Safety": { angle: 210, dist: 1 },      
-        
-        // Inner orbits
         "Helix": { angle: 90, dist: 0.6 }, 
         "Project Execution": { angle: -30, dist: 0.6 }, 
         "Workforce Management": { angle: 150, dist: 0.7 }, 
@@ -108,7 +105,7 @@ function forceCluster(alpha) {
     return function(d) {
         const focus = app.categoryFoci[d.group];
         if (!focus) return;
-        const k = alpha * 0.12; // Gentle pull to center
+        const k = alpha * 0.12; 
         d.vx -= (d.x - focus.x) * k;
         d.vy -= (d.y - focus.y) * k;
     };
@@ -132,13 +129,9 @@ function initializeSimulation() {
 
     // PHYSICS CONFIGURATION
     app.simulation = d3.forceSimulation()
-        // Pull linked nodes slightly
         .force("link", d3.forceLink().id(d => d.id).distance(100).strength(0.2))
-        // Strong Repulsion to prevent overlap (-900)
         .force("charge", d3.forceManyBody().strength(-900))
-        // Hard Collision Radius (60px)
         .force("collision", d3.forceCollide().radius(app.nodeCollisionRadius).strength(1))
-        // Gravity to center
         .force("center", d3.forceCenter(app.width / 2, app.height / 2))
         .on("tick", ticked);
 
@@ -177,8 +170,10 @@ function populateLegend() {
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const svg = legendSVGs[type.type_id] || "";
-            const item = legendContainer.append("label").attr("class", "flex items-start mb-2 cursor-pointer");
-            item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id).attr("class", "form-checkbox h-5 w-5 text-orange-600 legend-checkbox").on("change", () => updateGraph(true));
+            // UPDATED CLASS: added 'items-center' and 'mb-3'
+            const item = legendContainer.append("label").attr("class", "flex items-center mb-3 cursor-pointer");
+            // UPDATED CLASS: added 'mr-3' to input for spacing
+            item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id).attr("class", "form-checkbox h-4 w-4 text-orange-600 legend-checkbox mr-3").on("change", () => updateGraph(true));
             item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
             item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
         });
@@ -217,7 +212,6 @@ function updateGraph(isFilterChange = true) {
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
             nodeGroup.append("text").text(d => d.id).attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
             
-            // Badge Rendering with Hit Boxes
             nodeGroup.each(function(d) {
                 const g = d3.select(this);
                 let badgeOffset = 14;

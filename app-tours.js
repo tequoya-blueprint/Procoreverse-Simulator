@@ -1,10 +1,10 @@
 // --- app-tours.js ---
-// VERSION: 56 (BASELINE + AI SIMULATION LOADER)
+// VERSION: 60 (VISUAL POLISH + AI SIMULATION)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
     const packageGroup = d3.select("#package-tours");
-    const aiGroup = d3.select("#ai-tours"); // Selector for AI optgroup
+    const aiGroup = d3.select("#ai-tours"); 
     
     // Load Standard Tours
     if (typeof tours !== 'undefined' && tours.platform) {
@@ -14,11 +14,9 @@ function initializeTourControls() {
         Object.entries(tours.packages).forEach(([id, tour]) => packageGroup.append("option").attr("value", id).text(tour.name));
     }
 
-    // --- NEW: Load Static AI Simulations (from world_data.py) ---
-    // This allows the "Agentic Workflow" to appear in the list for the video
+    // Load AI/Saved Tours
     if (typeof tours !== 'undefined' && tours.ai) {
         Object.entries(tours.ai).forEach(([id, tour]) => {
-            // Check if this tour was already loaded by localStorage to avoid duplicates
             if (aiGroup.select(`option[value="${id}"]`).empty()) {
                 aiGroup.append("option").attr("value", id).text("✨ " + tour.name);
             }
@@ -46,14 +44,14 @@ function initializeTourControls() {
     d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
     d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
 
-    // AI Modal
+    // AI Modal Triggers
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
     aiModalOverlay.on("click", function(e) { if (e.target === this) aiModalOverlay.classed("visible", false); });
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 
-    // Manual Builder Button
+    // Manual Builder Trigger
     const container = d3.select("#tour-container");
     container.append("button")
         .attr("id", "manual-workflow-builder-btn")
@@ -108,7 +106,6 @@ function saveCurrentTour() {
 }
 
 // --- MANUAL BUILDER LOGIC ---
-
 let manualBuilderSteps = [];
 
 function startManualBuilder() {
@@ -116,7 +113,7 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Initial Visual State
+    // Initial Visual State: Dim Links, Show All Nodes
     app.node.transition().duration(500).style("opacity", 1);
     app.link.transition().duration(500).style("stroke-opacity", 0.1); 
 
@@ -142,30 +139,17 @@ function startManualBuilder() {
     if(typeof showToast === 'function') showToast("Recording started.");
 }
 
-// TOGGLE LOGIC: Add or Remove based on current state
 function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
-    
     if (existingIndex !== -1) {
-        // Node is already in the list -> REMOVE IT
         manualBuilderSteps.splice(existingIndex, 1);
         if(typeof showToast === 'function') showToast(`Removed ${d.id}`);
     } else {
-        // Node is not in list -> ADD IT
-        manualBuilderSteps.push({
-            nodeId: d.id,
-            info: `Maps to ${d.id} tool.` 
-        });
+        manualBuilderSteps.push({ nodeId: d.id, info: `Maps to ${d.id} tool.` });
     }
     updateManualBuilderVisuals();
 }
 
-// Double click kept as fallback, but single click handles everything now
-function handleManualNodeDoubleClick(d) {
-    // No-op to prevent conflict
-}
-
-// VISUALIZER: Enforces Directional Highlighting
 function updateManualBuilderVisuals() {
     d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
@@ -173,7 +157,6 @@ function updateManualBuilderVisuals() {
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
     const activeLinkKeys = new Set();
     
-    // Calculate Active Path Lines
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
         const v = manualBuilderSteps[i+1].nodeId;
@@ -181,54 +164,44 @@ function updateManualBuilderVisuals() {
         activeLinkKeys.add(`${v}-${u}`);
     }
 
-    // --- DIRECTIONAL CANDIDATE LOGIC ---
+    // Directional Candidates
     const candidateIds = new Set();
     const candidateLinkKeys = new Set();
     
     if (manualBuilderSteps.length > 0) {
         const lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
-        
         app.simulation.force("link").links().forEach(l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
-            
-            // LOGIC: Highlight Target ONLY if Source is the Last Node
-            // (Standard Process Flow: Downstream)
+            // Highlight downstream targets only
             if (s === lastNodeId && !activeIds.has(t)) {
                 candidateIds.add(t);
                 candidateLinkKeys.add(`${s}-${t}`);
             }
-            
-            // NOTE: We deliberately exclude upstream (t === lastNodeId) to enforce flow.
         });
     } else {
-        // Step 0: All nodes are valid start points
         if(app.node) app.node.each(d => candidateIds.add(d.id));
     }
 
-    // Update Nodes
     app.node.transition().duration(200).style("opacity", n => {
-        if (activeIds.has(n.id)) return 1;       // Selected (Full)
-        if (candidateIds.has(n.id)) return 0.6;  // Candidate (Medium)
-        return 0.1;                              // Invalid (Dim)
+        if (activeIds.has(n.id)) return 1;
+        if (candidateIds.has(n.id)) return 0.6;
+        return 0.1;
     });
 
-    // Update Links
     app.link.transition().duration(200)
         .style("stroke-opacity", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            
-            if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return 1; // Active
-            if (candidateLinkKeys.has(key) || candidateLinkKeys.has(rKey)) return 0.3; // Candidate
-            return 0.05; // Dim
+            if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return 1;
+            if (candidateLinkKeys.has(key) || candidateLinkKeys.has(rKey)) return 0.3;
+            return 0.05;
         })
         .attr("stroke", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            
             if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return "var(--procore-orange)";
             return "#a0a0a0";
         })
@@ -236,9 +209,8 @@ function updateManualBuilderVisuals() {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            
-            // Show arrow for active path OR candidate suggestion
             if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return `url(#arrow-highlighted)`;
+            // Show candidate arrows
             if (candidateLinkKeys.has(key) || candidateLinkKeys.has(rKey)) {
                  const legend = legendData.find(leg => leg.type_id === l.type);
                  return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
@@ -250,19 +222,13 @@ function updateManualBuilderVisuals() {
 function finishManualBuilder() {
     const name = prompt("Enter a name for this Custom Process:", "New SOP Process");
     if (!name) return;
-
-    const newTour = {
-        name: `📝 ${name}`, 
-        steps: manualBuilderSteps,
-        id: `custom_${Date.now()}`
-    };
-
+    const newTour = { name: `📝 ${name}`, steps: manualBuilderSteps, id: `custom_${Date.now()}` };
     app.currentTour = newTour;
     saveCurrentTour(); 
     previewTour(newTour); 
 }
 
-// --- STANDARD PREVIEW ---
+// --- PREVIEW & RUN LOGIC ---
 function previewTour(tourData) {
     stopTour(false); 
     app.currentTour = tourData;
@@ -271,7 +237,6 @@ function previewTour(tourData) {
     
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     
-    // Identify internal links
     const tourLinkKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
@@ -348,50 +313,65 @@ function startTour() {
 function runTourStep() {
     const step = app.currentTour.steps[app.currentStep];
     const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
+    
+    // UI Updates
     d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
-
     const isLastStep = (app.currentStep === app.currentTour.steps.length - 1);
     const saveBtn = d3.select("#tour-controls .save-tour-btn");
-    if (isLastStep) saveBtn.classed("hidden", false).classed("flex", true);
-    else saveBtn.classed("hidden", true).classed("flex", false);
+    saveBtn.classed("hidden", !isLastStep).classed("flex", isLastStep);
 
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
         
-        const activeNodeIds = new Set();
-        activeNodeIds.add(step.nodeId);
+        // Define Active and Past Sets
+        const activeNodeId = step.nodeId;
+        const pastNodeIds = new Set(app.currentTour.steps.slice(0, app.currentStep).map(s => s.nodeId));
+        const allTourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
         
-        let prevNodeId = null;
-        if (app.currentStep > 0) {
-            prevNodeId = app.currentTour.steps[app.currentStep - 1].nodeId;
-            activeNodeIds.add(prevNodeId);
-        }
-        
-        app.node.transition().duration(300).style("opacity", d => {
-            if (activeNodeIds.has(d.id)) return 1;
-            if (new Set(app.currentTour.steps.map(s => s.nodeId)).has(d.id)) return 0.15;
-            return 0.05;
+        // --- POLISHED NODE OPACITY LOGIC ---
+        app.node.transition().duration(400).style("opacity", d => {
+            if (d.id === activeNodeId) return 1;     // Active: Full Opacity
+            if (pastNodeIds.has(d.id)) return 0.4;   // Past: Dimmed but visible
+            if (allTourNodeIds.has(d.id)) return 0.1;// Future: Faint ghost
+            return 0.02;                             // Unrelated: Almost invisible
         });
         
-        app.link.transition().duration(300)
+        // --- POLISHED LINK LOGIC ---
+        let prevNodeId = app.currentStep > 0 ? app.currentTour.steps[app.currentStep - 1].nodeId : null;
+        
+        app.link.transition().duration(400)
             .style("stroke-opacity", l => {
                 const s = l.source.id || l.source;
                 const t = l.target.id || l.target;
-                const isActiveLink = prevNodeId && ((s === prevNodeId && t === step.nodeId) || (s === step.nodeId && t === prevNodeId));
-                return isActiveLink ? 1 : 0.02;
+                
+                // Active Link (Previous -> Current)
+                const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
+                if (isActiveLink) return 1;
+                
+                // Check if link is part of the tour history
+                const isHistoryLink = pastNodeIds.has(s) && pastNodeIds.has(t); 
+                if (isHistoryLink) return 0.2;
+                
+                return 0.01;
             })
             .attr("stroke", l => {
                 const s = l.source.id || l.source;
                 const t = l.target.id || l.target;
-                const isActiveLink = prevNodeId && ((s === prevNodeId && t === step.nodeId) || (s === step.nodeId && t === prevNodeId));
+                const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 return isActiveLink ? "var(--procore-orange)" : "#a0a0a0";
+            })
+            .style("stroke-width", l => {
+                const s = l.source.id || l.source;
+                const t = l.target.id || l.target;
+                const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
+                return isActiveLink ? 3 : 2;
             })
             .attr("marker-end", l => {
                 const s = l.source.id || l.source;
                 const t = l.target.id || l.target;
-                const isActiveLink = prevNodeId && ((s === prevNodeId && t === step.nodeId) || (s === step.nodeId && t === prevNodeId));
+                const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 if (isActiveLink) return `url(#arrow-highlighted)`;
                 return null; 
             });
