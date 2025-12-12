@@ -1,14 +1,15 @@
 // --- app-d3-helpers.js ---
-// VERSION: 75 (FULL EXPANSION + FLAT TOP FIX)
+// VERSION: 80 (FLAT-TOP NODE SHAPE + FULL LOGIC)
 
 /**
- * Generates a Hexagon Path (Flat-Top/Bottom orientation).
- * Rotates standard points by 30 degrees (PI/6).
+ * Generates a Hexagon Path (Flat-Top/Bottom).
+ * Starts at 0 degrees to create flat top/bottom edges.
  */
 function generateHexagonPath(size) {
     const points = Array.from({length: 6}, (_, i) => {
-        // Offset by 30 degrees (PI/6) to align edges horizontally
-        const a = (Math.PI / 180 * (60 * i)) + (Math.PI / 6); 
+        // 0-degree start = Vertices at 0, 60, 120... 
+        // This creates a hexagon with Flat Top and Bottom edges.
+        const a = (Math.PI / 180 * (60 * i)); 
         return [size * Math.cos(a), size * Math.sin(a)];
     });
     return "M" + points.map(p => p.join(",")).join("L") + "Z";
@@ -32,9 +33,9 @@ function drag(simulation) {
     
     function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0);
-        // We do not nullify d.fx/d.fy so the node stays where dragged if desired,
-        // or you can uncomment below to let it snap back:
-        // d.fx = null; d.fy = null;
+        // We release the fixed position so physics takes over again
+        d.fx = null; 
+        d.fy = null;
     }
     
     return d3.drag()
@@ -45,7 +46,6 @@ function drag(simulation) {
 
 /**
  * Central Node Click Handler.
- * Routes logic based on app state (Manual Builder vs Standard).
  */
 function nodeClicked(event, d) {
     event.stopPropagation();
@@ -58,7 +58,7 @@ function nodeClicked(event, d) {
         return; 
     }
 
-    // 2. SCOPING MODE IS HANDLED IN APP-MAIN.JS VIA OVERRIDE
+    // 2. SCOPING MODE IS HANDLED IN APP-MAIN.JS
     // This file contains the Fallback/Standard logic only.
     
     // 3. STANDARD SELECTION (Info Panel)
@@ -80,11 +80,9 @@ function nodeClicked(event, d) {
 
 function nodeDoubleClicked(event, d) {
     event.stopPropagation();
-    // No-op to avoid conflicts with single click
 }
 
 function nodeMouseOver(event, d) {
-    // Disable hover effects during active modes
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
     
     if (typeof showTooltip === 'function') showTooltip(event, d);
@@ -100,7 +98,6 @@ function nodeMouseOut() {
 
 /**
  * Visual Highlight Logic.
- * Dims unconnected nodes.
  */
 function applyHighlight(d) {
     if (!app.simulation) return;
@@ -131,14 +128,12 @@ function applyHighlight(d) {
 
 function highlightConnection(element, d) {
     if (!app.simulation) return;
-    // Optional: Highlight specific connection link from UI hover
 }
 
 /**
  * Resets the graph to neutral state.
  */
 function resetHighlight(hidePanel = true) {
-    // Don't reset if we are in a special mode (unless forcing it)
     if (!hidePanel && ['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return; 
 
     app.interactionState = 'explore';
