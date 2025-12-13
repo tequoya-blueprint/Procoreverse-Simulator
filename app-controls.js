@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 115 (AI BUILDER ENABLED FOR SERVICES) - UNCOMPRESSED
+// VERSION: 155 (UNCOMPRESSED - FULL RESTORATION)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -41,7 +41,7 @@ const TEAM_CONFIG = {
     },
     services: { 
         showTours: true, 
-        showAiBuilder: true, // UPDATED: Enabled for Prof. Services
+        showAiBuilder: true, 
         showManualBuilder: true, 
         showScoping: true, 
         showFilters: true, 
@@ -92,6 +92,9 @@ const SOW_QUESTIONS = [
 function initializeControls() {
     if (typeof app !== 'undefined') {
         app.customScope = new Set();
+        // Initialize State for Gap Analysis
+        if (!app.state) app.state = {};
+        if (!app.state.myStack) app.state.myStack = new Set();
     }
     if (typeof packagingData === 'undefined') {
         console.warn("Procoreverse: Packaging data missing.");
@@ -159,6 +162,22 @@ function initializeControls() {
         const el = document.getElementById(id);
         if(el) el.addEventListener('input', calculateScoping);
     });
+
+    // Initialize Stack Builder Button (Gap Analysis V2)
+    setTimeout(() => {
+        const existingBtn = d3.select("#stack-builder-btn");
+        if (existingBtn.empty()) {
+             const container = d3.select("#packaging-container"); 
+             if (!container.empty()) {
+                container.insert("button", ":first-child")
+                    .attr("id", "stack-builder-btn")
+                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed")
+                    .attr("disabled", true)
+                    .html('<i class="fas fa-layer-group mr-2"></i> Define Customer Stack')
+                    .on("click", toggleStackBuilderMode);
+             }
+        }
+    }, 500);
 }
 
 // --- CUSTOM SCOPE MANAGER ---
@@ -174,6 +193,103 @@ function toggleCustomScopeItem(nodeId) {
     if (typeof updateGraph === 'function') updateGraph(false); 
     calculateScoping();
 }
+
+// --- GAP ANALYSIS V2 MANAGER ---
+function toggleStackBuilderMode() {
+    // Prevent usage if Region not selected
+    if (d3.select("#region-filter").property("value") === "all") {
+        if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
+        return;
+    }
+
+    app.state.isBuildingStack = !app.state.isBuildingStack;
+    
+    let btn = d3.select("#stack-builder-btn");
+    
+    if (app.state.isBuildingStack) {
+        // --- ACTIVATE BUILDER MODE ---
+        app.interactionState = 'building_stack';
+        
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
+           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
+           .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
+        
+        if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
+        
+        d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
+        highlightOwnedNodes();
+        
+    } else {
+        // --- DEACTIVATE BUILDER MODE ---
+        app.interactionState = 'explore';
+        
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
+           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
+           .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
+        
+        // Return to normal view with "Gap Analysis" active if package selected
+        if (typeof updateGraph === 'function') updateGraph(true);
+        
+        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
+            showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
+        }
+    }
+}
+
+function toggleStackItem(d) {
+    if (!app.state.myStack) app.state.myStack = new Set();
+    
+    if (app.state.myStack.has(d.id)) {
+        app.state.myStack.delete(d.id);
+    } else {
+        app.state.myStack.add(d.id);
+    }
+    highlightOwnedNodes();
+}
+
+function highlightOwnedNodes() {
+    if (!app.node) return;
+    
+    app.node.transition().duration(200)
+        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
+        .select("path")
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
+        .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
+}
+
+// UPDATED LOGIC: Calculates Gap, Matched, and OUTLIERS
+function getGapAnalysis() {
+    const filters = getActiveFilters(); 
+    const targetPackageTools = filters.packageTools || new Set();
+    
+    const owned = app.state.myStack || new Set();
+    
+    const gap = new Set();      // In Package, NOT Owned (Upsell)
+    const matched = new Set();  // In Package, AND Owned (Safe)
+    const outlier = new Set();  // NOT in Package, BUT Owned (Legacy/Extra)
+    
+    if (targetPackageTools.size > 0) {
+        targetPackageTools.forEach(toolId => {
+            if (owned.has(toolId)) {
+                matched.add(toolId);
+            } else {
+                gap.add(toolId);
+            }
+        });
+        
+        // Calculate Outliers (Legacy tools)
+        owned.forEach(toolId => {
+            if (!targetPackageTools.has(toolId)) {
+                outlier.add(toolId);
+            }
+        });
+    }
+    
+    return { owned, gap, matched, outlier, target: targetPackageTools };
+}
+
+// --- STANDARD FILTER FUNCTIONS ---
 
 function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
@@ -502,19 +618,33 @@ function populateRegionFilter() {
     });
 }
 
+// --- HIERARCHY ENFORCER: LEVEL 1 (Region) ---
 function onRegionChange() {
     const region = d3.select(this).property("value");
     const audienceFilter = d3.select("#audience-filter");
+    const stackBtn = d3.select("#stack-builder-btn");
     
+    // 1. Reset Downstream Filters
     audienceFilter.property("value", "all").property("disabled", region === "all");
     audienceFilter.html('<option value="all">All Audiences</option>');
     
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
     
+    // 2. Reset App State (Stack, etc.)
+    if(typeof app !== 'undefined') {
+        app.state.myStack.clear();
+        if (app.state.isBuildingStack) toggleStackBuilderMode(); // Turn off if on
+    }
     clearPackageDetails();
     
+    // 3. Configure Audience based on Region
     if (region !== "all") {
+        // Unlock Stack Builder
+        stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", false)
+                .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", true)
+                .attr("disabled", null);
+
         const availableAudiences = new Set();
         packagingData.filter(pkg => 
             pkg.region === region || (region === 'NAMER' && pkg.region === 'NAM')
@@ -526,15 +656,23 @@ function onRegionChange() {
         [...availableAudiences].sort().forEach(audKey => {
              audienceFilter.append("option").attr("value", audKey).text(audienceKeyToLabelMap[audKey]);
         });
+    } else {
+        // Disable Stack Builder if no region
+        stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", true)
+                .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", false)
+                .attr("disabled", true);
     }
+    
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
+// --- HIERARCHY ENFORCER: LEVEL 2 (Audience) ---
 function onAudienceChange() {
     const region = d3.select("#region-filter").property("value");
     const audience = d3.select(this).property("value");
     const packageArea = d3.select("#package-selection-area");
     const packageList = d3.select("#package-checkboxes");
+    
     packageList.html("");
     clearPackageDetails();
     
@@ -573,7 +711,10 @@ function onAudienceChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
+// FIX: AUTO-EXIT BUILDER MODE ON PACKAGE SELECTION
 function onPackageChange() {
+    if (app.state.isBuildingStack) toggleStackBuilderMode(); // FORCE OFF
+    
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const pkgName = d3.select("#package-filter").property('value');
@@ -591,6 +732,9 @@ function onPackageChange() {
 }
 
 function updatePackageAddOns() {
+    // FORCE EXIT BUILDER MODE HERE TOO (Since this is triggered by checkboxes)
+    if (app.state.isBuildingStack) toggleStackBuilderMode();
+
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
@@ -765,6 +909,11 @@ function resetView() {
     allCategoriesChecked = true;
     
     d3.selectAll(".sow-question").property("checked", false);
+    
+    // RESET STACK
+    if (app.state && app.state.isBuildingStack) toggleStackBuilderMode();
+    app.state.myStack = new Set();
+    d3.select("#stack-builder-btn").attr("disabled", true).classed("cursor-not-allowed", true);
     
     clearPackageDetails();
     if (typeof updateGraph === 'function') updateGraph(false);
