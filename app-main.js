@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 400 (MASTER RESET: FIXED INFINITE RECURSION CRASH)
+// VERSION: 410 (FULL RESTORATION: NO MINIFICATION)
 
-console.log("App Main 400: Initializing...");
+console.log("App Main 410: Loading...");
 
 const app = {
     simulation: null,
@@ -30,16 +30,18 @@ const app = {
     customScope: new Set() 
 };
 
-// --- 1. EVENT HANDLERS (DEFINED FIRST) ---
+// --- 1. EVENT HANDLERS (DEFINED TOP-LEVEL) ---
 
 function nodeMouseOver(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
+    
     if (typeof showTooltip === 'function') showTooltip(event, d);
     if (app.interactionState === 'explore' && typeof applyHighlight === 'function') applyHighlight(d);
 }
 
 function nodeMouseOut(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
+    
     if (typeof hideTooltip === 'function') hideTooltip();
     if (app.interactionState === 'explore' && typeof resetHighlight === 'function') resetHighlight();
 }
@@ -168,6 +170,7 @@ function initializeSimulation() {
 
 function setupMarkers() {
     const defs = app.svg.select("defs");
+    // Standard Markers
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
     
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
@@ -217,31 +220,38 @@ function ticked() {
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour && typeof stopTour === 'function') stopTour();
     
+    // --- CRITICAL GUARD CLAUSE ---
     if (app.interactionState === 'manual_building') return;
 
+    // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
+    // 2. GAP ANALYSIS PRE-CALCULATION
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
     const isBuilderMode = app.state && app.state.isBuildingStack;
 
+    // 3. Filter Nodes
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
+        
         let inPackage = true;
         if (isBuilderMode) {
             inPackage = true; 
         } else {
             inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         }
+        
         return inCategory && inPersona && inPackage;
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
+    // 4. D3 Join & Update
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node").call(drag(app.simulation))
@@ -261,24 +271,28 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
+            // PRIORITY 1: STACK BUILDER VISUALS
             if (isBuilderMode) {
                 update.transition().duration(500)
                     .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
                     .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
+                
                 update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff")
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") // Brand Green
                     .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
+                    
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
 
+            // PRIORITY 2: GAP ANALYSIS VISUALS
             update.transition().duration(500)
             .style("opacity", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return 1.0; 
                     if (gapAnalysis.gap.has(d.id)) return 1.0;     
                     if (gapAnalysis.outlier.has(d.id)) return 1.0; 
-                    return 0.15; 
+                    return 0.15; // Ghost
                 }
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
@@ -289,8 +303,11 @@ function updateGraph(isFilterChange = true) {
             })
             .style("filter", d => {
                 if (isGapMode) {
+                    // MATCHED = BRAND GREEN GLOW
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
+                    // GAP = BRAND ORANGE PULSE
                     if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
+                    // OUTLIER = BRAND METAL GLOW
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 if (filters.showProcoreLed) {
@@ -304,9 +321,9 @@ function updateGraph(isFilterChange = true) {
                 .transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   
-                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
+                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; // Brand Green
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Brand Orange
+                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; // Brand Metal
                     }
                     return "#ffffff"; 
                 })
@@ -323,7 +340,7 @@ function updateGraph(isFilterChange = true) {
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    if (isGapMode) return 0; 
+                    if (isGapMode) return 0; // Reduce noise
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
@@ -334,7 +351,6 @@ function updateGraph(isFilterChange = true) {
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
         .attr("stroke", d => {
-            if (typeof legendData === 'undefined') return app.defaultArrowColor;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return app.defaultArrowColor;
             if (legend.type_id === "feeds") return "#4A4A4A";
@@ -343,7 +359,6 @@ function updateGraph(isFilterChange = true) {
             return app.defaultArrowColor;
         })
         .attr("stroke-dasharray", d => {
-            if (typeof legendData === 'undefined') return "none";
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return "none";
             if (d.type === "creates") return "4,3";
@@ -353,7 +368,6 @@ function updateGraph(isFilterChange = true) {
             return "none";
         })
         .attr("marker-end", d => {
-            if (typeof legendData === 'undefined') return null;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return null;
             if (legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
@@ -361,7 +375,7 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isBuilderMode || isGapMode) return 0.15;
+        if (isBuilderMode || isGapMode) return 0.15; // Dim links in special modes
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
@@ -377,8 +391,8 @@ function updateGraph(isFilterChange = true) {
     app.simulation.alpha(1).restart();
     if(typeof updateTourDropdown === 'function') updateTourDropdown(filters.packageTools); 
     
-    // CRITICAL FIX: Removed recursive call to resetHighlight()
-    // resetHighlight(); <--- DELETED THIS LINE
+    // REMOVED RECURSIVE CALL HERE TO PREVENT INFINITE LOOP
+    // if(typeof resetHighlight === 'function') resetHighlight(); 
 }
 
 function addBadge(group, iconCode, color, x, y, tooltipText) {
@@ -399,12 +413,11 @@ function addEmojiBadge(group, emoji, x, y, tooltipText) {
 window.addEventListener('resize', () => { 
     app.width = document.getElementById('graph-container').clientWidth; 
     app.height = document.getElementById('graph-container').clientHeight;
-    setHexFoci(); 
+    setHexFoci(); // Recalculate foci centers on resize
     if(app.simulation) app.simulation.alpha(0.5).restart();
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("App Main 400: DOMContentLoaded");
     setupCategories();
     initializeSimulation(); 
     if(typeof initializeControls === 'function') initializeControls(); 
