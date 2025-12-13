@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 230 (FIXED: PRESERVES BUILDER SPOTLIGHT & FOUNDATIONAL HELPERS)
+// VERSION: 210 (FIX: PROCESS BUILDER GRAPHICS PROTECTION)
 
 const app = {
     simulation: null,
@@ -18,7 +18,7 @@ const app = {
     nodeSizeCompany: 28,
     nodeCollisionRadius: 60, 
     arrowRefX: 34, 
-    defaultArrowColor: "#666666", 
+    defaultArrowColor: "#a0a0a0",
     interactionState: 'explore', 
     selectedNode: null,
     currentTour: null,
@@ -46,13 +46,13 @@ function setupCategories() {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. MANUAL PROCESS BUILDER (Highest Priority)
+    // 1. MANUAL PROCESS BUILDER (Priority 1)
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
         return; 
     }
 
-    // 2. STACK BUILDER
+    // 2. STACK BUILDER (Priority 2)
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
@@ -165,8 +165,8 @@ function populateLegend() {
         "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='8,4'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
         "syncs": "<svg width='24' height='10'><path d='M3,2 L9,5 L3,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path><line x1='6' y1='5' x2='18' y2='5' stroke='var(--procore-metal)' stroke-width='2'></line><path d='M21,2 L15,5 L21,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path></svg>",
         "pushes-data-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
-        "pulls-data-from": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#666666' stroke-width='2' stroke-dasharray='2,4'></line><path d='M17,2 L23,5 L17,8' stroke='#666666' stroke-width='2' fill='none'></path></svg>",
-        "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#666666' stroke-width='2' stroke-dasharray='1,3'></line><path d='M17,2 L23,5 L17,8' stroke='#666666' stroke-width='2' fill='none'></path></svg>",
+        "pulls-data-from": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='2,4'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
+        "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='1,3'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
         "feeds": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#4A4A4A' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='#4A4A4A' stroke-width='2' fill='none'></path></svg>"
     };
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
@@ -191,6 +191,10 @@ function ticked() {
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
     
+    // CRITICAL FIX: If Manual Builder is active, DO NOT re-render graph styles.
+    // This allows app-tours.js to maintain the path highlighting without being overwritten.
+    if (app.interactionState === 'manual_building') return;
+
     // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
@@ -203,18 +207,17 @@ function updateGraph(isFilterChange = true) {
 
     // 3. Filter Nodes
     const filteredNodes = nodes.filter(d => {
-        // CRITICAL FIX: If Manual Building, ignore filters so we see everything
-        if (app.interactionState === 'manual_building') return true;
-
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        let inPackage = true;
         
+        let inPackage = true;
         if (isBuilderMode) {
             inPackage = true; 
         } else {
+            // SHOW: Package Tools OR Outliers (Legacy tools owned by customer)
             inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         }
+        
         return inCategory && inPersona && inPackage;
     });
 
@@ -241,27 +244,28 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
-            // CRITICAL FIX: If Builder is active, DO NOT let this function touch the visuals.
-            if (app.interactionState === 'manual_building') return update;
-
+            // PRIORITY 1: BUILDER MODE VISUALS
             if (isBuilderMode) {
                 update.transition().duration(500)
                     .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
                     .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
+                
                 update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") 
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") // Brand Green
                     .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
+                    
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
 
+            // PRIORITY 2: GAP ANALYSIS VISUALS (BRANDED COLORS)
             update.transition().duration(500)
             .style("opacity", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return 1.0; 
                     if (gapAnalysis.gap.has(d.id)) return 1.0;     
                     if (gapAnalysis.outlier.has(d.id)) return 1.0; 
-                    return 0.15; 
+                    return 0.15; // Ghost
                 }
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
@@ -272,8 +276,11 @@ function updateGraph(isFilterChange = true) {
             })
             .style("filter", d => {
                 if (isGapMode) {
+                    // MATCHED = BRAND GREEN GLOW
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
+                    // GAP = BRAND ORANGE PULSE
                     if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
+                    // OUTLIER = BRAND METAL GLOW
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 if (filters.showProcoreLed) {
@@ -287,9 +294,9 @@ function updateGraph(isFilterChange = true) {
                 .transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   
-                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
+                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; // Brand Green
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Brand Orange
+                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; // Brand Metal
                     }
                     return "#ffffff"; 
                 })
@@ -306,7 +313,7 @@ function updateGraph(isFilterChange = true) {
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    if (isGapMode) return 0; 
+                    if (isGapMode) return 0; // Reduce noise
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
@@ -341,10 +348,10 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        // CRITICAL FIX: IF BUILDING, IGNORE.
-        if (app.interactionState === 'manual_building') return 1.0; 
+        // CRITICAL FIX for Manual Builder link visibility
+        if (app.interactionState === 'manual_building') return 0.1; // Default dim for manual mode links (overwritten by tours.js)
 
-        if (isBuilderMode || isGapMode) return 0.15; 
+        if (isBuilderMode || isGapMode) return 0.15; // Dim links in special modes
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
@@ -352,8 +359,7 @@ function updateGraph(isFilterChange = true) {
             const activeT = filters.procoreLedTools.has(t) || app.customScope.has(t);
             return (activeS && activeT) ? 0.6 : 0.05;
         }
-        // DEFAULT OPACITY: 1.0 (Darker/Visible)
-        return 1.0; 
+        return 0.6;
     });
 
     app.simulation.nodes(filteredNodes);
