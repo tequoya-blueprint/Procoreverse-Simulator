@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 150 (FIXED: CANDIDATE HIGHLIGHTING & LINE VISIBILITY)
+// VERSION: 160 (FIXED: SPOTLIGHT MODE & DIRECTIONAL FLOW)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -115,14 +115,19 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // VISIBILITY FIX: Reset graph to base state first
+    // Force a "Clean Slate" update first
     if (typeof updateGraph === 'function') updateGraph(false);
 
-    // Initial Visual State: Show lines clearly (0.3) so user can see structure
+    // Initial Visual State: 
+    // 1. Show Nodes clearly
+    // 2. Hide ALL lines initially (reduce clutter until a node is picked)
     setTimeout(() => {
-        app.node.transition().duration(500).style("opacity", 1);
+        app.node.transition().duration(500)
+            .style("opacity", 1)
+            .style("filter", null);
+            
         app.link.transition().duration(500)
-            .style("stroke-opacity", 0.3) 
+            .style("stroke-opacity", 0.05) // Faded background
             .attr("stroke", "#a0a0a0")
             .attr("stroke-width", 1);
     }, 100);
@@ -134,7 +139,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Click a tool to start. Valid next steps will highlight in blue.</p>
+            <p class="text-sm italic text-gray-300">Select a tool to begin. Possible connections will light up.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -146,7 +151,6 @@ function startManualBuilder() {
     d3.select("#finish-manual-btn").on("click", finishManualBuilder);
     
     if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
-    if(typeof showToast === 'function') showToast("Recording started. Select the first tool.");
 }
 
 function handleManualNodeClick(d) {
@@ -158,42 +162,47 @@ function handleManualNodeClick(d) {
         if(typeof showToast === 'function') showToast(`Removed step: ${d.id}`);
     } else {
         // Add Step
+        // Validation: Is this connected to the previous step? (Optional, but good for UX)
+        // For now, we allow free selection, but we highlight valid ones.
+        
         const desc = d.description || `Standard workflow step involving the ${d.id} tool.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
-        // Visual Pulse
+        
+        // Pulse effect
         d3.select(event.target).transition().duration(100).attr("r", 30).transition().duration(100).attr("r", 25);
     }
     updateManualBuilderVisuals();
 }
 
-// FIX: CANDIDATE HIGHLIGHTING LOGIC
 function updateManualBuilderVisuals() {
     d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
 
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
     
-    // Identify "Candidates" (Neighbors of the last selected node)
+    // --- DETERMINE CANDIDATES (POSSIBLE NEXT STEPS) ---
     const candidateNodes = new Set();
     const candidateLinks = new Set();
     
     if (manualBuilderSteps.length > 0) {
         const lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
         
-        // Find links connected to the last node
+        // Loop through all links to find valid connections from LastNode
         app.simulation.force("link").links().forEach(l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             
-            // If Source is LastNode -> Target is Candidate
+            // LOGIC: Data flows FROM source TO target.
+            // Valid Next Step: Source == LastNode
             if (s === lastNodeId && !activeIds.has(t)) {
                 candidateNodes.add(t);
                 candidateLinks.add(`${s}-${t}`);
             }
-            // If Target is LastNode -> Source is Candidate (Bi-directional)
-            if (t === lastNodeId && !activeIds.has(s)) {
+            
+            // LOGIC: 'Syncs' are bi-directional.
+            if (l.type === 'syncs' && t === lastNodeId && !activeIds.has(s)) {
                 candidateNodes.add(s);
-                candidateLinks.add(`${s}-${t}`);
+                candidateLinks.add(`${s}-${t}`); // Add both keys to be safe
                 candidateLinks.add(`${t}-${s}`);
             }
         });
@@ -202,17 +211,19 @@ function updateManualBuilderVisuals() {
     // 1. UPDATE NODES
     app.node.transition().duration(200)
         .style("opacity", n => {
-            if (activeIds.has(n.id)) return 1.0; // Selected = Bright
-            if (candidateNodes.has(n.id)) return 0.9; // Candidate = Visible
-            return 0.3; // Background = Dim but visible
+            if (activeIds.has(n.id)) return 1.0; // Selected
+            if (candidateNodes.has(n.id)) return 0.9; // Possible Next Step
+            return 0.2; // Irrelevant
         })
         .style("filter", n => {
-            if (activeIds.has(n.id)) return "drop-shadow(0 0 6px #F36C23)"; // Orange Glow
-            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 5px #3B82F6)"; // Blue Glow (Next Step Hint)
-            return null;
+            if (activeIds.has(n.id)) return "drop-shadow(0 0 6px #F36C23)"; // Orange Glow (Path)
+            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 5px #2563EB)"; // Blue Glow (Candidate)
+            return "grayscale(100%)"; // Grey out others
         });
 
-    // 2. UPDATE LINKS
+    // 2. UPDATE LINKS (The "Spotlight")
+    
+    // Identify links involved in the current path
     const pathLinks = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -227,18 +238,18 @@ function updateManualBuilderVisuals() {
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
             
-            if (pathLinks.has(key) || pathLinks.has(rKey)) return 1.0; // Path = Solid
-            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return 0.6; // Candidate = Visible hint
-            return 0.15; // Background = Faint but there
+            if (pathLinks.has(key) || pathLinks.has(rKey)) return 1.0; // Existing Path = Visible
+            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return 0.8; // Candidate Path = Visible
+            return 0.02; // Everything else = Hidden
         })
         .attr("stroke", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
             
-            if (pathLinks.has(key) || pathLinks.has(rKey)) return "var(--procore-orange)"; // Path
-            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return "#3B82F6"; // Candidate (Blue)
-            return "#a0a0a0"; // Default
+            if (pathLinks.has(key) || pathLinks.has(rKey)) return "var(--procore-orange)";
+            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return "#2563EB"; // Blue for next steps
+            return "#a0a0a0";
         })
         .attr("stroke-width", l => {
             const s = l.source.id || l.source;
@@ -248,6 +259,19 @@ function updateManualBuilderVisuals() {
             if (pathLinks.has(key) || pathLinks.has(rKey)) return 3;
             if (candidateLinks.has(key) || candidateLinks.has(rKey)) return 2;
             return 1;
+        })
+        .attr("marker-end", l => {
+             const s = l.source.id || l.source;
+             const t = l.target.id || l.target;
+             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
+             
+             if (pathLinks.has(key) || pathLinks.has(rKey)) return `url(#arrow-highlighted)`;
+             // Show markers for candidates too so user knows direction
+             if (candidateLinks.has(key) || candidateLinks.has(rKey)) {
+                 const legend = legendData.find(leg => leg.type_id === l.type);
+                 return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
+             }
+             return null;
         });
 }
 
@@ -258,7 +282,7 @@ function finishManualBuilder() {
     app.currentTour = newTour;
     saveCurrentTour(); 
     
-    // Force immediate preview to show SOP Button
+    // Force immediate preview
     setTimeout(() => previewTour(newTour), 100);
 }
 
@@ -319,12 +343,7 @@ function previewTour(tourData) {
 
     d3.select("#start-tour-btn").on("click", startTour);
     d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
-    
-    // BIND SOP CLICK EVENT
-    d3.select("#export-sop-btn").on("click", function() {
-        console.log("Generating SOP for:", app.currentTour.name);
-        generateSOP();
-    });
+    d3.select("#export-sop-btn").on("click", generateSOP); 
     
     if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     resizeTourAccordion();
@@ -332,10 +351,7 @@ function previewTour(tourData) {
 
 // --- SOP GENERATOR V2 ---
 function generateSOP() {
-    if (!app.currentTour) {
-        alert("No active process to export.");
-        return;
-    }
+    if (!app.currentTour) return;
     
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
@@ -377,6 +393,7 @@ function generateSOP() {
         <style>
             body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; line-height: 1.6; max-width: 800px; margin: 0 auto; }
             .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
             .doc-title { font-size: 28px; font-weight: 700; margin-top: 5px; color: #111; }
             .client-name { font-size: 14px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
             .section { margin-bottom: 30px; }
