@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 220 (FIXED: 100% LINK VISIBILITY & NO FADING)
+// VERSION: 230 (FIXED: PRESERVES BUILDER SPOTLIGHT & FOUNDATIONAL HELPERS)
 
 const app = {
     simulation: null,
@@ -18,7 +18,7 @@ const app = {
     nodeSizeCompany: 28,
     nodeCollisionRadius: 60, 
     arrowRefX: 34, 
-    defaultArrowColor: "#666666", // Dark Grey
+    defaultArrowColor: "#666666", 
     interactionState: 'explore', 
     selectedNode: null,
     currentTour: null,
@@ -46,13 +46,13 @@ function setupCategories() {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. MANUAL PROCESS BUILDER (Priority 1)
+    // 1. MANUAL PROCESS BUILDER (Highest Priority)
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
         return; 
     }
 
-    // 2. STACK BUILDER (Priority 2)
+    // 2. STACK BUILDER
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
@@ -191,21 +191,25 @@ function ticked() {
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
     
-    // GUARD: If Manual Building, DO NOT hide anything.
-    if (app.interactionState === 'manual_building') return;
-
+    // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
+    // 2. GAP ANALYSIS PRE-CALCULATION
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
     const isBuilderMode = app.state && app.state.isBuildingStack;
 
+    // 3. Filter Nodes
     const filteredNodes = nodes.filter(d => {
+        // CRITICAL FIX: If Manual Building, ignore filters so we see everything
+        if (app.interactionState === 'manual_building') return true;
+
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
         let inPackage = true;
+        
         if (isBuilderMode) {
             inPackage = true; 
         } else {
@@ -217,6 +221,7 @@ function updateGraph(isFilterChange = true) {
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
+    // 4. D3 Join & Update
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node").call(drag(app.simulation))
@@ -236,6 +241,9 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
+            // CRITICAL FIX: If Builder is active, DO NOT let this function touch the visuals.
+            if (app.interactionState === 'manual_building') return update;
+
             if (isBuilderMode) {
                 update.transition().duration(500)
                     .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
@@ -333,8 +341,8 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        // MANUAL BUILDER EXCEPTION: Show links so user can trace path
-        if (app.interactionState === 'manual_building') return 0.4; 
+        // CRITICAL FIX: IF BUILDING, IGNORE.
+        if (app.interactionState === 'manual_building') return 1.0; 
 
         if (isBuilderMode || isGapMode) return 0.15; 
         if (filters.showProcoreLed) {
@@ -344,7 +352,7 @@ function updateGraph(isFilterChange = true) {
             const activeT = filters.procoreLedTools.has(t) || app.customScope.has(t);
             return (activeS && activeT) ? 0.6 : 0.05;
         }
-        // DEFAULT STATE: VISIBLE (As requested)
+        // DEFAULT OPACITY: 1.0 (Darker/Visible)
         return 1.0; 
     });
 
