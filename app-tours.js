@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 300 (MASTER RESET: FUTURE FLOW VISUALS & SOP V2)
+// VERSION: 310 (FIXED: PROCESS BUILDER LINEWORK RESTORATION)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -148,7 +148,7 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Initial Visual State: Dim Links, Show All Nodes
+    // Initial Visual State: Dim everything initially
     app.node.transition().duration(500).style("opacity", 1);
     app.link.transition().duration(500).style("opacity", 0.05); 
 
@@ -159,7 +159,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Select a tool to start. BLUE dashed lines show valid next steps.</p>
+            <p class="text-sm italic text-gray-300">Select tools in order to build your path.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -178,9 +178,9 @@ function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
-        // Remove step
-        manualBuilderSteps.splice(existingIndex, 1);
-        if(typeof showToast === 'function') showToast(`Removed step: ${d.id}`);
+        // Remove step and anything after it
+        manualBuilderSteps = manualBuilderSteps.slice(0, existingIndex);
+        if(typeof showToast === 'function') showToast(`Removed steps starting from: ${d.id}`);
     } else {
         // Add step
         const desc = d.description || `Standard workflow step involving the ${d.id} tool.`;
@@ -200,100 +200,67 @@ function updateManualBuilderVisuals() {
 
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
     
-    // 1. Identify Path Links (History)
-    const pathLinkKeys = new Set();
-    for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
-        const u = manualBuilderSteps[i].nodeId;
-        const v = manualBuilderSteps[i+1].nodeId;
-        pathLinkKeys.add(`${u}-${v}`); 
-        pathLinkKeys.add(`${v}-${u}`); // Allow bidirectional highlight for history
-    }
-
-    // 2. Identify Candidate Links (Future Outgoing)
-    // CRITICAL: Only Highlight lines flowing AWAY from the last selected node
-    const candidateLinkKeys = new Set();
-    const candidateNodeIds = new Set();
-    
-    if (manualBuilderSteps.length > 0) {
-        const lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
-        
-        if (app.simulation) {
-            app.simulation.force("link").links().forEach(l => {
-                const s = l.source.id || l.source;
-                const t = l.target.id || l.target;
-                
-                // Direction Check: Source must be the last node clicked
-                if (s === lastNodeId && !activeIds.has(t)) {
-                    candidateLinkKeys.add(`${s}-${t}`);
-                    candidateNodeIds.add(t);
-                }
-            });
-        }
-    }
-
     // --- NODE UPDATES ---
     app.node.transition().duration(200)
-        .style("opacity", n => {
-            if (activeIds.has(n.id)) return 1.0;            // Active Path
-            if (candidateNodeIds.has(n.id)) return 0.9;     // Possible Next Step (High Vis)
-            return manualBuilderSteps.length === 0 ? 1 : 0.15; // Dim others
-        })
-        .style("filter", n => {
-            if (activeIds.has(n.id)) return "drop-shadow(0 0 5px #F36C23)"; // Orange Glow (Path)
-            if (candidateNodeIds.has(n.id)) return "drop-shadow(0 0 4px #2563EB)"; // Blue Glow (Next)
-            return null;
-        });
+        .style("opacity", n => activeIds.has(n.id) ? 1.0 : 0.15) // Dim unselected
+        .style("filter", n => activeIds.has(n.id) ? "drop-shadow(0 0 5px #F36C23)" : null); // Glow selected
 
-    // --- LINK UPDATES ---
+    // --- LINK UPDATES (THE FIX) ---
+    // We strictly check the history array to draw lines between steps
     app.link.transition().duration(200)
         .style("stroke-opacity", l => {
-            const s = l.source.id || l.source;
-            const t = l.target.id || l.target;
-            const dirKey = `${s}-${t}`;
+            const sId = String(l.source.id || l.source);
+            const tId = String(l.target.id || l.target);
             
-            if (pathLinkKeys.has(dirKey)) return 1.0;       // Path
-            if (candidateLinkKeys.has(dirKey)) return 0.9;  // Candidate (High Vis)
-            return 0.05;                                    // Irrelevant
+            // Check if this link connects two consecutive steps in our recorded path
+            for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
+                const stepA = manualBuilderSteps[i].nodeId;
+                const stepB = manualBuilderSteps[i+1].nodeId;
+                
+                // Check both directions
+                if ((sId === stepA && tId === stepB) || (sId === stepB && tId === stepA)) {
+                    return 1.0; // Show this link fully
+                }
+            }
+            return 0.05; // Hide unrelated links
         })
         .attr("stroke", l => {
-            const s = l.source.id || l.source;
-            const t = l.target.id || l.target;
-            const dirKey = `${s}-${t}`;
-            
-            if (pathLinkKeys.has(dirKey)) return "var(--procore-orange)"; // History = Orange
-            if (candidateLinkKeys.has(dirKey)) return "#2563EB";          // Future = Blue
+             const sId = String(l.source.id || l.source);
+             const tId = String(l.target.id || l.target);
+             // Verify path again for Color
+             for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
+                const stepA = manualBuilderSteps[i].nodeId;
+                const stepB = manualBuilderSteps[i+1].nodeId;
+                if ((sId === stepA && tId === stepB) || (sId === stepB && tId === stepA)) {
+                    return "var(--procore-orange)"; // Orange Path
+                }
+            }
             return "#a0a0a0";
         })
         .style("stroke-width", l => {
-            const s = l.source.id || l.source;
-            const t = l.target.id || l.target;
-            const dirKey = `${s}-${t}`;
-            
-            if (pathLinkKeys.has(dirKey)) return 3;
-            if (candidateLinkKeys.has(dirKey)) return 2;
+             // Thicker lines for the path
+             const sId = String(l.source.id || l.source);
+             const tId = String(l.target.id || l.target);
+             for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
+                const stepA = manualBuilderSteps[i].nodeId;
+                const stepB = manualBuilderSteps[i+1].nodeId;
+                if ((sId === stepA && tId === stepB) || (sId === stepB && tId === stepA)) {
+                    return 3;
+                }
+            }
             return 1;
         })
-        .attr("stroke-dasharray", l => {
-             const s = l.source.id || l.source;
-             const t = l.target.id || l.target;
-             const dirKey = `${s}-${t}`;
-             
-             // Dashed lines for Candidates ("Ghost Lines")
-             if (candidateLinkKeys.has(dirKey) && !pathLinkKeys.has(dirKey)) return "4, 2";
-             
-             // Standard lines for established path
-             return "none";
-        })
+        .attr("stroke-dasharray", "none") // Force solid lines for history
         .attr("marker-end", l => {
-            const s = l.source.id || l.source;
-            const t = l.target.id || l.target;
-            const dirKey = `${s}-${t}`;
-            
-            // Show arrow for both path and candidates to indicate flow
-            if (pathLinkKeys.has(dirKey)) return `url(#arrow-highlighted)`;
-            
-            if (candidateLinkKeys.has(dirKey)) {
-                return `url(#arrow-candidate)`; 
+            // Add arrows to path
+            const sId = String(l.source.id || l.source);
+            const tId = String(l.target.id || l.target);
+             for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
+                const stepA = manualBuilderSteps[i].nodeId;
+                const stepB = manualBuilderSteps[i+1].nodeId;
+                if ((sId === stepA && tId === stepB) || (sId === stepB && tId === stepA)) {
+                    return `url(#arrow-highlighted)`;
+                }
             }
             return null;
         });
