@@ -115,21 +115,14 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Force a "Clean Slate" update first
+    // VISIBILITY RESET: Ensure full graph is visible before starting spotlight
     if (typeof updateGraph === 'function') updateGraph(false);
 
-    // Initial Visual State: 
-    // 1. Show Nodes clearly
-    // 2. Hide ALL lines initially (reduce clutter until a node is picked)
+    // Initial State: Dim everything so only user interaction matters
     setTimeout(() => {
-        app.node.transition().duration(500)
-            .style("opacity", 1)
-            .style("filter", null);
-            
-        app.link.transition().duration(500)
-            .style("stroke-opacity", 0.05) // Faded background
-            .attr("stroke", "#a0a0a0")
-            .attr("stroke-width", 1);
+        app.node.transition().duration(500).style("opacity", 1);
+        // HIDE ALL LINES INITIALLY (Spotlight logic)
+        app.link.transition().duration(500).style("stroke-opacity", 0.05); 
     }, 100);
 
     const controls = d3.select("#tour-controls");
@@ -139,7 +132,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Select a tool to begin. Possible connections will light up.</p>
+            <p class="text-sm italic text-gray-300">Select a tool to begin. Valid next steps will light up.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -151,24 +144,18 @@ function startManualBuilder() {
     d3.select("#finish-manual-btn").on("click", finishManualBuilder);
     
     if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
+    if(typeof showToast === 'function') showToast("Recording started. Click the first tool.");
 }
 
 function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
-        // Remove Step
         manualBuilderSteps.splice(existingIndex, 1);
         if(typeof showToast === 'function') showToast(`Removed step: ${d.id}`);
     } else {
-        // Add Step
-        // Validation: Is this connected to the previous step? (Optional, but good for UX)
-        // For now, we allow free selection, but we highlight valid ones.
-        
         const desc = d.description || `Standard workflow step involving the ${d.id} tool.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
-        
-        // Pulse effect
         d3.select(event.target).transition().duration(100).attr("r", 30).transition().duration(100).attr("r", 25);
     }
     updateManualBuilderVisuals();
@@ -180,29 +167,27 @@ function updateManualBuilderVisuals() {
 
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
     
-    // --- DETERMINE CANDIDATES (POSSIBLE NEXT STEPS) ---
+    // --- SPOTLIGHT LOGIC: Find Valid Next Steps ---
     const candidateNodes = new Set();
     const candidateLinks = new Set();
     
     if (manualBuilderSteps.length > 0) {
         const lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
         
-        // Loop through all links to find valid connections from LastNode
+        // Loop ALL links to find connections
         app.simulation.force("link").links().forEach(l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             
-            // LOGIC: Data flows FROM source TO target.
-            // Valid Next Step: Source == LastNode
+            // 1. OUTGOING (Source -> Target)
             if (s === lastNodeId && !activeIds.has(t)) {
                 candidateNodes.add(t);
                 candidateLinks.add(`${s}-${t}`);
             }
-            
-            // LOGIC: 'Syncs' are bi-directional.
+            // 2. BI-DIRECTIONAL SYNCS
             if (l.type === 'syncs' && t === lastNodeId && !activeIds.has(s)) {
                 candidateNodes.add(s);
-                candidateLinks.add(`${s}-${t}`); // Add both keys to be safe
+                candidateLinks.add(`${s}-${t}`); 
                 candidateLinks.add(`${t}-${s}`);
             }
         });
@@ -211,19 +196,17 @@ function updateManualBuilderVisuals() {
     // 1. UPDATE NODES
     app.node.transition().duration(200)
         .style("opacity", n => {
-            if (activeIds.has(n.id)) return 1.0; // Selected
-            if (candidateNodes.has(n.id)) return 0.9; // Possible Next Step
-            return 0.2; // Irrelevant
+            if (activeIds.has(n.id)) return 1.0; // Selected = Bright
+            if (candidateNodes.has(n.id)) return 0.9; // Candidate = Visible
+            return 0.3; // Others = Dimmed
         })
         .style("filter", n => {
-            if (activeIds.has(n.id)) return "drop-shadow(0 0 6px #F36C23)"; // Orange Glow (Path)
-            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 5px #2563EB)"; // Blue Glow (Candidate)
-            return "grayscale(100%)"; // Grey out others
+            if (activeIds.has(n.id)) return "drop-shadow(0 0 6px #F36C23)"; // Orange Glow
+            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 5px #2563EB)"; // Blue Glow
+            return "grayscale(100%)";
         });
 
-    // 2. UPDATE LINKS (The "Spotlight")
-    
-    // Identify links involved in the current path
+    // 2. UPDATE LINKS
     const pathLinks = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -238,9 +221,9 @@ function updateManualBuilderVisuals() {
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
             
-            if (pathLinks.has(key) || pathLinks.has(rKey)) return 1.0; // Existing Path = Visible
-            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return 0.8; // Candidate Path = Visible
-            return 0.02; // Everything else = Hidden
+            if (pathLinks.has(key) || pathLinks.has(rKey)) return 1.0; // Path = Solid
+            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return 0.6; // Candidate = Visible hint
+            return 0.02; // Rest = Hidden
         })
         .attr("stroke", l => {
             const s = l.source.id || l.source;
@@ -248,7 +231,7 @@ function updateManualBuilderVisuals() {
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
             
             if (pathLinks.has(key) || pathLinks.has(rKey)) return "var(--procore-orange)";
-            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return "#2563EB"; // Blue for next steps
+            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return "#2563EB"; // Blue
             return "#a0a0a0";
         })
         .attr("stroke-width", l => {
@@ -266,7 +249,6 @@ function updateManualBuilderVisuals() {
              const key = `${s}-${t}`; const rKey = `${t}-${s}`;
              
              if (pathLinks.has(key) || pathLinks.has(rKey)) return `url(#arrow-highlighted)`;
-             // Show markers for candidates too so user knows direction
              if (candidateLinks.has(key) || candidateLinks.has(rKey)) {
                  const legend = legendData.find(leg => leg.type_id === l.type);
                  return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
@@ -398,6 +380,14 @@ function generateSOP() {
             .client-name { font-size: 14px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
             .section { margin-bottom: 30px; }
             .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
+            .step { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #F36C23; border-radius: 4px; }
+            .step-header { display: flex; align-items: center; margin-bottom: 8px; }
+            .step-num { background: #F36C23; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px; }
+            .step-tool { font-weight: 700; font-size: 16px; color: #333; }
+            .step-desc { font-size: 14px; color: #555; margin-left: 34px; margin-bottom: 8px; }
+            .step-link { margin-left: 34px; font-size: 12px; }
+            .step-link a { color: #2563EB; text-decoration: none; font-weight: 500; }
+            .step-link a:hover { text-decoration: underline; }
             .footer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
