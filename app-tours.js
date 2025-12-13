@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 310 (FIXED: PROCESS BUILDER LINEWORK RESTORATION)
+// VERSION: 320 (FIXED: RESTORED CANDIDATE/FUTURE LINEWORK)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -148,7 +148,7 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Initial Visual State: Dim everything initially
+    // Initial Visual State: Dim everything heavily to verify control
     app.node.transition().duration(500).style("opacity", 1);
     app.link.transition().duration(500).style("opacity", 0.05); 
 
@@ -159,7 +159,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Select tools in order to build your path.</p>
+            <p class="text-sm italic text-gray-300">Select a tool to start. <span style="color:#60A5FA">Blue dashed lines</span> show valid next steps.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -178,7 +178,7 @@ function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
-        // Remove step and anything after it
+        // Remove step and anything after it (Undo logic)
         manualBuilderSteps = manualBuilderSteps.slice(0, existingIndex);
         if(typeof showToast === 'function') showToast(`Removed steps starting from: ${d.id}`);
     } else {
@@ -199,48 +199,88 @@ function updateManualBuilderVisuals() {
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
 
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
-    
+    let lastNodeId = null;
+    if (manualBuilderSteps.length > 0) {
+        lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
+    }
+
+    // 1. Identify Candidate Links (Lines flowing OUT from the last selected node)
+    const candidateLinkKeys = new Set();
+    const candidateNodeIds = new Set();
+
+    if (lastNodeId && app.simulation) {
+        app.simulation.force("link").links().forEach(l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            
+            // Check connectivity
+            // We only want to highlight lines connected to the LAST node selected
+            if (s === lastNodeId || t === lastNodeId) {
+                const otherNode = (s === lastNodeId) ? t : s;
+                if (!activeIds.has(otherNode)) {
+                    // Valid next step
+                    candidateLinkKeys.add(`${s}-${t}`);
+                    candidateLinkKeys.add(`${t}-${s}`); // Bidirectional key for safety
+                    candidateNodeIds.add(otherNode);
+                }
+            }
+        });
+    }
+
     // --- NODE UPDATES ---
     app.node.transition().duration(200)
-        .style("opacity", n => activeIds.has(n.id) ? 1.0 : 0.15) // Dim unselected
-        .style("filter", n => activeIds.has(n.id) ? "drop-shadow(0 0 5px #F36C23)" : null); // Glow selected
+        .style("opacity", n => {
+            if (activeIds.has(n.id)) return 1.0;            // Active Path (History)
+            if (candidateNodeIds.has(n.id)) return 0.8;     // Candidate (Future)
+            return manualBuilderSteps.length === 0 ? 1 : 0.1; // Dim irrelevant
+        })
+        .style("filter", n => {
+            if (activeIds.has(n.id)) return "drop-shadow(0 0 5px #F36C23)"; // Orange Glow (History)
+            if (candidateNodeIds.has(n.id)) return "drop-shadow(0 0 4px #2563EB)"; // Blue Glow (Future)
+            return null;
+        });
 
-    // --- LINK UPDATES (THE FIX) ---
-    // We strictly check the history array to draw lines between steps
+    // --- LINK UPDATES ---
     app.link.transition().duration(200)
         .style("stroke-opacity", l => {
             const sId = String(l.source.id || l.source);
             const tId = String(l.target.id || l.target);
+            const key = `${sId}-${tId}`;
             
-            // Check if this link connects two consecutive steps in our recorded path
+            // 1. Check History (Solid Orange)
             for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
                 const stepA = manualBuilderSteps[i].nodeId;
                 const stepB = manualBuilderSteps[i+1].nodeId;
-                
-                // Check both directions
                 if ((sId === stepA && tId === stepB) || (sId === stepB && tId === stepA)) {
-                    return 1.0; // Show this link fully
+                    return 1.0; 
                 }
             }
-            return 0.05; // Hide unrelated links
+            
+            // 2. Check Candidate (Dashed Blue)
+            if (candidateLinkKeys.has(key)) return 0.8;
+
+            return 0.05; // Dim irrelevant
         })
         .attr("stroke", l => {
              const sId = String(l.source.id || l.source);
              const tId = String(l.target.id || l.target);
-             // Verify path again for Color
+             const key = `${sId}-${tId}`;
+
              for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
                 const stepA = manualBuilderSteps[i].nodeId;
                 const stepB = manualBuilderSteps[i+1].nodeId;
                 if ((sId === stepA && tId === stepB) || (sId === stepB && tId === stepA)) {
-                    return "var(--procore-orange)"; // Orange Path
+                    return "var(--procore-orange)"; // History
                 }
             }
+            if (candidateLinkKeys.has(key)) return "#2563EB"; // Candidate
             return "#a0a0a0";
         })
         .style("stroke-width", l => {
-             // Thicker lines for the path
              const sId = String(l.source.id || l.source);
              const tId = String(l.target.id || l.target);
+             const key = `${sId}-${tId}`;
+
              for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
                 const stepA = manualBuilderSteps[i].nodeId;
                 const stepB = manualBuilderSteps[i+1].nodeId;
@@ -248,13 +288,29 @@ function updateManualBuilderVisuals() {
                     return 3;
                 }
             }
+            if (candidateLinkKeys.has(key)) return 2;
             return 1;
         })
-        .attr("stroke-dasharray", "none") // Force solid lines for history
-        .attr("marker-end", l => {
-            // Add arrows to path
+        .attr("stroke-dasharray", l => {
             const sId = String(l.source.id || l.source);
             const tId = String(l.target.id || l.target);
+            const key = `${sId}-${tId}`;
+
+             for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
+                const stepA = manualBuilderSteps[i].nodeId;
+                const stepB = manualBuilderSteps[i+1].nodeId;
+                if ((sId === stepA && tId === stepB) || (sId === stepB && tId === stepA)) {
+                    return "none"; // Solid for history
+                }
+            }
+            if (candidateLinkKeys.has(key)) return "4, 2"; // Dashed for candidate
+            return "none";
+        })
+        .attr("marker-end", l => {
+            const sId = String(l.source.id || l.source);
+            const tId = String(l.target.id || l.target);
+            const key = `${sId}-${tId}`;
+            
              for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
                 const stepA = manualBuilderSteps[i].nodeId;
                 const stepB = manualBuilderSteps[i+1].nodeId;
@@ -262,6 +318,7 @@ function updateManualBuilderVisuals() {
                     return `url(#arrow-highlighted)`;
                 }
             }
+            if (candidateLinkKeys.has(key)) return `url(#arrow-candidate)`;
             return null;
         });
 }
