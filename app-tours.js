@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 90 (SOP V2: SUPPORT DOCS & CUSTOM BRANDING)
+// VERSION: 95 (SOP V2: SUPPORT DOCS & SMART BRANDING)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -257,13 +257,18 @@ function previewTour(tourData) {
     resizeTourAccordion();
 }
 
-// --- SOP GENERATOR V2: SUPPORT DOCS & BRANDING ---
+// --- SOP GENERATOR V2: SUPPORT DOCS & SMART BRANDING ---
 function generateSOP() {
     if (!app.currentTour) return;
     
     // 1. Capture Branding Info
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
-    const logoUrl = prompt("Enter Client Logo URL (optional):", "") || "";
+    const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
+    
+    // Logic: Use input if provided, otherwise fallback to Procore text/logo
+    const logoHtml = (logoInput && logoInput.trim() !== "") 
+        ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
+        : `<div class="logo">PROCORE</div>`;
     
     const tour = app.currentTour;
     const date = new Date().toLocaleDateString();
@@ -291,11 +296,6 @@ function generateSOP() {
             </div>
         `;
     });
-
-    // 3. Logo Logic
-    const logoHtml = logoUrl 
-        ? `<img src="${logoUrl}" style="max-height: 50px; margin-bottom: 10px;">` 
-        : `<div class="logo">PROCORE</div>`;
 
     const htmlContent = `
     <!DOCTYPE html>
