@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 210 (FIXED: ROBUST SOW CONTENT GENERATION)
+// VERSION: 210 (FULL VERBOSITY: SOW LIBRARY & LOGIC)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -41,11 +41,20 @@ const audienceKeyToDataValuesMap = {
     "SC": ["SC", "Specialty Contractor"],
     "O": ["Owners", "Owner", "Owner Developer *Coming Soon", "O"]
 };
-const audienceDataToKeyMap = { "Contractor": "GC", "General Contractor": "GC", "GC": "GC", "SC": "SC", "Specialty Contractor": "SC", "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O" };
-const audienceKeyToLabelMap = { "GC": "General Contractor", "SC": "Specialty Contractor", "O": "Owner" };
+
+const audienceDataToKeyMap = {
+    "Contractor": "GC", "General Contractor": "GC", "GC": "GC",
+    "SC": "SC", "Specialty Contractor": "SC",
+    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O"
+};
+
+const audienceKeyToLabelMap = {
+    "GC": "General Contractor",
+    "SC": "Specialty Contractor",
+    "O": "Owner"
+};
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
-// "module" key corresponds to SOW_LIBRARY keys
 const SOW_QUESTIONS = [
     { id: "q-sop", label: "SOP Development", type: "cost", hrs: 140, cost: 35000, module: "MOD_SOP" },
     { id: "q-consulting", label: "Virtual Consulting", type: "cost", hrs: 400, cost: 100000, module: "MOD_CONSULTING" },
@@ -278,6 +287,7 @@ function initializeControls() {
         app.state.calculatorMode = 'edit'; 
     }
     
+    // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
     });
@@ -286,11 +296,13 @@ function initializeControls() {
     populatePersonaFilter();
     renderSOWQuestionnaire();
    
+    // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange); 
     d3.select("#persona-filter").on("change", () => { if (typeof updateGraph === 'function') updateGraph(true) });
     
+    // Procore-Led Toggle
     const ledToggle = d3.select("#toggle-procore-led");
     if (!ledToggle.empty()) {
         ledToggle.on("change", function() {
@@ -331,6 +343,7 @@ function initializeControls() {
         if(el) el.addEventListener('input', calculateScoping);
     });
     
+    // Init Stack Builder Button
     setTimeout(() => {
         const existingBtn = d3.select("#stack-builder-btn");
         if (existingBtn.empty()) {
@@ -699,6 +712,7 @@ function applyTeamView(team) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
+    // Handle Calculator Visibility & Mode
     const scopingContainer = d3.select("#scoping-ui-container");
     if (config.calculatorMode === 'hidden') {
         scopingContainer.classed("hidden", true);
@@ -706,7 +720,7 @@ function applyTeamView(team) {
         scopingContainer.classed("hidden", !config.showScoping);
         if (typeof app !== 'undefined' && app.state) {
             app.state.calculatorMode = config.calculatorMode;
-            calculateScoping(); 
+            calculateScoping(); // Re-run to apply disabled states
         }
     }
 
@@ -754,24 +768,29 @@ function populateRegionFilter() {
     });
 }
 
+// --- HIERARCHY ENFORCER: LEVEL 1 (Region) ---
 function onRegionChange() {
     const region = d3.select(this).property("value");
     const audienceFilter = d3.select("#audience-filter");
     const stackBtn = d3.select("#stack-builder-btn");
     
+    // 1. Reset Downstream Filters
     audienceFilter.property("value", "all").property("disabled", region === "all");
     audienceFilter.html('<option value="all">All Audiences</option>');
     
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
     
+    // 2. Reset App State (Stack, etc.)
     if(typeof app !== 'undefined') {
         app.state.myStack.clear();
         if (app.state.isBuildingStack) toggleStackBuilderMode(); // Turn off if on
     }
     clearPackageDetails();
     
+    // 3. Configure Audience based on Region
     if (region !== "all") {
+        // Unlock Stack Builder
         stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", false)
                 .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", true)
                 .attr("disabled", null);
@@ -788,6 +807,7 @@ function onRegionChange() {
              audienceFilter.append("option").attr("value", audKey).text(audienceKeyToLabelMap[audKey]);
         });
     } else {
+        // Disable Stack Builder if no region
         stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", true)
                 .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", false)
                 .attr("disabled", true);
@@ -796,6 +816,7 @@ function onRegionChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
+// --- HIERARCHY ENFORCER: LEVEL 2 (Audience) ---
 function onAudienceChange() {
     const region = d3.select("#region-filter").property("value");
     const audience = d3.select(this).property("value");
@@ -840,6 +861,7 @@ function onAudienceChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
+// FIX: AUTO-EXIT BUILDER MODE ON PACKAGE SELECTION
 function onPackageChange() {
     if (app.state.isBuildingStack) toggleStackBuilderMode(); // FORCE OFF
     
@@ -860,6 +882,7 @@ function onPackageChange() {
 }
 
 function updatePackageAddOns() {
+    // FORCE EXIT BUILDER MODE HERE TOO (Since this is triggered by checkboxes)
     if (app.state.isBuildingStack) toggleStackBuilderMode();
 
     const region = d3.select("#region-filter").property('value');
