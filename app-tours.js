@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 480 (FIXED: STRICT LOGIC + FULL HTML RESTORATION)
+// VERSION: 500 (FIXED: STRICT DATA FLOW LOGIC & VISUAL PRIORITY)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -63,7 +63,6 @@ function initializeTourControls() {
         } 
     });
 
-    // AI Modal Triggers
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
@@ -154,13 +153,11 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Dim Everything at Start to clean slate
+    // Reset view
     app.node.transition().duration(500).style("opacity", 1);
-    
-    // Explicitly set stroke to default before logic takes over
     app.link.transition().duration(500)
-        .style("opacity", 0.02) // Nearly invisible
-        .style("stroke-opacity", 0.02)
+        .style("opacity", 0.05)
+        .style("stroke-opacity", 0.05)
         .style("stroke", "#a0a0a0"); 
 
     const controls = d3.select("#tour-controls");
@@ -196,11 +193,7 @@ function handleManualNodeClick(d) {
         // Add Step
         const desc = d.description || `Step involving ${d.id}.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
-        
-        // Pulse animation
-        d3.select(event.target)
-            .transition().duration(100).attr("r", 30)
-            .transition().duration(100).attr("r", 25);
+        d3.select(event.target).transition().duration(100).attr("r", 30).transition().duration(100).attr("r", 25);
     }
     updateManualBuilderVisuals();
 }
@@ -223,7 +216,7 @@ function updateManualBuilderVisuals() {
         lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
     }
 
-    // 1. PATH KEYS (HISTORY)
+    // 1. PATH KEYS (HISTORY) - Bi-directional matching
     const pathKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -241,16 +234,23 @@ function updateManualBuilderVisuals() {
             const s = safeId(l.source);
             const t = safeId(l.target);
             
-            // STRICT LOGIC:
-            // A. OUTGOING: Source == LastNode -> Target (Always Valid)
+            // STRICT CANDIDATE LOGIC
+            
+            // A. OUTGOING: Selected (Source) -> Candidate (Target)
+            // Valid Types: creates, pushes, converts, syncs, attaches, feeds
+            // INVALID: pulls-data-from (This means Selected pulls from Candidate, so data flows Candidate->Selected. Bad next step.)
             if (s === lastNodeId && !activeIds.has(t)) {
-                candidateLinkKeys.add(`${s}-${t}`);
-                candidateNodeIds.add(t);
+                if (l.type !== 'pulls-data-from') {
+                    candidateLinkKeys.add(`${s}-${t}`);
+                    candidateNodeIds.add(t);
+                }
             } 
-            // B. BI-DIRECTIONAL: Target == LastNode -> Source (Only if Syncs)
+            
+            // B. INCOMING: Candidate (Source) -> Selected (Target)
+            // Valid Types: pulls-data-from (Candidate pulls from Selected, data flows Selected->Candidate) OR syncs
             else if (t === lastNodeId && !activeIds.has(s)) {
-                if (l.type === 'syncs') {
-                    candidateLinkKeys.add(`${s}-${t}`); // Add key in correct direction for iteration
+                if (l.type === 'pulls-data-from' || l.type === 'syncs') {
+                    candidateLinkKeys.add(`${s}-${t}`); // Key matches visual loop direction
                     candidateNodeIds.add(s);
                 }
             }
@@ -288,18 +288,11 @@ function updateManualBuilderVisuals() {
             }
         }
 
-        let isCandidate = false;
-        // Check Candidates (Strict match)
-        if (!isPath && lastNodeId) {
-            // Forward check
-            if (s === lastNodeId && candidateNodeIds.has(t)) isCandidate = true;
-            // Reverse check (only for syncs)
-            if (t === lastNodeId && candidateNodeIds.has(s) && d.type === 'syncs') isCandidate = true;
-        }
+        let isCandidate = candidateLinkKeys.has(key);
 
         // APPLY VISUALS
         if (isPath) {
-            // HISTORY: Solid Orange
+            // HISTORY: Solid Orange (Forced)
             el.transition().duration(200)
               .style("stroke", "#F36C23")
               .style("opacity", 1)
@@ -308,7 +301,7 @@ function updateManualBuilderVisuals() {
               .attr("stroke-dasharray", "none")
               .attr("marker-end", "url(#arrow-highlighted)");
         } else if (isCandidate) {
-            // FUTURE: Dashed Blue
+            // FUTURE: Dashed Blue (Forced)
             el.transition().duration(200)
               .style("stroke", "#2563EB")
               .style("opacity", 1)
@@ -320,7 +313,7 @@ function updateManualBuilderVisuals() {
             // IRRELEVANT: Hidden
             el.transition().duration(200)
               .style("stroke", "#a0a0a0")
-              .style("opacity", 0.02) // Near invisible
+              .style("opacity", 0.02)
               .style("stroke-opacity", 0.02);
         }
     });
@@ -339,7 +332,6 @@ function finishManualBuilder() {
     app.currentTour = newTour;
     saveCurrentTour(); 
     
-    // Force immediate preview
     setTimeout(() => previewTour(newTour), 100);
 }
 
