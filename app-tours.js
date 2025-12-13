@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 420 (FIXED: ROBUST LINEWORK & DYNAMIC INSTRUCTIONS)
+// VERSION: 450 (FIXED: VISIBILITY, CSS OVERRIDES, DATA FLOW LOGIC)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -58,14 +58,9 @@ function initializeTourControls() {
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
-    
-    aiModalOverlay.on("click", function(e) { 
-        if (e.target === this) aiModalOverlay.classed("visible", false); 
-    });
-    
+    aiModalOverlay.on("click", function(e) { if (e.target === this) aiModalOverlay.classed("visible", false); });
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 
-    // Manual Builder Trigger
     const container = d3.select("#tour-container");
     if (container.select("#manual-workflow-builder-btn").empty()) {
         container.append("button")
@@ -77,7 +72,6 @@ function initializeTourControls() {
     }
 }
 
-// --- PERSISTENCE ---
 function loadSavedTours() {
     const saved = localStorage.getItem('procoreverse_saved_tours');
     if (saved) {
@@ -85,52 +79,39 @@ function loadSavedTours() {
             const parsedTours = JSON.parse(saved);
             const aiGroup = d3.select("#ai-tours");
             if (!tours.ai) tours.ai = {};
-            
             Object.entries(parsedTours).forEach(([id, tour]) => {
                 tours.ai[id] = tour;
                 if(aiGroup.select(`option[value="${id}"]`).empty()) {
                     aiGroup.append("option").attr("value", id).text(tour.name);
                 }
             });
-        } catch (e) { 
-            console.error("Error loading saved tours:", e); 
-        }
+        } catch (e) { console.error(e); }
     }
 }
 
 function saveCurrentTour() {
     if (!app.currentTour) return;
-    
     let tourId = app.currentTour.id;
     if (!tourId || tourId.startsWith('custom_')) {
         tourId = `custom_tour_${Date.now()}`;
         app.currentTour.id = tourId;
     }
-    
     if (!tours.ai) tours.ai = {};
     tours.ai[tourId] = app.currentTour;
-
     let saved = {};
     const existing = localStorage.getItem('procoreverse_saved_tours');
-    if (existing) { 
-        try { saved = JSON.parse(existing); } catch(e) {} 
-    }
-    
+    if (existing) { try { saved = JSON.parse(existing); } catch(e) {} }
     saved[tourId] = app.currentTour;
     localStorage.setItem('procoreverse_saved_tours', JSON.stringify(saved));
-    
     const aiGroup = d3.select("#ai-tours");
     if (aiGroup.select(`option[value="${tourId}"]`).empty()) {
         aiGroup.append("option").attr("value", tourId).text(app.currentTour.name);
     }
-    
     d3.select("#tour-select").property("value", tourId);
-    
     if(typeof showToast === 'function') showToast("Process Saved!");
     d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
 }
 
-// --- MANUAL BUILDER LOGIC ---
 let manualBuilderSteps = [];
 
 // Helper to safely get the String ID
@@ -147,7 +128,11 @@ function startManualBuilder() {
     
     // Dim Everything at Start
     app.node.transition().duration(500).style("opacity", 1);
-    app.link.transition().duration(500).style("opacity", 0.05).style("stroke-opacity", 0.05); 
+    // FORCE reset style to avoid CSS conflicts
+    app.link.transition().duration(500)
+        .style("opacity", 0.05)
+        .style("stroke-opacity", 0.05)
+        .style("stroke", "#a0a0a0"); 
 
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
@@ -156,7 +141,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p id="manual-instruction-text" class="text-sm italic text-gray-300">Select any tool to start your process.</p>
+            <p id="manual-instruction-text" class="text-sm italic text-gray-300">Select a tool to start.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -195,7 +180,7 @@ function updateManualBuilderVisuals() {
     d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
 
-    // Update Text Instruction
+    // Dynamic Instructions
     const instructionText = d3.select("#manual-instruction-text");
     if (manualBuilderSteps.length === 0) {
         instructionText.html("Select a tool to start.");
@@ -209,16 +194,16 @@ function updateManualBuilderVisuals() {
         lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
     }
 
-    // 1. Identify Path Keys (History) - BI-DIRECTIONAL
+    // 1. Path Keys (History) - Bi-directional matching
     const pathKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
         const v = manualBuilderSteps[i+1].nodeId;
         pathKeys.add(`${u}-${v}`);
-        pathKeys.add(`${v}-${u}`); // Add both directions to ensure match
+        pathKeys.add(`${v}-${u}`);
     }
 
-    // 2. Identify Candidate Keys (Future) - BI-DIRECTIONAL
+    // 2. Candidate Keys (Strict Data Flow)
     const candidateKeys = new Set();
     const candidateNodes = new Set();
 
@@ -227,15 +212,18 @@ function updateManualBuilderVisuals() {
             const s = safeId(l.source);
             const t = safeId(l.target);
             
-            // Check connections to the LAST node
+            // LOGIC: Outgoing (Source -> Target) OR Syncs (Target -> Source)
+            // If current node is Source, Target is next step
             if (s === lastNodeId && !activeIds.has(t)) {
                 candidateKeys.add(`${s}-${t}`);
-                candidateKeys.add(`${t}-${s}`); 
                 candidateNodes.add(t);
-            } else if (t === lastNodeId && !activeIds.has(s)) {
-                candidateKeys.add(`${t}-${s}`);
-                candidateKeys.add(`${s}-${t}`);
-                candidateNodes.add(s);
+            } 
+            // If current node is Target, Source is next step ONLY if it's a sync (bi-directional)
+            else if (t === lastNodeId && !activeIds.has(s)) {
+                if (l.type === 'syncs') {
+                     candidateKeys.add(`${s}-${t}`); 
+                     candidateNodes.add(s);
+                }
             }
         });
     }
@@ -243,17 +231,18 @@ function updateManualBuilderVisuals() {
     // --- NODE UPDATES ---
     app.node.transition().duration(200)
         .style("opacity", n => {
-            if (activeIds.has(n.id)) return 1.0;            // Path
-            if (candidateNodes.has(n.id)) return 0.9;       // Candidate (High Vis)
-            return manualBuilderSteps.length === 0 ? 1 : 0.1; // Dim others
+            if (activeIds.has(n.id)) return 1.0;            
+            if (candidateNodes.has(n.id)) return 0.9;       
+            return manualBuilderSteps.length === 0 ? 1 : 0.1;
         })
         .style("filter", n => {
-            if (activeIds.has(n.id)) return "drop-shadow(0 0 6px #F36C23)"; // Orange Glow
-            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 5px #2563EB)"; // Blue Glow
+            if (activeIds.has(n.id)) return "drop-shadow(0 0 6px #F36C23)"; 
+            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 5px #2563EB)"; 
             return null;
         });
 
     // --- LINK UPDATES ---
+    // Using .style() to override CSS classes
     app.link.transition().duration(200)
         .style("opacity", l => {
             const s = safeId(l.source);
@@ -261,8 +250,8 @@ function updateManualBuilderVisuals() {
             const key = `${s}-${t}`;
             
             if (pathKeys.has(key)) return 1.0;
-            if (candidateKeys.has(key)) return 1.0; // Make candidates fully visible too
-            return 0.02; // Very faint for irrelevant links
+            if (candidateKeys.has(key)) return 1.0; 
+            return 0.05; // Hide irrelevant
         })
         .style("stroke-opacity", l => {
             const s = safeId(l.source);
@@ -271,15 +260,15 @@ function updateManualBuilderVisuals() {
             
             if (pathKeys.has(key)) return 1.0;
             if (candidateKeys.has(key)) return 0.8;
-            return 0.02;
+            return 0.05;
         })
-        .attr("stroke", l => {
+        .style("stroke", l => {
              const s = safeId(l.source);
              const t = safeId(l.target);
              const key = `${s}-${t}`;
 
-            if (pathKeys.has(key)) return "#F36C23"; // Orange Hex directly
-            if (candidateKeys.has(key)) return "#2563EB"; // Blue Hex directly
+            if (pathKeys.has(key)) return "#F36C23"; // FORCE ORANGE
+            if (candidateKeys.has(key)) return "#2563EB"; // FORCE BLUE
             return "#a0a0a0";
         })
         .style("stroke-width", l => {
@@ -287,9 +276,9 @@ function updateManualBuilderVisuals() {
              const t = safeId(l.target);
              const key = `${s}-${t}`;
 
-            if (pathKeys.has(key)) return 4; // Thick path
-            if (candidateKeys.has(key)) return 2; // Medium candidate
-            return 1;
+            if (pathKeys.has(key)) return "3px";
+            if (candidateKeys.has(key)) return "2px";
+            return "1px";
         })
         .attr("stroke-dasharray", l => {
             const s = safeId(l.source);
@@ -353,19 +342,25 @@ function previewTour(tourData) {
             const s = safeId(l.source);
             const t = safeId(l.target);
             const key = `${s}-${t}`;
-            return pathKeys.has(key) ? 1.0 : 0.02;
+            return pathKeys.has(key) ? 1.0 : 0.05;
         })
         .style("stroke-opacity", l => {
             const s = safeId(l.source);
             const t = safeId(l.target);
             const key = `${s}-${t}`;
-            return pathKeys.has(key) ? 1.0 : 0.02;
+            return pathKeys.has(key) ? 1.0 : 0.05;
         })
-        .attr("stroke", l => {
+        .style("stroke", l => {
             const s = safeId(l.source);
             const t = safeId(l.target);
             const key = `${s}-${t}`;
             return pathKeys.has(key) ? "#F36C23" : "#a0a0a0";
+        })
+        .style("stroke-width", l => {
+            const s = safeId(l.source);
+            const t = safeId(l.target);
+            const key = `${s}-${t}`;
+            return pathKeys.has(key) ? "3px" : "1px";
         })
         .attr("marker-end", l => {
              const s = safeId(l.source);
@@ -584,7 +579,7 @@ function runTourStep() {
                 
                 return 0.01;
             })
-            .attr("stroke", l => {
+            .style("stroke", l => {
                 const s = safeId(l.source);
                 const t = safeId(l.target);
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
@@ -594,7 +589,7 @@ function runTourStep() {
                 const s = safeId(l.source);
                 const t = safeId(l.target);
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
-                return isActiveLink ? 3 : 2;
+                return isActiveLink ? "3px" : "2px";
             })
             .attr("marker-end", l => {
                 const s = safeId(l.source);
