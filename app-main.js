@@ -1,6 +1,5 @@
 // --- app-main.js ---
-// --- app-main.js ---
-// VERSION: 110 (LEGEND ALIGNMENT FIX)
+// VERSION: 120 (GHOST MODE & GAP VISUALIZATION)
 
 const app = {
     simulation: null,
@@ -25,7 +24,7 @@ const app = {
     currentTour: null,
     currentStep: -1,
     apiKey: "AIzaSyCZx6YBE0qwuRd0Jl8HJQ580MUFbANtygA",
-    state: { showProcoreLedOnly: false },
+    state: { showProcoreLedOnly: false, myStack: new Set(), isBuildingStack: false },
     customScope: new Set() 
 };
 
@@ -48,7 +47,6 @@ function nodeClicked(event, d) {
     event.stopPropagation();
     
     // 1. STACK BUILDER INTERCEPT (NEW)
-    // If in builder mode, clicks simply toggle "Owned" status
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
         return; 
@@ -60,16 +58,12 @@ function nodeClicked(event, d) {
         return; 
     }
     
-    // 3. STANDARD LOGIC (Existing)
+    // 3. STANDARD LOGIC
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { procoreLedTools: new Set() };
-    
-    // Handle "Procore Led" scope toggling
     if (app.state.showProcoreLedOnly) {
         const isStandardLed = filters.procoreLedTools.has(d.id);
         if (!isStandardLed) { if (typeof toggleCustomScopeItem === 'function') toggleCustomScopeItem(d.id); return; }
     }
-    
-    // Standard Selection & Info Panel
     if (app.selectedNode === d) { resetHighlight(); } 
     else {
         app.interactionState = 'selected';
@@ -188,9 +182,7 @@ function populateLegend() {
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const svg = legendSVGs[type.type_id] || "";
-            // UPDATED CLASS: added 'items-center' and 'mb-3'
             const item = legendContainer.append("label").attr("class", "flex items-center mb-3 cursor-pointer");
-            // UPDATED CLASS: added 'mr-3' to input for spacing
             item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id).attr("class", "form-checkbox h-4 w-4 text-orange-600 legend-checkbox mr-3").on("change", () => updateGraph(true));
             item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
             item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
@@ -215,20 +207,15 @@ function updateGraph(isFilterChange = true) {
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
     // 2. GAP ANALYSIS PRE-CALCULATION (NEW)
-    // Check if we are in "Gap Mode" (Stack exists + Package Selected)
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set() };
-    // We are in Gap Mode if the user has defined a stack AND selected a package
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
 
-    // 3. Filter Nodes (Ghost Mode Logic: We keep ALL nodes in data, but change visibility)
-    // If NOT in Gap Mode, we filter normally. If IN Gap Mode, we might want to keep more nodes visible for context.
+    // 3. Filter Nodes (Ghost Mode Logic: Keep ALL relevant nodes in data for context)
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
         
-        // STANDARD PACKAGE FILTERING
-        // If a package is selected, we usually hide non-package tools.
-        // However, if in Gap Mode, we want to see Owned tools even if they aren't in the new package (Legacy tools).
+        // STANDARD PACKAGE FILTERING + GHOST MODE EXCEPTION
         const inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.owned.has(d.id));
         
         return inCategory && inPersona && inPackage;
@@ -237,7 +224,6 @@ function updateGraph(isFilterChange = true) {
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
-    // 4. D3 Join & Update
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node").call(drag(app.simulation))
@@ -246,7 +232,6 @@ function updateGraph(isFilterChange = true) {
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
             nodeGroup.append("text").text(d => d.id).attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
             
-            // Badges
             nodeGroup.each(function(d) {
                 const g = d3.select(this);
                 let badgeOffset = 14;
@@ -264,17 +249,11 @@ function updateGraph(isFilterChange = true) {
             // --- GHOST MODE: OPACITY ---
             .style("opacity", d => {
                 if (isGapMode) {
-                    // 1. Owned Tools = Full Opacity (Value Protected)
-                    if (gapAnalysis.owned.has(d.id)) return 1.0; 
-                    // 2. Gap Tools (In Package, Not Owned) = Full Opacity (The Upsell)
-                    if (gapAnalysis.gap.has(d.id)) return 1.0;   
-                    // 3. Ghost Tools (In Package but filtered out by something else? OR Legacy?) 
-                    // Actually, standard filtering handles "In Package". 
-                    // So anything remaining is likely relevant. 
-                    return 0.15; // Fallback for edge cases
+                    if (gapAnalysis.owned.has(d.id)) return 1.0; // Owned
+                    if (gapAnalysis.gap.has(d.id)) return 1.0;   // Upsell Gap
+                    return 0.15; // Ghost (Noise)
                 }
                 
-                // Fallback to Procore-Led Dimming (Existing Logic)
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
                     if (filters.procoreLedTools.has(d.id)) return 1.0;
@@ -286,12 +265,9 @@ function updateGraph(isFilterChange = true) {
             // --- GHOST MODE: GLOW & SHADOW ---
             .style("filter", d => {
                 if (isGapMode) {
-                    // GREEN GLOW for Owned
-                    if (gapAnalysis.owned.has(d.id)) return "drop-shadow(0 0 3px rgba(34, 197, 94, 0.5))"; 
-                    // ORANGE PULSE for Gap (Upsell)
-                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
+                    if (gapAnalysis.owned.has(d.id)) return "drop-shadow(0 0 3px rgba(34, 197, 94, 0.5))"; // Green
+                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; // Orange
                 }
-                // Procore Led Glows
                 if (filters.showProcoreLed) {
                     if (filters.procoreLedTools.has(d.id)) return "drop-shadow(0 0 5px rgba(243, 108, 35, 0.5))"; 
                     if (app.customScope && app.customScope.has(d.id)) return "drop-shadow(0 0 5px rgba(0, 150, 255, 0.5))"; 
@@ -307,33 +283,29 @@ function updateGraph(isFilterChange = true) {
                         if (gapAnalysis.owned.has(d.id)) return "#22c55e"; // Green Border
                         if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Orange Border
                     }
-                    return "#ffffff"; // Default White
+                    return "#ffffff"; 
                 })
                 .style("stroke-width", d => {
-                    if (isGapMode && gapAnalysis.gap.has(d.id)) return 4; // Thickest for Upsell
-                    if (isGapMode && gapAnalysis.owned.has(d.id)) return 3; // Medium for Owned
+                    if (isGapMode && gapAnalysis.gap.has(d.id)) return 4; 
+                    if (isGapMode && gapAnalysis.owned.has(d.id)) return 3; 
                     return 2;
                 });
 
-            // --- RING LOGIC (Ensure no conflict) ---
             update.select(".procore-led-ring").transition().duration(300)
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    if (isGapMode) return 0; // Reduce noise in Gap Mode
+                    if (isGapMode) return 0; // Reduce noise
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
-                
             return update;
         },
         exit => exit.transition().duration(300).style("opacity", 0).remove()
     );
 
-    // 5. Update Links (Dim irrelevant links in Gap Mode)
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
         .attr("stroke", d => {
-            // Keep existing coloring
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return app.defaultArrowColor;
             if (legend.type_id === "feeds") return "#4A4A4A";
@@ -342,7 +314,6 @@ function updateGraph(isFilterChange = true) {
             return app.defaultArrowColor;
         })
         .attr("stroke-dasharray", d => {
-            // Keep existing dashes
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return "none";
             if (d.type === "creates") return "4,3";
@@ -358,12 +329,8 @@ function updateGraph(isFilterChange = true) {
             return null;
         });
 
-    // Link Opacity Transitions
     app.link.transition().duration(500).style("opacity", d => {
-        if (isGapMode) {
-            // Dim links significantly to focus on the Nodes (Gap vs Owned)
-            return 0.15;
-        }
+        if (isGapMode) return 0.15; // Dim links in Gap Mode
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
