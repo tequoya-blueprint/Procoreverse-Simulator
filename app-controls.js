@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 145 (STRICT REGION HIERARCHY)
+// VERSION: 155 (UNCOMPRESSED - FULL RESTORATION)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -92,6 +92,7 @@ const SOW_QUESTIONS = [
 function initializeControls() {
     if (typeof app !== 'undefined') {
         app.customScope = new Set();
+        // Initialize State for Gap Analysis
         if (!app.state) app.state = {};
         if (!app.state.myStack) app.state.myStack = new Set();
     }
@@ -111,7 +112,7 @@ function initializeControls() {
     populatePersonaFilter();
     renderSOWQuestionnaire();
    
-    // Filter Listeners - Enforcing Hierarchy
+    // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange); 
@@ -162,7 +163,7 @@ function initializeControls() {
         if(el) el.addEventListener('input', calculateScoping);
     });
 
-    // Initialize Stack Builder Button (Hidden until Region Selected)
+    // Initialize Stack Builder Button (Gap Analysis V2)
     setTimeout(() => {
         const existingBtn = d3.select("#stack-builder-btn");
         if (existingBtn.empty()) {
@@ -251,9 +252,9 @@ function highlightOwnedNodes() {
     
     app.node.transition().duration(200)
         .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") 
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") 
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
@@ -710,7 +711,10 @@ function onAudienceChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
+// FIX: AUTO-EXIT BUILDER MODE ON PACKAGE SELECTION
 function onPackageChange() {
+    if (app.state.isBuildingStack) toggleStackBuilderMode(); // FORCE OFF
+    
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const pkgName = d3.select("#package-filter").property('value');
@@ -728,6 +732,9 @@ function onPackageChange() {
 }
 
 function updatePackageAddOns() {
+    // FORCE EXIT BUILDER MODE HERE TOO (Since this is triggered by checkboxes)
+    if (app.state.isBuildingStack) toggleStackBuilderMode();
+
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
@@ -903,18 +910,11 @@ function resetView() {
     
     d3.selectAll(".sow-question").property("checked", false);
     
-    // RESET STACK BUILDER MODE
-    if (app.state && app.state.isBuildingStack) {
-        toggleStackBuilderMode(); // Toggles it off
-    }
+    // RESET STACK
+    if (app.state && app.state.isBuildingStack) toggleStackBuilderMode();
     app.state.myStack = new Set();
+    d3.select("#stack-builder-btn").attr("disabled", true).classed("cursor-not-allowed", true);
     
-    // Disable Stack Button on Reset (Because region is cleared)
-    d3.select("#stack-builder-btn")
-      .classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", true)
-      .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", false)
-      .attr("disabled", true);
-
     clearPackageDetails();
     if (typeof updateGraph === 'function') updateGraph(false);
     if (typeof resetZoom === 'function') resetZoom();
