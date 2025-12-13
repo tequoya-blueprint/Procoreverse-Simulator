@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 140 (FIX: PERSISTENT BUILDER MODE)
+// VERSION: 150 (BRAND ALIGNMENT & AUTO-EXIT FIX)
 
 const app = {
     simulation: null,
@@ -47,10 +47,8 @@ function nodeClicked(event, d) {
     event.stopPropagation();
     
     // 1. STACK BUILDER INTERCEPT
-    // Check global state so it works even after graph updates
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
-        // Force a re-highlight to ensure immediate feedback
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
         return; 
     }
@@ -209,15 +207,11 @@ function updateGraph(isFilterChange = true) {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
         
-        // STANDARD FILTERING LOGIC
-        // If in Builder Mode: Show ALL tools (ignoring package filters) so user can select them.
-        // If in Gap Mode: Show Package Tools + Outliers (User Owned).
-        // Default: Show Package Tools.
         let inPackage = true;
-        
         if (isBuilderMode) {
-            inPackage = true; // Show everything to allow selection
+            inPackage = true; 
         } else {
+            // SHOW: Package Tools OR Outliers (Legacy tools owned by customer)
             inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         }
         
@@ -247,21 +241,21 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
-            // PRIORITY 1: BUILDER MODE VISUALS (Override everything else)
+            // PRIORITY 1: BUILDER MODE VISUALS
             if (isBuilderMode) {
                 update.transition().duration(500)
-                    .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) // Dim unselected
-                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none");
+                    .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
+                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
                 
                 update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#ffffff")
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") // Brand Green
                     .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
                     
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
 
-            // PRIORITY 2: GAP ANALYSIS VISUALS
+            // PRIORITY 2: GAP ANALYSIS VISUALS (BRANDED COLORS)
             update.transition().duration(500)
             .style("opacity", d => {
                 if (isGapMode) {
@@ -279,9 +273,12 @@ function updateGraph(isFilterChange = true) {
             })
             .style("filter", d => {
                 if (isGapMode) {
-                    if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 3px rgba(34, 197, 94, 0.5))"; // Green
-                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; // Orange Pulse
-                    if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 3px rgba(147, 51, 234, 0.6))"; // Purple
+                    // MATCHED = BRAND GREEN GLOW
+                    if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
+                    // GAP = BRAND ORANGE PULSE
+                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
+                    // OUTLIER = BRAND METAL GLOW
+                    if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 if (filters.showProcoreLed) {
                     if (filters.procoreLedTools.has(d.id)) return "drop-shadow(0 0 5px rgba(243, 108, 35, 0.5))"; 
@@ -294,9 +291,9 @@ function updateGraph(isFilterChange = true) {
                 .transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#22c55e"; 
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   
-                        if (gapAnalysis.outlier.has(d.id)) return "#9333ea"; 
+                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; // Brand Green
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Brand Orange
+                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; // Brand Metal
                     }
                     return "#ffffff"; 
                 })
