@@ -1,7 +1,7 @@
 // --- app-controls.js ---
-// VERSION: 180 (SOW V2: FULL TEMPLATE LIBRARY)
+// VERSION: 200 (MASTER MERGE: GAP ANALYSIS + SOW ENGINE + RBAC)
 
-// --- TEAM CONFIGURATION RULES ---
+// --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
     admin: { 
         showTours: true, showAiBuilder: true, showManualBuilder: true, 
@@ -45,7 +45,6 @@ const audienceDataToKeyMap = { "Contractor": "GC", "General Contractor": "GC", "
 const audienceKeyToLabelMap = { "GC": "General Contractor", "SC": "Specialty Contractor", "O": "Owner" };
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
-// These IDs map to the Scope Modules in SOW_LIBRARY
 const SOW_QUESTIONS = [
     { id: "q-sop", label: "SOP Development", type: "cost", hrs: 140, cost: 35000, module: "MOD_SOP" },
     { id: "q-consulting", label: "Virtual Consulting", type: "cost", hrs: 400, cost: 100000, module: "MOD_CONSULTING" },
@@ -58,9 +57,8 @@ const SOW_QUESTIONS = [
     { id: "q-ent", label: "Enterprise Scale", type: "risk", factor: 0.2, target: "change" }
 ];
 
-// --- SOW TEMPLATE LIBRARY (DYNAMIC CONTENT) ---
+// --- SOW TEMPLATE LIBRARY ---
 const SOW_LIBRARY = {
-    // 1. LEGAL WRAPPERS (Region + Audience)
     "NAM_GC_BASE": {
         title: "STATEMENT OF WORK (GENERAL CONTRACTOR)",
         body: `
@@ -71,11 +69,11 @@ const SOW_LIBRARY = {
         </div>
         <div class="sow-section">
             <h3>OVERVIEW</h3>
-            [cite_start]<p>Client is currently implementing project management software products and has identified a need for standardizing processes and content[cite: 7]. To support Client’s strategic initiative, Client and Provider agree to the custom scope of services outlined below.</p>
+            <p>Client is currently implementing project management software products and has identified a need for standardizing processes and content. To support Client’s strategic initiative, Client and Provider agree to the custom scope of services outlined below.</p>
         </div>
         <div class="sow-section">
             <h3>GOVERNING TERMS</h3>
-            <p>This SOW is governed by the Master Services Agreement ("MSA") or Subscription Terms currently in place between the parties. [cite_start]All fees are in USD[cite: 10].</p>
+            <p>This SOW is governed by the Master Services Agreement ("MSA") or Subscription Terms currently in place between the parties. All fees are in USD.</p>
         </div>
         `
     },
@@ -89,11 +87,11 @@ const SOW_LIBRARY = {
         </div>
         <div class="sow-section">
             <h3>OVERVIEW</h3>
-            [cite_start]<p>Client requires specialized assistance to standardize capital project controls and financial workflows[cite: 4]. Client and Provider agree to the custom scope of services outlined below to ensure successful onboarding of future assets.</p>
+            <p>Client requires specialized assistance to standardize capital project controls and financial workflows. Client and Provider agree to the custom scope of services outlined below to ensure successful onboarding of future assets.</p>
         </div>
         <div class="sow-section">
             <h3>GOVERNING TERMS</h3>
-            <p>This SOW is governed by the Master Services Agreement ("MSA") executed by the Client. [cite_start]All fees are in USD[cite: 6].</p>
+            <p>This SOW is governed by the Master Services Agreement ("MSA") executed by the Client. All fees are in USD.</p>
         </div>
         `
     },
@@ -110,7 +108,7 @@ const SOW_LIBRARY = {
             <ul>
                 <li><strong>Currency:</strong> All fees are listed in AUD/SGD unless otherwise specified.</li>
                 <li><strong>GST/Tax:</strong> Fees are exclusive of Goods and Services Tax (GST).</li>
-                [cite_start]<li><strong>Jurisdiction:</strong> This agreement is governed by the laws of New South Wales (or relevant APAC jurisdiction)[cite: 8].</li>
+                <li><strong>Jurisdiction:</strong> This agreement is governed by the laws of New South Wales (or relevant APAC jurisdiction).</li>
             </ul>
         </div>
         `
@@ -128,120 +126,97 @@ const SOW_LIBRARY = {
             <ul>
                 <li><strong>Data Protection:</strong> Both parties agree to comply with all applicable provisions of the General Data Protection Regulation (GDPR).</li>
                 <li><strong>VAT:</strong> All fees are exclusive of VAT.</li>
-                [cite_start]<li><strong>Jurisdiction:</strong> This agreement is governed by the laws of England and Wales[cite: 9].</li>
+                <li><strong>Jurisdiction:</strong> This agreement is governed by the laws of England and Wales.</li>
             </ul>
         </div>
         `
     },
-
-    // 2. SCOPE MODULES (Add-Ons)
     "MOD_SOP": {
         title: "STANDARD OPERATING PROCEDURE (SOP) SERVICES",
         body: `
-        [cite_start]<p>Provider will provide up to one-hundred forty (140) hours towards developing Client Standard Operating Procedures with Provider's Strategic Product Consultants (SPCs) and one (1) named Training Management Specialist[cite: 11].</p>
+        <p>Provider will provide up to one-hundred forty (140) hours towards developing Client Standard Operating Procedures with Provider's Strategic Product Consultants (SPCs) and one (1) named Training Management Specialist.</p>
         <ul>
-            [cite_start]<li>Planning & discovery to align on timelines and outcomes[cite: 14].</li>
-            [cite_start]<li>Virtual consultation services to provide guidance on SOPs and best practices[cite: 15].</li>
-            [cite_start]<li>Documentation of SOPs within the Provider's training/knowledge center product[cite: 16].</li>
+            <li>Planning & discovery to align on timelines and outcomes.</li>
+            <li>Virtual consultation services to provide guidance on SOPs and best practices.</li>
+            <li>Documentation of SOPs within the Provider's training/knowledge center product.</li>
         </ul>
-        [cite_start]<p><strong>Exclusions:</strong> Ongoing SOP management greater than 140 hours[cite: 19].</p>
+        <p><strong>Exclusions:</strong> Ongoing SOP management greater than 140 hours.</p>
         `
     },
     "MOD_CONSULTING": {
         title: "VIRTUAL CONSULTING SERVICES",
         body: `
-        [cite_start]<p>Provider will provide up to four-hundred (400) additional hours of Virtual Consulting Services[cite: 25]. These hours are led by Strategic Product Consultants.</p>
+        <p>Provider will provide up to four-hundred (400) additional hours of Virtual Consulting Services. These hours are led by Strategic Product Consultants.</p>
         <ul>
-            [cite_start]<li>Expert review of Client’s systems, processes, and operations[cite: 31].</li>
-            [cite_start]<li>Usage monitoring and reviews with Client’s key stakeholders[cite: 30].</li>
-            [cite_start]<li>Project administration duties, including coordination, planning, and management of project execution[cite: 35].</li>
+            <li>Expert review of Client’s systems, processes, and operations.</li>
+            <li>Usage monitoring and reviews with Client’s key stakeholders.</li>
+            <li>Project administration duties, including coordination, planning, and management of project execution.</li>
         </ul>
         `
     },
     "MOD_TRAINING": {
         title: "ONSITE TRAINING SERVICES",
         body: `
-        [cite_start]<p>Provider will provide fifteen (15) days of onsite training led by an Implementation Manager or Strategic Consultant[cite: 38].</p>
+        <p>Provider will provide fifteen (15) days of onsite training led by an Implementation Manager or Strategic Consultant.</p>
         <ul>
-            [cite_start]<li><strong>Kickoff, Discovery and Planning Workshop (3 Days):</strong> To set project expectations and outline a project plan[cite: 54, 57].</li>
-            [cite_start]<li><strong>SOP End-User Trainings (6 Days):</strong> "Train the Trainer" workshops informed by the SOPs being developed[cite: 59, 60].</li>
-            [cite_start]<li><strong>Business Health Checks (6 Days):</strong> Stakeholder meetings to review milestone status and adoption progress[cite: 63, 64].</li>
+            <li><strong>Kickoff, Discovery and Planning Workshop (3 Days):</strong> To set project expectations and outline a project plan.</li>
+            <li><strong>SOP End-User Trainings (6 Days):</strong> "Train the Trainer" workshops informed by the SOPs being developed.</li>
+            <li><strong>Business Health Checks (6 Days):</strong> Stakeholder meetings to review milestone status and adoption progress.</li>
         </ul>
-        <p><strong>Terms:</strong> Includes expenses. [cite_start]Limited to twenty (20) Client participants per session[cite: 65].</p>
+        <p><strong>Terms:</strong> Includes expenses. Limited to twenty (20) Client participants per session.</p>
         `
     },
     "MOD_INTEGRATION": {
         title: "INTEGRATION CONSULTING",
         body: `
-        [cite_start]<p>Provider will provide up to twenty-five (25) hours of virtual Integration Consulting led by a Solutions Architect to assist with scoping and planning for Client’s anticipated integrations[cite: 69].</p>
+        <p>Provider will provide up to twenty-five (25) hours of virtual Integration Consulting led by a Solutions Architect to assist with scoping and planning for Client’s anticipated integrations.</p>
         <ul>
-            [cite_start]<li>Guidance on integration best practices[cite: 72].</li>
-            [cite_start]<li>Virtual Developer training on webhooks, authentication, or REST web services[cite: 73].</li>
-            [cite_start]<li>Data migration feasibility analysis and guidance[cite: 74].</li>
+            <li>Guidance on integration best practices.</li>
+            <li>Virtual Developer training on webhooks, authentication, or REST web services.</li>
+            <li>Data migration feasibility analysis and guidance.</li>
         </ul>
-        [cite_start]<p><strong>Exclusions:</strong> Actual integration code development[cite: 76].</p>
+        <p><strong>Exclusions:</strong> Actual integration code development.</p>
         `
     },
     "MOD_CUSTOM": {
         title: "CUSTOM SOLUTIONS",
         body: `
-        [cite_start]<p>Provider will provide up to forty (40) hours for custom form and workflow development[cite: 79].</p>
+        <p>Provider will provide up to forty (40) hours for custom form and workflow development.</p>
         <ul>
-            [cite_start]<li>Customizing PDF item outputs[cite: 80].</li>
-            [cite_start]<li>Creation of custom tools and custom workflows[cite: 80].</li>
+            <li>Customizing PDF item outputs.</li>
+            <li>Creation of custom tools and custom workflows.</li>
         </ul>
-        [cite_start]<p><strong>IP Rights:</strong> Any intellectual property created shall be owned solely by Provider, provided that Client is granted a non-exclusive right to use any custom forms/tools solely for internal business purposes[cite: 83].</p>
+        <p><strong>IP Rights:</strong> Any intellectual property created shall be owned solely by Provider, provided that Client is granted a non-exclusive right to use any custom forms/tools solely for internal business purposes.</p>
         `
     },
     "MOD_ADMIN": {
         title: "PROJECT ADMINISTRATION",
         body: `
-        [cite_start]<p>An Implementation Manager (IM) will be assigned for up to 140 virtual hours to partner with consultants in overseeing deliverables, timelines, and resource allocation[cite: 85, 99].</p>
+        <p>An Implementation Manager (IM) will be assigned for up to 140 virtual hours to partner with consultants in overseeing deliverables, timelines, and resource allocation.</p>
         <ul>
-            [cite_start]<li>Coordinating services, deliverables, and resource scheduling[cite: 87].</li>
-            [cite_start]<li>Driving milestone progress in the Project Plan[cite: 89].</li>
-            [cite_start]<li>Progress calls, coaching, and KPI monitoring[cite: 94].</li>
+            <li>Coordinating services, deliverables, and resource scheduling.</li>
+            <li>Driving milestone progress in the Project Plan.</li>
+            <li>Progress calls, coaching, and KPI monitoring.</li>
         </ul>
         `
     }
 };
 
-// --- DYNAMIC CONTENT ASSEMBLER ---
-function getSOWContent(sowData) {
-    // 1. Determine Base Wrapper (Region + Audience)
-    let baseKey = "NAM_GC_BASE"; // Default
-    if (sowData.region === "APAC") baseKey = "APAC_BASE";
-    else if (sowData.region === "EMEA") baseKey = "EMEA_BASE";
-    else if (sowData.audience === "O") baseKey = "NAM_OWNER_BASE";
-
-    // 2. Determine Modules (Services)
-    let modules = [];
-    
-    // Check Services selected in checkbox list
-    if (sowData.services.some(s => s.includes("SOP"))) modules.push(SOW_LIBRARY["MOD_SOP"]);
-    if (sowData.services.some(s => s.includes("Virtual Consulting"))) modules.push(SOW_LIBRARY["MOD_CONSULTING"]);
-    if (sowData.services.some(s => s.includes("Admin"))) modules.push(SOW_LIBRARY["MOD_ADMIN"]);
-    if (sowData.services.some(s => s.includes("Integration"))) modules.push(SOW_LIBRARY["MOD_INTEGRATION"]);
-    if (sowData.services.some(s => s.includes("Custom Solutions"))) modules.push(SOW_LIBRARY["MOD_CUSTOM"]);
-    
-    // Check Onsite Input
-    if (sowData.onsite > 0) modules.push(SOW_LIBRARY["MOD_TRAINING"]);
-
-    return { base: SOW_LIBRARY[baseKey], modules: modules };
-}
-
 // --- INITIALIZATION ---
 function initializeControls() {
     if (typeof app !== 'undefined') {
         app.customScope = new Set();
+        // Initialize State for Gap Analysis
         if (!app.state) app.state = {};
         if (!app.state.myStack) app.state.myStack = new Set();
-        app.state.calculatorMode = 'edit'; 
+        app.state.calculatorMode = 'edit';
     }
     
     // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
-        header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
+        header.addEventListener('click', () => {
+            if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement);
+        });
     });
 
     populateRegionFilter();
@@ -252,7 +227,10 @@ function initializeControls() {
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange); 
-    d3.select("#persona-filter").on("change", () => { if (typeof updateGraph === 'function') updateGraph(true) });
+    
+    d3.select("#persona-filter").on("change", () => {
+        if (typeof updateGraph === 'function') updateGraph(true)
+    });
     
     // Procore-Led Toggle
     const ledToggle = d3.select("#toggle-procore-led");
@@ -266,6 +244,7 @@ function initializeControls() {
     populateCategoryFilters();
     d3.select("#toggle-categories").on("click", toggleAllCategories);
     d3.select("#toggle-legend").on("click", toggleAllConnections);
+
     d3.select("#search-input").on("input", handleSearchInput);
     
     const teamSelector = d3.select("#team-selector");
@@ -294,8 +273,8 @@ function initializeControls() {
         const el = document.getElementById(id);
         if(el) el.addEventListener('input', calculateScoping);
     });
-    
-    // Init Stack Builder Button
+
+    // Initialize Stack Builder Button (Gap Analysis V2)
     setTimeout(() => {
         const existingBtn = d3.select("#stack-builder-btn");
         if (existingBtn.empty()) {
@@ -315,80 +294,120 @@ function initializeControls() {
 // --- CUSTOM SCOPE MANAGER ---
 function toggleCustomScopeItem(nodeId) {
     if (!app || !app.customScope) return;
-    if (app.customScope.has(nodeId)) app.customScope.delete(nodeId);
-    else app.customScope.add(nodeId);
+    if (app.customScope.has(nodeId)) {
+        app.customScope.delete(nodeId);
+        if(typeof showToast === 'function') showToast(`Removed ${nodeId} from Custom Scope`);
+    } else {
+        app.customScope.add(nodeId);
+        if(typeof showToast === 'function') showToast(`Added ${nodeId} to Custom Scope`);
+    }
     if (typeof updateGraph === 'function') updateGraph(false); 
     calculateScoping();
 }
 
 // --- GAP ANALYSIS V2 MANAGER ---
 function toggleStackBuilderMode() {
+    // Prevent usage if Region not selected
     if (d3.select("#region-filter").property("value") === "all") {
         if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
         return;
     }
+
     app.state.isBuildingStack = !app.state.isBuildingStack;
+    
     let btn = d3.select("#stack-builder-btn");
     
     if (app.state.isBuildingStack) {
+        // --- ACTIVATE BUILDER MODE ---
         app.interactionState = 'building_stack';
+        
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
+        
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
+        
         d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
         highlightOwnedNodes();
+        
     } else {
+        // --- DEACTIVATE BUILDER MODE ---
         app.interactionState = 'explore';
+        
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
+        
+        // Return to normal view with "Gap Analysis" active if package selected
         if (typeof updateGraph === 'function') updateGraph(true);
-        if (app.state.myStack.size > 0 && typeof showToast === 'function') showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
+        
+        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
+            showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
+        }
     }
 }
 
 function toggleStackItem(d) {
     if (!app.state.myStack) app.state.myStack = new Set();
-    if (app.state.myStack.has(d.id)) app.state.myStack.delete(d.id);
-    else app.state.myStack.add(d.id);
+    
+    if (app.state.myStack.has(d.id)) {
+        app.state.myStack.delete(d.id);
+    } else {
+        app.state.myStack.add(d.id);
+    }
     highlightOwnedNodes();
 }
 
 function highlightOwnedNodes() {
     if (!app.node) return;
+    
     app.node.transition().duration(200)
         .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") 
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") 
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
+// UPDATED LOGIC: Calculates Gap, Matched, and OUTLIERS
 function getGapAnalysis() {
     const filters = getActiveFilters(); 
     const targetPackageTools = filters.packageTools || new Set();
+    
     const owned = app.state.myStack || new Set();
-    const gap = new Set(); const matched = new Set(); const outlier = new Set();
+    
+    const gap = new Set();      // In Package, NOT Owned (Upsell)
+    const matched = new Set();  // In Package, AND Owned (Safe)
+    const outlier = new Set();  // NOT in Package, BUT Owned (Legacy/Extra)
     
     if (targetPackageTools.size > 0) {
         targetPackageTools.forEach(toolId => {
-            if (owned.has(toolId)) matched.add(toolId);
-            else gap.add(toolId);
+            if (owned.has(toolId)) {
+                matched.add(toolId);
+            } else {
+                gap.add(toolId);
+            }
         });
+        
+        // Calculate Outliers
         owned.forEach(toolId => {
-            if (!targetPackageTools.has(toolId)) outlier.add(toolId);
+            if (!targetPackageTools.has(toolId)) {
+                outlier.add(toolId);
+            }
         });
     }
+    
     return { owned, gap, matched, outlier, target: targetPackageTools };
 }
 
-// --- SOW V2: COMPLEXITY ---
+// --- SOW V2: COMPLEXITY & T-SHIRT SIZING ---
 function setComplexity(level) {
+    // Only allow if not in Read-Only mode
     if (app.state.calculatorMode === 'view') {
         if(typeof showToast === 'function') showToast("View Only: Complexity cannot be edited.");
         return;
     }
+
     const map = {
         'standard': { mat: 1.0, data: 1.0, change: 1.0 },
         'complex': { mat: 1.4, data: 1.5, change: 1.3 },
@@ -400,6 +419,7 @@ function setComplexity(level) {
         document.getElementById('slider-data').value = vals.data;
         document.getElementById('slider-change').value = vals.change;
         calculateScoping();
+        // Update Button States
         d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
         d3.select(`#btn-${level}`).classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
     }
@@ -410,7 +430,7 @@ function renderSOWQuestionnaire() {
     if(revenueContainer.empty()) return;
     revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200").html("");
     
-    // Complexity Buttons
+    // --- COMPLEXITY BUTTONS (SOW V2) ---
     const complexityDiv = revenueContainer.append("div").attr("class", "mb-3 flex gap-2");
     ['Standard', 'Complex', 'Transform'].forEach(label => {
         const key = label.toLowerCase();
@@ -448,7 +468,6 @@ function renderSOWQuestionnaire() {
 // --- SCOPING CALCULATOR (WITH RBAC) ---
 function calculateScoping() {
     const isViewOnly = (app.state.calculatorMode === 'view');
-    
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
@@ -553,7 +572,6 @@ function calculateScoping() {
 
     const hourlyRate = 250; 
     const implementationCost = (baseHours + customScopeHours) * PREP_FACTOR * combinedMultiplier * hourlyRate;
-    const onsiteInput = document.getElementById('onsite-input');
     const onsiteCount = parseInt(onsiteInput ? onsiteInput.value : 0) || 0;
     const onsiteCost = onsiteCount * 7500;
     
@@ -575,10 +593,37 @@ function calculateScoping() {
     refreshAccordionHeight();
 }
 
-// --- PRINT SOW LOGIC (DYNAMIC TEMPLATE RENDERING) ---
+// --- DYNAMIC CONTENT ASSEMBLER ---
+function getSOWContent(sowData) {
+    let baseKey = "NAM_GC_BASE";
+    if (sowData.region === "APAC") baseKey = "APAC_BASE";
+    else if (sowData.region === "EMEA") baseKey = "EMEA_BASE";
+    else if (sowData.audience === "O") baseKey = "NAM_OWNER_BASE";
+
+    let modules = [];
+    if (sowData.services.some(s => s.includes("SOP"))) modules.push(SOW_LIBRARY["MOD_SOP"]);
+    if (sowData.services.some(s => s.includes("Virtual Consulting"))) modules.push(SOW_LIBRARY["MOD_CONSULTING"]);
+    if (sowData.services.some(s => s.includes("Admin"))) modules.push(SOW_LIBRARY["MOD_ADMIN"]);
+    if (sowData.services.some(s => s.includes("Integration"))) modules.push(SOW_LIBRARY["MOD_INTEGRATION"]);
+    if (sowData.services.some(s => s.includes("Custom Solutions"))) modules.push(SOW_LIBRARY["MOD_CUSTOM"]);
+    if (sowData.onsite > 0) modules.push(SOW_LIBRARY["MOD_TRAINING"]);
+
+    return { base: SOW_LIBRARY[baseKey], modules: modules };
+}
+
+// --- PRINT SOW (BRANDING + TEMPLATES) ---
 function generateSOWPrintView() {
     if (!app.currentSOW) { alert("Please configure a scope first."); return; }
     
+    // 1. Capture Branding
+    const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
+    const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
+    
+    // 2. Logic: Use input or default Procore
+    const logoHtml = (logoInput && logoInput.trim() !== "") 
+        ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
+        : `<div class="logo">PROCORE</div>`;
+
     const sow = app.currentSOW;
     const templateData = getSOWContent(sow); // Retrieve dynamic content
     const today = new Date().toLocaleDateString();
@@ -594,9 +639,9 @@ function generateSOWPrintView() {
         </div>`;
     });
 
-    // Populate Placeholders
+    // Populate Legal Wrapper
     let bodyContent = templateData.base.body
-        .replace(/{{Client Name}}/g, "Valued Client")
+        .replace(/{{Client Name}}/g, clientName)
         .replace(/{{Date}}/g, today);
 
     const htmlContent = `
@@ -625,7 +670,7 @@ function generateSOWPrintView() {
     </head>
     <body>
         <div class="header">
-            <div class="logo">PROCORE</div>
+            <div>${logoHtml}</div>
             <div class="title">${templateData.base.title}</div>
         </div>
         
@@ -726,6 +771,7 @@ function populateRegionFilter() {
     });
 }
 
+// --- HIERARCHY ENFORCER: LEVEL 1 (Region) ---
 function onRegionChange() {
     const region = d3.select(this).property("value");
     const audienceFilter = d3.select("#audience-filter");
@@ -773,6 +819,7 @@ function onRegionChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
+// --- HIERARCHY ENFORCER: LEVEL 2 (Audience) ---
 function onAudienceChange() {
     const region = d3.select("#region-filter").property("value");
     const audience = d3.select(this).property("value");
@@ -817,6 +864,7 @@ function onAudienceChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
+// FIX: AUTO-EXIT BUILDER MODE ON PACKAGE SELECTION
 function onPackageChange() {
     if (app.state.isBuildingStack) toggleStackBuilderMode(); // FORCE OFF
     
@@ -837,6 +885,7 @@ function onPackageChange() {
 }
 
 function updatePackageAddOns() {
+    // FORCE EXIT BUILDER MODE HERE TOO (Since this is triggered by checkboxes)
     if (app.state.isBuildingStack) toggleStackBuilderMode();
 
     const region = d3.select("#region-filter").property('value');
