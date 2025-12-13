@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 300 (MASTER RESET: STATE PROTECTION & BRANDING)
+// VERSION: 310 (FIXED: ADDED MISSING MARKERS & CLICK ROUTING)
 
 const app = {
     simulation: null,
@@ -155,8 +155,9 @@ function setupMarkers() {
             }
         });
     }
+    // HIGHLIGHT ARROW (Orange)
     defs.append("marker").attr("id", "arrow-highlighted").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "var(--procore-orange)");
-    // Add Blue Marker for Candidates
+    // CANDIDATE ARROW (Blue) - THIS WAS MISSING
     defs.append("marker").attr("id", "arrow-candidate").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#2563EB");
 }
 
@@ -195,8 +196,6 @@ function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
     
     // --- CRITICAL GUARD CLAUSE ---
-    // If the Manual Builder is active, we MUST NOT update the graph visuals based on
-    // standard filtering logic. The builder has exclusive control over the visuals.
     if (app.interactionState === 'manual_building') return;
 
     // 1. Retrieve Filters & Data
