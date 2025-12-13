@@ -1,52 +1,32 @@
 // --- app-controls.js ---
-// VERSION: 155 (UNCOMPRESSED - FULL RESTORATION)
+// VERSION: 170 (SOW V2: CONDITIONAL TEMPLATES & RBAC)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
     admin: { 
-        showTours: true, 
-        showAiBuilder: true, 
-        showManualBuilder: true, 
-        showScoping: true, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'view-options-accordion' 
+        showTours: true, showAiBuilder: true, showManualBuilder: true, 
+        showScoping: true, calculatorMode: 'edit',
+        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
     },
     enablement: { 
-        showTours: true, 
-        showAiBuilder: true, 
-        showManualBuilder: true, 
-        showScoping: false, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'view-options-accordion' 
+        showTours: true, showAiBuilder: true, showManualBuilder: true, 
+        showScoping: false, calculatorMode: 'hidden',
+        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
     },
     sales: { 
-        showTours: false, 
-        showAiBuilder: false, 
-        showManualBuilder: false, 
-        showScoping: false, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'view-options-accordion' 
+        showTours: true, showAiBuilder: false, showManualBuilder: false, 
+        showScoping: true, calculatorMode: 'view', // VIEW ONLY
+        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
     },
     product: { 
-        showTours: true, 
-        showAiBuilder: true, 
-        showManualBuilder: true, 
-        showScoping: false, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'view-options-accordion' 
+        showTours: true, showAiBuilder: true, showManualBuilder: true, 
+        showScoping: false, calculatorMode: 'hidden',
+        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
     },
     services: { 
-        showTours: true, 
-        showAiBuilder: true, 
-        showManualBuilder: true, 
-        showScoping: true, 
-        showFilters: true, 
-        showLegend: true, 
-        defaultOpen: 'view-options-accordion' 
+        showTours: true, showAiBuilder: true, showManualBuilder: true, 
+        showScoping: true, calculatorMode: 'edit', // FULL EDIT
+        showFilters: true, showLegend: true, defaultOpen: 'scoping-ui-container' 
     }
 };
 
@@ -56,24 +36,13 @@ function getUrlParam(param) {
 }
 
 // --- DATA MAPPING CONSTANTS ---
-const audienceDataToKeyMap = {
-    "Contractor": "GC", "General Contractor": "GC", "GC": "GC",
-    "SC": "SC", "Specialty Contractor": "SC",
-    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O",
-    "GC": "GC", "SC": "SC", "O": "O"
-};
-
-const audienceKeyToLabelMap = {
-    "GC": "General Contractor",
-    "SC": "Specialty Contractor",
-    "O": "Owner"
-};
-
 const audienceKeyToDataValuesMap = {
     "GC": ["Contractor", "General Contractor", "GC"],
     "SC": ["SC", "Specialty Contractor"],
     "O": ["Owners", "Owner", "Owner Developer *Coming Soon", "O"]
 };
+const audienceDataToKeyMap = { "Contractor": "GC", "General Contractor": "GC", "GC": "GC", "SC": "SC", "Specialty Contractor": "SC", "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O" };
+const audienceKeyToLabelMap = { "GC": "General Contractor", "SC": "Specialty Contractor", "O": "Owner" };
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
 const SOW_QUESTIONS = [
@@ -88,24 +57,53 @@ const SOW_QUESTIONS = [
     { id: "q-financials", label: "Complex Finance", type: "risk", factor: 0.3, target: "data" } 
 ];
 
+// --- CONDITIONAL TEMPLATE LOGIC ---
+function getSOWTemplate(sowData) {
+    // Default Template
+    let templateId = "STD_IMPL";
+    let title = "Standard Implementation SOW";
+    let terms = "Standard Professional Services Terms apply.";
+
+    // Logic: Region + Audience + Key Add-ons determine the template
+    if (sowData.region === "APAC") {
+        templateId = "APAC_STD";
+        title = "APAC Service Agreement";
+        terms = " governed by APAC localized terms.";
+    } 
+    
+    if (sowData.packages.some(p => p.includes("Premier"))) {
+        templateId = "PREMIER_ENT";
+        title = "Premier Enterprise Implementation";
+        terms = "Includes dedicated consultant and weekly status calls.";
+    }
+
+    if (sowData.services.includes("ERP Connector")) {
+        templateId += "_ERP";
+        title += " + ERP Integration";
+        terms += " Includes technical validation phase for ERP.";
+    }
+
+    if (sowData.services.includes("Custom Integration")) {
+        templateId += "_CUSTOM";
+        title += " (Custom Scope)";
+        terms += " Custom development requires separate sign-off on technical specs.";
+    }
+
+    return { id: templateId, title: title, terms: terms };
+}
+
 // --- INITIALIZATION ---
 function initializeControls() {
     if (typeof app !== 'undefined') {
         app.customScope = new Set();
-        // Initialize State for Gap Analysis
         if (!app.state) app.state = {};
         if (!app.state.myStack) app.state.myStack = new Set();
+        app.state.calculatorMode = 'edit'; 
     }
-    if (typeof packagingData === 'undefined') {
-        console.warn("Procoreverse: Packaging data missing.");
-        return;
-    }
-
+    
     // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
-        header.addEventListener('click', () => {
-            if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement);
-        });
+        header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
     });
 
     populateRegionFilter();
@@ -116,10 +114,7 @@ function initializeControls() {
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange); 
-    
-    d3.select("#persona-filter").on("change", () => {
-        if (typeof updateGraph === 'function') updateGraph(true)
-    });
+    d3.select("#persona-filter").on("change", () => { if (typeof updateGraph === 'function') updateGraph(true) });
     
     // Procore-Led Toggle
     const ledToggle = d3.select("#toggle-procore-led");
@@ -133,7 +128,6 @@ function initializeControls() {
     populateCategoryFilters();
     d3.select("#toggle-categories").on("click", toggleAllCategories);
     d3.select("#toggle-legend").on("click", toggleAllConnections);
-
     d3.select("#search-input").on("input", handleSearchInput);
     
     const teamSelector = d3.select("#team-selector");
@@ -162,8 +156,8 @@ function initializeControls() {
         const el = document.getElementById(id);
         if(el) el.addEventListener('input', calculateScoping);
     });
-
-    // Initialize Stack Builder Button (Gap Analysis V2)
+    
+    // Init Stack Builder Button
     setTimeout(() => {
         const existingBtn = d3.select("#stack-builder-btn");
         if (existingBtn.empty()) {
@@ -171,9 +165,8 @@ function initializeControls() {
              if (!container.empty()) {
                 container.insert("button", ":first-child")
                     .attr("id", "stack-builder-btn")
-                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed")
-                    .attr("disabled", true)
-                    .html('<i class="fas fa-layer-group mr-2"></i> Define Customer Stack')
+                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
+                    .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
                     .on("click", toggleStackBuilderMode);
              }
         }
@@ -183,179 +176,152 @@ function initializeControls() {
 // --- CUSTOM SCOPE MANAGER ---
 function toggleCustomScopeItem(nodeId) {
     if (!app || !app.customScope) return;
-    if (app.customScope.has(nodeId)) {
-        app.customScope.delete(nodeId);
-        if(typeof showToast === 'function') showToast(`Removed ${nodeId} from Custom Scope`);
-    } else {
-        app.customScope.add(nodeId);
-        if(typeof showToast === 'function') showToast(`Added ${nodeId} to Custom Scope`);
-    }
+    if (app.customScope.has(nodeId)) app.customScope.delete(nodeId);
+    else app.customScope.add(nodeId);
     if (typeof updateGraph === 'function') updateGraph(false); 
     calculateScoping();
 }
 
 // --- GAP ANALYSIS V2 MANAGER ---
 function toggleStackBuilderMode() {
-    // Prevent usage if Region not selected
     if (d3.select("#region-filter").property("value") === "all") {
         if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
         return;
     }
-
     app.state.isBuildingStack = !app.state.isBuildingStack;
-    
     let btn = d3.select("#stack-builder-btn");
     
     if (app.state.isBuildingStack) {
-        // --- ACTIVATE BUILDER MODE ---
         app.interactionState = 'building_stack';
-        
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
-        
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
-        
         d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
         highlightOwnedNodes();
-        
     } else {
-        // --- DEACTIVATE BUILDER MODE ---
         app.interactionState = 'explore';
-        
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
-        
-        // Return to normal view with "Gap Analysis" active if package selected
         if (typeof updateGraph === 'function') updateGraph(true);
-        
-        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
-            showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
-        }
+        if (app.state.myStack.size > 0 && typeof showToast === 'function') showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
     }
 }
 
 function toggleStackItem(d) {
     if (!app.state.myStack) app.state.myStack = new Set();
-    
-    if (app.state.myStack.has(d.id)) {
-        app.state.myStack.delete(d.id);
-    } else {
-        app.state.myStack.add(d.id);
-    }
+    if (app.state.myStack.has(d.id)) app.state.myStack.delete(d.id);
+    else app.state.myStack.add(d.id);
     highlightOwnedNodes();
 }
 
 function highlightOwnedNodes() {
     if (!app.node) return;
-    
     app.node.transition().duration(200)
         .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") 
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") 
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
-// UPDATED LOGIC: Calculates Gap, Matched, and OUTLIERS
 function getGapAnalysis() {
     const filters = getActiveFilters(); 
     const targetPackageTools = filters.packageTools || new Set();
-    
     const owned = app.state.myStack || new Set();
-    
-    const gap = new Set();      // In Package, NOT Owned (Upsell)
-    const matched = new Set();  // In Package, AND Owned (Safe)
-    const outlier = new Set();  // NOT in Package, BUT Owned (Legacy/Extra)
+    const gap = new Set(); const matched = new Set(); const outlier = new Set();
     
     if (targetPackageTools.size > 0) {
         targetPackageTools.forEach(toolId => {
-            if (owned.has(toolId)) {
-                matched.add(toolId);
-            } else {
-                gap.add(toolId);
-            }
+            if (owned.has(toolId)) matched.add(toolId);
+            else gap.add(toolId);
         });
-        
-        // Calculate Outliers (Legacy tools)
         owned.forEach(toolId => {
-            if (!targetPackageTools.has(toolId)) {
-                outlier.add(toolId);
-            }
+            if (!targetPackageTools.has(toolId)) outlier.add(toolId);
         });
     }
-    
     return { owned, gap, matched, outlier, target: targetPackageTools };
 }
 
-// --- STANDARD FILTER FUNCTIONS ---
+// --- SOW V2: COMPLEXITY ---
+function setComplexity(level) {
+    if (app.state.calculatorMode === 'view') {
+        if(typeof showToast === 'function') showToast("View Only: Complexity cannot be edited.");
+        return;
+    }
+    const map = {
+        'standard': { mat: 1.0, data: 1.0, change: 1.0 },
+        'complex': { mat: 1.4, data: 1.5, change: 1.3 },
+        'transform': { mat: 1.8, data: 2.0, change: 1.8 }
+    };
+    const vals = map[level];
+    if (vals) {
+        document.getElementById('slider-maturity').value = vals.mat;
+        document.getElementById('slider-data').value = vals.data;
+        document.getElementById('slider-change').value = vals.change;
+        calculateScoping();
+        d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
+        d3.select(`#btn-${level}`).classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
+    }
+}
 
 function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
     if(revenueContainer.empty()) return;
-
-    revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
-    revenueContainer.html("");
-
-    // --- ONSITE & SERVICES CONTAINER ---
-    const settingsGroup = revenueContainer.append("div").attr("class", "mb-1 w-full");
+    revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200").html("");
     
-    // 1. Onsite Input
-    const onsiteRow = settingsGroup.append("div").attr("class", "mb-3 border-b border-gray-100 pb-3");
-    onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
-    onsiteRow.append("input")
-        .attr("type", "number")
-        .attr("id", "onsite-input")
-        .attr("value", "0")
-        .attr("min", "0")
-        .attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500")
-        .on("input", calculateScoping);
-
-    // 2. Service Qualifiers
-    settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
-    
-    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2 w-full");
-
-    SOW_QUESTIONS.forEach(q => {
-        const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 w-full");
-        
-        label.append("input")
-            .attr("type", "checkbox")
-            .attr("id", q.id)
-            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500")
-            .on("change", calculateScoping);
-        
-        const textCol = label.append("div").attr("class", "ml-2 flex flex-col min-w-0");
-        textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight truncate").text(q.label).attr("title", q.label);
-        
-        if (q.type === 'cost') {
-             textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
-        }
+    // Complexity Buttons
+    const complexityDiv = revenueContainer.append("div").attr("class", "mb-3 flex gap-2");
+    ['Standard', 'Complex', 'Transform'].forEach(label => {
+        const key = label.toLowerCase();
+        complexityDiv.append("button")
+            .attr("id", `btn-${key}`)
+            .attr("class", `complexity-btn flex-1 py-1 text-[10px] font-bold uppercase rounded transition ${key === 'standard' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`)
+            .text(label)
+            .on("click", () => setComplexity(key));
     });
 
-    // --- PRINT BUTTON MOVED TO TOTAL BOX ---
+    const settingsGroup = revenueContainer.append("div").attr("class", "mb-1 w-full");
+    const onsiteRow = settingsGroup.append("div").attr("class", "mb-3 border-b border-gray-100 pb-3");
+    onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
+    onsiteRow.append("input").attr("type", "number").attr("id", "onsite-input").attr("value", "0").attr("min", "0").attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500").on("input", calculateScoping);
+    
+    settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
+    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2 w-full");
+    
+    SOW_QUESTIONS.forEach(q => {
+        const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 w-full");
+        label.append("input").attr("type", "checkbox").attr("id", q.id).attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500").on("change", calculateScoping);
+        const textCol = label.append("div").attr("class", "ml-2 flex flex-col min-w-0");
+        textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight truncate").text(q.label).attr("title", q.label);
+        if (q.type === 'cost') textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
+    });
+    
     const totalBox = d3.select("#sow-total").select(function() { return this.parentNode; });
     if (!totalBox.empty()) {
         totalBox.select("#print-sow-mini-btn").remove(); 
-        
-        totalBox.append("button")
-            .attr("id", "print-sow-mini-btn")
-            .attr("class", "w-full mt-3 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold py-1.5 rounded text-[11px] flex items-center justify-center transition shadow-sm border border-indigo-600")
-            .html('<i class="fas fa-print mr-2"></i> Print Estimate')
-            .on("click", generateSOWPrintView);
+        totalBox.append("button").attr("id", "print-sow-mini-btn").attr("class", "w-full mt-3 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold py-1.5 rounded text-[11px] flex items-center justify-center transition shadow-sm border border-indigo-600").html('<i class="fas fa-print mr-2"></i> Print Estimate').on("click", generateSOWPrintView);
     }
-
     setTimeout(refreshAccordionHeight, 50);
 }
 
-// --- SCOPING CALCULATOR ---
+// --- SCOPING CALCULATOR (WITH RBAC) ---
 function calculateScoping() {
+    const isViewOnly = (app.state.calculatorMode === 'view');
+    
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
+    const onsiteInput = document.getElementById('onsite-input');
     
-    if (!sliderMaturity || !sliderData || !sliderChange) return;
+    if (sliderMaturity) {
+        [sliderMaturity, sliderData, sliderChange, onsiteInput].forEach(el => { if(el) el.disabled = isViewOnly; });
+        d3.selectAll('.sow-question').property('disabled', isViewOnly);
+        d3.selectAll('.complexity-btn').classed('opacity-50 cursor-not-allowed', isViewOnly);
+    }
+
+    if (!sliderMaturity) return;
 
     let mat = parseFloat(sliderMaturity.value);
     let data = parseFloat(sliderData.value);
@@ -369,12 +335,9 @@ function calculateScoping() {
         }
     });
 
-    const valMat = document.getElementById('val-maturity');
-    if(valMat) valMat.innerText = mat.toFixed(1) + "x";
-    const valData = document.getElementById('val-data');
-    if(valData) valData.innerText = data.toFixed(1) + "x";
-    const valChange = document.getElementById('val-change');
-    if(valChange) valChange.innerText = change.toFixed(1) + "x";
+    const valMat = document.getElementById('val-maturity'); if(valMat) valMat.innerText = mat.toFixed(1) + "x";
+    const valData = document.getElementById('val-data'); if(valData) valData.innerText = data.toFixed(1) + "x";
+    const valChange = document.getElementById('val-change'); if(valChange) valChange.innerText = change.toFixed(1) + "x";
 
     let baseHours = 0;
     const region = d3.select("#region-filter").property('value');
@@ -398,9 +361,7 @@ function calculateScoping() {
 
     const customToolCount = app.customScope ? app.customScope.size : 0;
     const customScopeHours = customToolCount * 5; 
-    
-    let servicesHours = 0;
-    let servicesCost = 0;
+    let servicesHours = 0; let servicesCost = 0;
 
     SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => {
         const checkbox = document.getElementById(q.id);
@@ -453,7 +414,6 @@ function calculateScoping() {
 
     const hourlyRate = 250; 
     const implementationCost = (baseHours + customScopeHours) * PREP_FACTOR * combinedMultiplier * hourlyRate;
-    const onsiteInput = document.getElementById('onsite-input');
     const onsiteCount = parseInt(onsiteInput ? onsiteInput.value : 0) || 0;
     const onsiteCost = onsiteCount * 7500;
     
@@ -465,28 +425,24 @@ function calculateScoping() {
     }
 
     app.currentSOW = {
-        totalHours: totalHoursRaw,
-        weeks: finalWeeks,
-        totalCost: totalSOW,
-        region: region,
-        audience: audience,
+        totalHours: totalHoursRaw, weeks: finalWeeks, totalCost: totalSOW, region: region, audience: audience,
         packages: d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value),
         customTools: Array.from(app.customScope || []),
         services: SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label),
-        onsite: onsiteCount,
-        multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) }
+        onsite: onsiteCount, multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) }
     };
     
     refreshAccordionHeight();
 }
 
-// --- PRINT SOW LOGIC ---
+// --- PRINT SOW LOGIC (CONDITIONAL TEMPLATES) ---
 function generateSOWPrintView() {
     if (!app.currentSOW) {
         alert("Please configure a scope first.");
         return;
     }
     const sow = app.currentSOW;
+    const template = getSOWTemplate(sow); // Retrieve the conditional template
     const today = new Date().toLocaleDateString();
 
     const printWindow = window.open('', '_blank');
@@ -499,25 +455,30 @@ function generateSOWPrintView() {
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Procore Services Estimate</title>
+        <title>${template.title}</title>
         <style>
             body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.5; }
-            .header { border-bottom: 2px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
             .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
             .title { font-size: 14px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+            .doc-id { font-size: 10px; color: #aaa; margin-top: 5px; }
             h2 { font-size: 18px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; color: #555; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
             .item { margin-bottom: 8px; font-size: 14px; }
             .label { font-weight: bold; color: #555; display: inline-block; width: 140px; }
             .total-box { background: #f9f9f9; padding: 20px; border-radius: 8px; text-align: right; margin-top: 40px; border: 1px solid #eee; }
             .total-cost { font-size: 32px; font-weight: 800; color: #111; margin-top: 5px; }
+            .terms-box { margin-top: 30px; padding: 15px; background: #fff5f0; border-left: 4px solid #F36C23; font-size: 12px; color: #666; }
             .disclaimer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
     <body>
         <div class="header">
-            <div class="logo">PROCORE</div>
-            <div class="title">Services Estimate • ${today}</div>
+            <div>
+                <div class="logo">PROCORE</div>
+                <div class="doc-id">Template ID: ${template.id}</div>
+            </div>
+            <div class="title">${template.title} • ${today}</div>
         </div>
         
         <div class="grid">
@@ -525,7 +486,7 @@ function generateSOWPrintView() {
                 <h2>Client Profile</h2>
                 <div class="item"><span class="label">Region:</span> ${sow.region}</div>
                 <div class="item"><span class="label">Audience:</span> ${sow.audience}</div>
-                <div class="item"><span class="label">Timeline Risk:</span> Mat: ${sow.multipliers.mat}, Data: ${sow.multipliers.data}, Chg: ${sow.multipliers.change}</div>
+                <div class="item"><span class="label">Complexity:</span> Mat: ${sow.multipliers.mat}, Data: ${sow.multipliers.data}, Chg: ${sow.multipliers.change}</div>
             </div>
             <div>
                  <h2>Project Scope</h2>
@@ -534,6 +495,10 @@ function generateSOWPrintView() {
                  <div class="item"><span class="label">Add-on Services:</span> ${sow.services.length > 0 ? sow.services.join(", ") : "None"}</div>
                  <div class="item"><span class="label">On-Site Visits:</span> ${sow.onsite}</div>
             </div>
+        </div>
+
+        <div class="terms-box">
+            <strong>Applicable Terms:</strong> ${template.terms}
         </div>
 
         <div class="total-box">
@@ -558,7 +523,6 @@ function generateSOWPrintView() {
     printWindow.document.close();
 }
 
-// --- TEAM VIEW MANAGER ---
 function applyTeamView(team) {
     const config = TEAM_CONFIG[team];
     if (!config) return;
@@ -572,7 +536,17 @@ function applyTeamView(team) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
-    d3.select("#scoping-ui-container").classed("hidden", !config.showScoping);
+    // Handle Calculator Visibility & Mode
+    const scopingContainer = d3.select("#scoping-ui-container");
+    if (config.calculatorMode === 'hidden') {
+        scopingContainer.classed("hidden", true);
+    } else {
+        scopingContainer.classed("hidden", !config.showScoping);
+        if (typeof app !== 'undefined' && app.state) {
+            app.state.calculatorMode = config.calculatorMode;
+            calculateScoping(); // Re-run to apply disabled states
+        }
+    }
 
     document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
     
@@ -847,6 +821,11 @@ function clearPackageDetails() {
     d3.select("#package-services-container").classed('hidden', true);
     if (app && app.customScope) app.customScope.clear();
     d3.selectAll(".sow-question").property("checked", false);
+    
+    // RESET COMPLEXITY
+    d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
+    d3.select('#btn-standard').classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
+    
     calculateScoping();
 }
 
@@ -914,6 +893,10 @@ function resetView() {
     if (app.state && app.state.isBuildingStack) toggleStackBuilderMode();
     app.state.myStack = new Set();
     d3.select("#stack-builder-btn").attr("disabled", true).classed("cursor-not-allowed", true);
+    
+    // RESET COMPLEXITY
+    d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
+    d3.select('#btn-standard').classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
     
     clearPackageDetails();
     if (typeof updateGraph === 'function') updateGraph(false);
