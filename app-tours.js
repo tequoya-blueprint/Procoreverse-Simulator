@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 80 (FIXED: BUILDER HIGHLIGHTS & SOP GENERATOR)
+// VERSION: 90 (SOP V2: SUPPORT DOCS & CUSTOM BRANDING)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -53,7 +53,6 @@ function initializeTourControls() {
 
     // Manual Builder Trigger
     const container = d3.select("#tour-container");
-    // Ensure we don't duplicate the button
     if (container.select("#manual-workflow-builder-btn").empty()) {
         container.append("button")
             .attr("id", "manual-workflow-builder-btn")
@@ -112,11 +111,10 @@ function saveCurrentTour() {
 let manualBuilderSteps = [];
 
 function startManualBuilder() {
-    stopTour(false); // Don't full reset, just stop current
+    stopTour(false); 
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Initial Visual State: Dim Links, Show All Nodes
     app.node.transition().duration(500).style("opacity", 1);
     app.link.transition().duration(500).style("opacity", 0.1); 
 
@@ -143,17 +141,13 @@ function startManualBuilder() {
 }
 
 function handleManualNodeClick(d) {
-    // Toggle Logic
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
-        // Remove if exists
         manualBuilderSteps.splice(existingIndex, 1);
         if(typeof showToast === 'function') showToast(`Removed step: ${d.id}`);
     } else {
-        // Add if new
         manualBuilderSteps.push({ nodeId: d.id, info: `Step ${manualBuilderSteps.length + 1}: ${d.id}` });
-        // Pulse the node visually
         d3.select(event.target).transition().duration(100).attr("r", 30).transition().duration(100).attr("r", 25);
     }
     updateManualBuilderVisuals();
@@ -165,13 +159,10 @@ function updateManualBuilderVisuals() {
 
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
     
-    // 1. Highlight Nodes (Keep them bright, dim others)
     app.node.transition().duration(200)
         .style("opacity", n => activeIds.has(n.id) ? 1 : 0.3)
         .style("filter", n => activeIds.has(n.id) ? "drop-shadow(0 0 5px #F36C23)" : null);
 
-    // 2. Draw Temporary Path
-    // We create a temporary path set to visualize the flow
     const pathLinks = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -217,7 +208,6 @@ function previewTour(tourData) {
     app.currentStep = -1; 
     app.interactionState = 'tour_preview';
     
-    // Highlight the path
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     const tourLinkKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
@@ -261,15 +251,19 @@ function previewTour(tourData) {
 
     d3.select("#start-tour-btn").on("click", startTour);
     d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
-    d3.select("#export-sop-btn").on("click", generateSOP); // THIS IS THE SOP GENERATOR TRIGGER
+    d3.select("#export-sop-btn").on("click", generateSOP); 
     
     if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     resizeTourAccordion();
 }
 
-// --- SOP GENERATOR (NEW PHASE 4) ---
+// --- SOP GENERATOR V2: SUPPORT DOCS & BRANDING ---
 function generateSOP() {
     if (!app.currentTour) return;
+    
+    // 1. Capture Branding Info
+    const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
+    const logoUrl = prompt("Enter Client Logo URL (optional):", "") || "";
     
     const tour = app.currentTour;
     const date = new Date().toLocaleDateString();
@@ -277,8 +271,15 @@ function generateSOP() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) { alert("Please allow popups to download the SOP."); return; }
 
+    // 2. Build Steps with Support References
     let stepsHtml = "";
     tour.steps.forEach((step, index) => {
+        // LOOKUP NODE DATA to find Support Link
+        const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
+        const supportLink = (nodeData && nodeData.supportDocUrl) 
+            ? `<div class="step-link"><a href="${nodeData.supportDocUrl}" target="_blank">View Standard Procedure <i class="fas fa-external-link-alt"></i></a></div>` 
+            : "";
+
         stepsHtml += `
             <div class="step">
                 <div class="step-header">
@@ -286,21 +287,28 @@ function generateSOP() {
                     <span class="step-tool">${step.nodeId}</span>
                 </div>
                 <div class="step-desc">${step.info || "Execute standard workflow procedure for this tool."}</div>
+                ${supportLink}
             </div>
         `;
     });
+
+    // 3. Logo Logic
+    const logoHtml = logoUrl 
+        ? `<img src="${logoUrl}" style="max-height: 50px; margin-bottom: 10px;">` 
+        : `<div class="logo">PROCORE</div>`;
 
     const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Standard Operating Procedure: ${tour.name}</title>
+        <title>SOP: ${tour.name}</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <style>
             body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; max-width: 800px; margin: 0 auto; }
-            .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; }
+            .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
             .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
-            .doc-title { font-size: 28px; font-weight: 700; margin-top: 10px; margin-bottom: 5px; color: #111; }
-            .meta { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+            .doc-title { font-size: 28px; font-weight: 700; margin-top: 5px; color: #111; }
+            .client-name { font-size: 14px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
             
             .section { margin-bottom: 30px; }
             .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
@@ -309,21 +317,29 @@ function generateSOP() {
             .step-header { display: flex; align-items: center; margin-bottom: 8px; }
             .step-num { background: #F36C23; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px; }
             .step-tool { font-weight: 700; font-size: 16px; color: #333; }
-            .step-desc { font-size: 14px; color: #555; margin-left: 34px; }
+            .step-desc { font-size: 14px; color: #555; margin-left: 34px; margin-bottom: 8px; }
+            .step-link { margin-left: 34px; font-size: 12px; }
+            .step-link a { color: #2563EB; text-decoration: none; font-weight: 500; }
+            .step-link a:hover { text-decoration: underline; }
             
             .footer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
     <body>
         <div class="header">
-            <div class="logo">PROCORE</div>
-            <div class="doc-title">${tour.name.replace(/^[✨📝]\s*/, '')}</div>
-            <div class="meta">Standard Operating Procedure • Generated ${date}</div>
+            <div>
+                ${logoHtml}
+                <div class="doc-title">${tour.name.replace(/^[✨📝]\s*/, '')}</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="client-name">Prepared For: ${clientName}</div>
+                <div style="font-size: 12px; color: #888;">Generated ${date}</div>
+            </div>
         </div>
         
         <div class="section">
             <div class="section-title">1. Purpose & Scope</div>
-            <p>This document outlines the standard workflow for the <strong>${tour.name.replace(/^[✨📝]\s*/, '')}</strong> process using the Procore Platform. It is intended for Project Managers and Administrators to ensure data consistency and compliance.</p>
+            <p>This Standard Operating Procedure (SOP) outlines the required workflow for the <strong>${tour.name.replace(/^[✨📝]\s*/, '')}</strong> process using the Procore Platform. It is intended to standardize data entry and ensure compliance across the <strong>${clientName}</strong> project portfolio.</p>
         </div>
 
         <div class="section">
@@ -376,7 +392,6 @@ function runTourStep() {
     const step = app.currentTour.steps[app.currentStep];
     const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
     
-    // UI Updates
     d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
@@ -387,35 +402,27 @@ function runTourStep() {
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
         
-        // Define Active and Past Sets
         const activeNodeId = step.nodeId;
         const pastNodeIds = new Set(app.currentTour.steps.slice(0, app.currentStep).map(s => s.nodeId));
         const allTourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
         
-        // --- POLISHED NODE OPACITY LOGIC ---
         app.node.transition().duration(400).style("opacity", d => {
-            if (d.id === activeNodeId) return 1;     // Active: Full Opacity
-            if (pastNodeIds.has(d.id)) return 0.4;   // Past: Dimmed but visible
-            if (allTourNodeIds.has(d.id)) return 0.1;// Future: Faint ghost
-            return 0.02;                             // Unrelated: Almost invisible
+            if (d.id === activeNodeId) return 1;     
+            if (pastNodeIds.has(d.id)) return 0.4;   
+            if (allTourNodeIds.has(d.id)) return 0.1;
+            return 0.02;                             
         });
         
-        // --- POLISHED LINK LOGIC ---
         let prevNodeId = app.currentStep > 0 ? app.currentTour.steps[app.currentStep - 1].nodeId : null;
         
         app.link.transition().duration(400)
             .style("stroke-opacity", l => {
                 const s = l.source.id || l.source;
                 const t = l.target.id || l.target;
-                
-                // Active Link (Previous -> Current)
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 if (isActiveLink) return 1;
-                
-                // Check if link is part of the tour history
                 const isHistoryLink = pastNodeIds.has(s) && pastNodeIds.has(t); 
                 if (isHistoryLink) return 0.2;
-                
                 return 0.01;
             })
             .attr("stroke", l => {
