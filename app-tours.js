@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 320 (FIXED: RESTORED CANDIDATE/FUTURE LINEWORK)
+// VERSION: 330 (FIXED: OPACITY CSS CONFLICT RESOLVED)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -148,9 +148,13 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Initial Visual State: Dim everything heavily to verify control
+    // Initial Visual State: Dim everything initially
     app.node.transition().duration(500).style("opacity", 1);
-    app.link.transition().duration(500).style("opacity", 0.05); 
+    
+    // CRITICAL FIX: Ensure we start clean by setting opacity on the element level
+    app.link.transition().duration(500)
+        .style("opacity", 0.1) // Dim element
+        .style("stroke-opacity", 0.1); // Dim stroke
 
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
@@ -214,7 +218,6 @@ function updateManualBuilderVisuals() {
             const t = l.target.id || l.target;
             
             // Check connectivity
-            // We only want to highlight lines connected to the LAST node selected
             if (s === lastNodeId || t === lastNodeId) {
                 const otherNode = (s === lastNodeId) ? t : s;
                 if (!activeIds.has(otherNode)) {
@@ -242,6 +245,25 @@ function updateManualBuilderVisuals() {
 
     // --- LINK UPDATES ---
     app.link.transition().duration(200)
+        // CRITICAL FIX: Restore Element Opacity to 1 for active links
+        .style("opacity", l => {
+            const sId = String(l.source.id || l.source);
+            const tId = String(l.target.id || l.target);
+            const key = `${sId}-${tId}`;
+            
+            // Check History
+            for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
+                const stepA = manualBuilderSteps[i].nodeId;
+                const stepB = manualBuilderSteps[i+1].nodeId;
+                if ((sId === stepA && tId === stepB) || (sId === stepB && tId === stepA)) {
+                    return 1.0; // Fully visible
+                }
+            }
+            // Check Candidate
+            if (candidateLinkKeys.has(key)) return 1.0; // Fully visible
+
+            return 0.1; // Dimmed
+        })
         .style("stroke-opacity", l => {
             const sId = String(l.source.id || l.source);
             const tId = String(l.target.id || l.target);
@@ -259,7 +281,7 @@ function updateManualBuilderVisuals() {
             // 2. Check Candidate (Dashed Blue)
             if (candidateLinkKeys.has(key)) return 0.8;
 
-            return 0.05; // Dim irrelevant
+            return 0.1; // Dim irrelevant
         })
         .attr("stroke", l => {
              const sId = String(l.source.id || l.source);
@@ -358,7 +380,14 @@ function previewTour(tourData) {
 
     app.node.transition().duration(500).style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
     
+    // FIX PREVIEW OPACITY TOO
     app.link.transition().duration(500)
+        .style("opacity", l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            const key = `${s}-${t}`; const rKey = `${t}-${s}`;
+            return (tourLinkKeys.has(key) || tourLinkKeys.has(rKey)) ? 1 : 0.05;
+        })
         .style("stroke-opacity", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
@@ -562,6 +591,20 @@ function runTourStep() {
         let prevNodeId = app.currentStep > 0 ? app.currentTour.steps[app.currentStep - 1].nodeId : null;
         
         app.link.transition().duration(400)
+            .style("opacity", l => {
+                const s = l.source.id || l.source;
+                const t = l.target.id || l.target;
+                
+                // Active Link (Previous -> Current)
+                const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
+                if (isActiveLink) return 1;
+                
+                // Check if link is part of the tour history
+                const isHistoryLink = pastNodeIds.has(s) && pastNodeIds.has(t); 
+                if (isHistoryLink) return 1.0;
+                
+                return 0.05;
+            })
             .style("stroke-opacity", l => {
                 const s = l.source.id || l.source;
                 const t = l.target.id || l.target;
