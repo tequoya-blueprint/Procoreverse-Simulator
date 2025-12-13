@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 130 (GAP ANALYSIS V2 - OUTLIERS SUPPORT)
+// VERSION: 140 (FIX: PERSISTENT BUILDER MODE)
 
 const app = {
     simulation: null,
@@ -47,8 +47,11 @@ function nodeClicked(event, d) {
     event.stopPropagation();
     
     // 1. STACK BUILDER INTERCEPT
+    // Check global state so it works even after graph updates
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
+        // Force a re-highlight to ensure immediate feedback
+        if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
         return; 
     }
 
@@ -75,7 +78,7 @@ function nodeClicked(event, d) {
     }
 }
 
-// --- SEMANTIC LAYOUT: HEXAGONAL CLUSTERS ---
+// --- SEMANTIC LAYOUT ---
 function setHexFoci() {
     const container = document.getElementById('graph-container');
     if(!container) return;
@@ -187,7 +190,7 @@ function ticked() {
     if(app.node) app.node.attr("transform", d => `translate(${d.x || 0},${d.y || 0})`);
 }
 
-// --- CORE GAP ANALYSIS RENDERING ---
+// --- CORE RENDER FUNCTION: Now Respects Builder Mode Persistence ---
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
     
@@ -198,17 +201,25 @@ function updateGraph(isFilterChange = true) {
     
     // 2. GAP ANALYSIS PRE-CALCULATION
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
-    // Gap Mode is active if the user has defined a stack AND a package is selected
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
+    const isBuilderMode = app.state && app.state.isBuildingStack;
 
-    // 3. Filter Nodes (Ghost Mode Logic)
-    // If in Gap Mode, we show Outliers (Legacy tools) even if they aren't in the selected package.
+    // 3. Filter Nodes
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
         
-        // STANDARD PACKAGE FILTERING + OUTLIER EXCEPTION
-        const inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
+        // STANDARD FILTERING LOGIC
+        // If in Builder Mode: Show ALL tools (ignoring package filters) so user can select them.
+        // If in Gap Mode: Show Package Tools + Outliers (User Owned).
+        // Default: Show Package Tools.
+        let inPackage = true;
+        
+        if (isBuilderMode) {
+            inPackage = true; // Show everything to allow selection
+        } else {
+            inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
+        }
         
         return inCategory && inPersona && inPackage;
     });
@@ -216,6 +227,7 @@ function updateGraph(isFilterChange = true) {
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
+    // 4. D3 Join & Update
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node").call(drag(app.simulation))
@@ -235,14 +247,28 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
+            // PRIORITY 1: BUILDER MODE VISUALS (Override everything else)
+            if (isBuilderMode) {
+                update.transition().duration(500)
+                    .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) // Dim unselected
+                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none");
+                
+                update.select("path").transition().duration(500)
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#ffffff")
+                    .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
+                    
+                update.select(".procore-led-ring").attr("stroke-opacity", 0);
+                return update;
+            }
+
+            // PRIORITY 2: GAP ANALYSIS VISUALS
             update.transition().duration(500)
-            // --- GHOST MODE: OPACITY ---
             .style("opacity", d => {
                 if (isGapMode) {
-                    if (gapAnalysis.matched.has(d.id)) return 1.0; // Safe
-                    if (gapAnalysis.gap.has(d.id)) return 1.0;     // Upsell
-                    if (gapAnalysis.outlier.has(d.id)) return 1.0; // Legacy
-                    return 0.15; // Ghost (Noise)
+                    if (gapAnalysis.matched.has(d.id)) return 1.0; 
+                    if (gapAnalysis.gap.has(d.id)) return 1.0;     
+                    if (gapAnalysis.outlier.has(d.id)) return 1.0; 
+                    return 0.15; // Ghost
                 }
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
@@ -251,7 +277,6 @@ function updateGraph(isFilterChange = true) {
                 }
                 return 1.0;
             })
-            // --- GHOST MODE: GLOW & SHADOW ---
             .style("filter", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 3px rgba(34, 197, 94, 0.5))"; // Green
@@ -265,14 +290,13 @@ function updateGraph(isFilterChange = true) {
                 return null;
             });
 
-            // --- GHOST MODE: BORDERS (STROKE) ---
             update.select("path")
                 .transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#22c55e"; // Green Border
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Orange Border
-                        if (gapAnalysis.outlier.has(d.id)) return "#9333ea"; // Purple Border
+                        if (gapAnalysis.matched.has(d.id)) return "#22c55e"; 
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   
+                        if (gapAnalysis.outlier.has(d.id)) return "#9333ea"; 
                     }
                     return "#ffffff"; 
                 })
@@ -324,7 +348,7 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isGapMode) return 0.15; 
+        if (isBuilderMode || isGapMode) return 0.15; // Dim links in special modes
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
@@ -360,7 +384,7 @@ function addEmojiBadge(group, emoji, x, y, tooltipText) {
 window.addEventListener('resize', () => { 
     app.width = document.getElementById('graph-container').clientWidth; 
     app.height = document.getElementById('graph-container').clientHeight;
-    setHexFoci(); 
+    setHexFoci(); // Recalculate foci centers on resize
     if(app.simulation) app.simulation.alpha(0.5).restart();
 });
 
