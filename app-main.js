@@ -1,5 +1,7 @@
 // --- app-main.js ---
-// VERSION: 360 (FIXED: REORDERED EVENT HANDLERS TO PREVENT REFERENCE ERRORS)
+// VERSION: 370 (CRASH-RESISTANT: SAFETY SHIMS & LOGGING)
+
+console.log("App Main 370: Loading...");
 
 const app = {
     simulation: null,
@@ -28,18 +30,30 @@ const app = {
     customScope: new Set() 
 };
 
-// --- 1. CORE INTERACTION HANDLERS (DEFINED FIRST TO PREVENT ERRORS) ---
+// --- 1. EVENT HANDLERS (DEFINED TOP-LEVEL) ---
+
+function nodeMouseOver(event, d) {
+    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
+    if (typeof showTooltip === 'function') showTooltip(event, d);
+    if (app.interactionState === 'explore' && typeof applyHighlight === 'function') applyHighlight(d);
+}
+
+function nodeMouseOut(event, d) {
+    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
+    if (typeof hideTooltip === 'function') hideTooltip();
+    if (app.interactionState === 'explore' && typeof resetHighlight === 'function') resetHighlight();
+}
 
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. MANUAL PROCESS BUILDER (Priority 1)
+    // 1. MANUAL PROCESS BUILDER
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
         return; 
     }
 
-    // 2. CUSTOMER STACK BUILDER (Priority 2)
+    // 2. CUSTOMER STACK BUILDER
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
@@ -52,6 +66,7 @@ function nodeClicked(event, d) {
         const isStandardLed = filters.procoreLedTools.has(d.id);
         if (!isStandardLed) { if (typeof toggleCustomScopeItem === 'function') toggleCustomScopeItem(d.id); return; }
     }
+    
     if (app.selectedNode === d) { 
         if(typeof resetHighlight === 'function') resetHighlight(); 
     } else {
@@ -64,27 +79,11 @@ function nodeClicked(event, d) {
     }
 }
 
-function nodeMouseOver(event, d) {
-    // Do not interfere if we are in a specific mode
-    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
-    if (typeof showTooltip === 'function') showTooltip(event, d);
-    if (app.interactionState === 'explore' && typeof applyHighlight === 'function') applyHighlight(d);
-}
-
-function nodeMouseOut(event, d) {
-    // Do not interfere if we are in a specific mode
-    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
-    if (typeof hideTooltip === 'function') hideTooltip();
-    if (app.interactionState === 'explore' && typeof resetHighlight === 'function') resetHighlight();
-}
-
 function nodeDoubleClicked(event, d) {
     event.stopPropagation();
 }
 
-// --- 2. SETUP & LAYOUT LOGIC ---
+// --- 2. SETUP & LAYOUT ---
 
 function setupCategories() {
     const rootStyles = getComputedStyle(document.documentElement);
@@ -97,7 +96,7 @@ function setupCategories() {
     const colorMap = { "Preconstruction": procoreColors.lumber, "Project Management": procoreColors.orange, "Financial Management": procoreColors.earth, "Workforce Management": "#3a8d8c", "Quality & Safety": "#5B8D7E", "Platform & Core": "#757575", "Construction Intelligence": "#4A4A4A", "External Integrations": "#B0B0B0", "Helix": procoreColors.metal, "Project Execution": procoreColors.orange, "Resource Management": procoreColors.metal, "Emails": "#c94b4b", "Project Map": procoreColors.orange };
     app.categories = {}; 
     if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
-        nodesData.forEach(node => { if (!app.categories[node.group]) app.categories[node.group] = { color: colorMap[node.group] || "#" + Math.floor(Math.random()*16777215).toString(16) }; });
+        nodesData.forEach(node => { if (!app.categories[node.group]) app.categories[node.group] = { color: colorMap[node.group] || "#999" }; });
     }
 }
 
@@ -171,6 +170,8 @@ function setupMarkers() {
     const defs = app.svg.select("defs");
     // Standard Markers
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
+    
+    // SAFETY CHECK: Ensure legendData exists
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
@@ -179,7 +180,6 @@ function setupMarkers() {
             }
         });
     }
-    // PROCESS BUILDER MARKERS
     defs.append("marker").attr("id", "arrow-highlighted").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "var(--procore-orange)");
     defs.append("marker").attr("id", "arrow-candidate").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#2563EB");
 }
@@ -187,6 +187,8 @@ function setupMarkers() {
 function populateLegend() {
     const legendContainer = d3.select("#connection-legend");
     legendContainer.html(""); 
+    if (typeof legendData === 'undefined' || !Array.isArray(legendData)) return;
+
     const legendSVGs = {
         "creates": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='4,3'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
         "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='8,4'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
@@ -196,15 +198,14 @@ function populateLegend() {
         "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='1,3'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
         "feeds": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#4A4A4A' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='#4A4A4A' stroke-width='2' fill='none'></path></svg>"
     };
-    if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
-        legendData.forEach(type => {
-            const svg = legendSVGs[type.type_id] || "";
-            const item = legendContainer.append("label").attr("class", "flex items-center mb-3 cursor-pointer");
-            item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id).attr("class", "form-checkbox h-4 w-4 text-orange-600 legend-checkbox mr-3").on("change", () => updateGraph(true));
-            item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
-            item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
-        });
-    }
+    
+    legendData.forEach(type => {
+        const svg = legendSVGs[type.type_id] || "";
+        const item = legendContainer.append("label").attr("class", "flex items-center mb-3 cursor-pointer");
+        item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id).attr("class", "form-checkbox h-4 w-4 text-orange-600 legend-checkbox mr-3").on("change", () => updateGraph(true));
+        item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
+        item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
+    });
 }
 
 function ticked() {
@@ -301,11 +302,8 @@ function updateGraph(isFilterChange = true) {
             })
             .style("filter", d => {
                 if (isGapMode) {
-                    // MATCHED = BRAND GREEN GLOW
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
-                    // GAP = BRAND ORANGE PULSE
                     if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
-                    // OUTLIER = BRAND METAL GLOW
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 if (filters.showProcoreLed) {
@@ -319,9 +317,9 @@ function updateGraph(isFilterChange = true) {
                 .transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; // Brand Green
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Brand Orange
-                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; // Brand Metal
+                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23"; 
+                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
                     }
                     return "#ffffff"; 
                 })
@@ -349,6 +347,8 @@ function updateGraph(isFilterChange = true) {
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
         .attr("stroke", d => {
+            // SAFE LEGEND LOOKUP
+            if (typeof legendData === 'undefined') return app.defaultArrowColor;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return app.defaultArrowColor;
             if (legend.type_id === "feeds") return "#4A4A4A";
@@ -357,6 +357,7 @@ function updateGraph(isFilterChange = true) {
             return app.defaultArrowColor;
         })
         .attr("stroke-dasharray", d => {
+            if (typeof legendData === 'undefined') return "none";
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return "none";
             if (d.type === "creates") return "4,3";
@@ -366,6 +367,7 @@ function updateGraph(isFilterChange = true) {
             return "none";
         })
         .attr("marker-end", d => {
+            if (typeof legendData === 'undefined') return null;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return null;
             if (legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
