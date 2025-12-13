@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 310 (FIXED: ADDED MISSING MARKERS & CLICK ROUTING)
+// VERSION: 350 (FIXED: RESTORED MISSING MOUSE EVENT HANDLERS)
 
 const app = {
     simulation: null,
@@ -43,10 +43,12 @@ function setupCategories() {
     }
 }
 
+// --- CORE INTERACTION HANDLERS (THESE WERE MISSING) ---
+
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. MANUAL PROCESS BUILDER (Priority 1: Absolute Override)
+    // 1. MANUAL PROCESS BUILDER (Priority 1)
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
         return; 
@@ -55,7 +57,6 @@ function nodeClicked(event, d) {
     // 2. CUSTOMER STACK BUILDER (Priority 2)
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
-        // Force a visual refresh for the stack builder specifically
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
         return; 
     }
@@ -75,6 +76,27 @@ function nodeClicked(event, d) {
         centerViewOnNode(d);
         d3.select('#graph-container').classed('selection-active', true);
     }
+}
+
+function nodeMouseOver(event, d) {
+    // Do not interfere if we are in a specific mode
+    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
+    
+    if (typeof showTooltip === 'function') showTooltip(event, d);
+    if (app.interactionState === 'explore') applyHighlight(d);
+}
+
+function nodeMouseOut(event, d) {
+    // Do not interfere if we are in a specific mode
+    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
+    
+    if (typeof hideTooltip === 'function') hideTooltip();
+    if (app.interactionState === 'explore') resetHighlight();
+}
+
+function nodeDoubleClicked(event, d) {
+    event.stopPropagation();
+    // Placeholder for future zoom-to-fit logic
 }
 
 // --- SEMANTIC LAYOUT ---
@@ -146,6 +168,7 @@ function initializeSimulation() {
 
 function setupMarkers() {
     const defs = app.svg.select("defs");
+    // Standard Markers
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
@@ -155,9 +178,8 @@ function setupMarkers() {
             }
         });
     }
-    // HIGHLIGHT ARROW (Orange)
+    // PROCESS BUILDER MARKERS
     defs.append("marker").attr("id", "arrow-highlighted").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "var(--procore-orange)");
-    // CANDIDATE ARROW (Blue) - THIS WAS MISSING
     defs.append("marker").attr("id", "arrow-candidate").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#2563EB");
 }
 
