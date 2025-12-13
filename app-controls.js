@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 200 (MASTER MERGE: GAP ANALYSIS + SOW ENGINE + RBAC)
+// VERSION: 220 (FULL SOW LIBRARY & RBAC)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -41,8 +41,18 @@ const audienceKeyToDataValuesMap = {
     "SC": ["SC", "Specialty Contractor"],
     "O": ["Owners", "Owner", "Owner Developer *Coming Soon", "O"]
 };
-const audienceDataToKeyMap = { "Contractor": "GC", "General Contractor": "GC", "GC": "GC", "SC": "SC", "Specialty Contractor": "SC", "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O" };
-const audienceKeyToLabelMap = { "GC": "General Contractor", "SC": "Specialty Contractor", "O": "Owner" };
+
+const audienceDataToKeyMap = {
+    "Contractor": "GC", "General Contractor": "GC", "GC": "GC",
+    "SC": "SC", "Specialty Contractor": "SC",
+    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O"
+};
+
+const audienceKeyToLabelMap = {
+    "GC": "General Contractor",
+    "SC": "Specialty Contractor",
+    "O": "Owner"
+};
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
 const SOW_QUESTIONS = [
@@ -57,8 +67,9 @@ const SOW_QUESTIONS = [
     { id: "q-ent", label: "Enterprise Scale", type: "risk", factor: 0.2, target: "change" }
 ];
 
-// --- SOW TEMPLATE LIBRARY ---
+// --- SOW TEMPLATE LIBRARY (FULL TEXT) ---
 const SOW_LIBRARY = {
+    // 1. LEGAL WRAPPERS
     "NAM_GC_BASE": {
         title: "STATEMENT OF WORK (GENERAL CONTRACTOR)",
         body: `
@@ -70,6 +81,10 @@ const SOW_LIBRARY = {
         <div class="sow-section">
             <h3>OVERVIEW</h3>
             <p>Client is currently implementing project management software products and has identified a need for standardizing processes and content. To support Client’s strategic initiative, Client and Provider agree to the custom scope of services outlined below.</p>
+        </div>
+        <div class="sow-section">
+            <h3>TERM</h3>
+            <p>Unless otherwise noted in a specific module, access to resources and service hours must be used within thirty-six (36) months of the service start date.</p>
         </div>
         <div class="sow-section">
             <h3>GOVERNING TERMS</h3>
@@ -90,6 +105,10 @@ const SOW_LIBRARY = {
             <p>Client requires specialized assistance to standardize capital project controls and financial workflows. Client and Provider agree to the custom scope of services outlined below to ensure successful onboarding of future assets.</p>
         </div>
         <div class="sow-section">
+            <h3>TERM</h3>
+            <p>Services outlined herein are valid for thirty-six (36) months from execution.</p>
+        </div>
+        <div class="sow-section">
             <h3>GOVERNING TERMS</h3>
             <p>This SOW is governed by the Master Services Agreement ("MSA") executed by the Client. All fees are in USD.</p>
         </div>
@@ -104,12 +123,20 @@ const SOW_LIBRARY = {
             <strong>Client:</strong> {{Client Name}}</p>
         </div>
         <div class="sow-section">
+            <h3>OVERVIEW</h3>
+            <p>Client and Provider agree to the custom scope of services outlined below.</p>
+        </div>
+        <div class="sow-section">
             <h3>REGIONAL TERMS</h3>
             <ul>
                 <li><strong>Currency:</strong> All fees are listed in AUD/SGD unless otherwise specified.</li>
                 <li><strong>GST/Tax:</strong> Fees are exclusive of Goods and Services Tax (GST).</li>
                 <li><strong>Jurisdiction:</strong> This agreement is governed by the laws of New South Wales (or relevant APAC jurisdiction).</li>
             </ul>
+        </div>
+        <div class="sow-section">
+            <h3>TERM</h3>
+            <p>Services must be utilized within thirty-six (36) months of the service start date.</p>
         </div>
         `
     },
@@ -122,6 +149,10 @@ const SOW_LIBRARY = {
             <strong>Client:</strong> {{Client Name}}</p>
         </div>
         <div class="sow-section">
+            <h3>OVERVIEW</h3>
+            <p>Client and Provider agree to the custom scope of services outlined below to support Client's standardization and implementation initiatives.</p>
+        </div>
+        <div class="sow-section">
             <h3>REGIONAL TERMS</h3>
             <ul>
                 <li><strong>Data Protection:</strong> Both parties agree to comply with all applicable provisions of the General Data Protection Regulation (GDPR).</li>
@@ -129,40 +160,52 @@ const SOW_LIBRARY = {
                 <li><strong>Jurisdiction:</strong> This agreement is governed by the laws of England and Wales.</li>
             </ul>
         </div>
+        <div class="sow-section">
+            <h3>TERM</h3>
+            <p>Services must be utilized within thirty-six (36) months of the service start date.</p>
+        </div>
         `
     },
+
+    // 2. SCOPE MODULES
     "MOD_SOP": {
         title: "STANDARD OPERATING PROCEDURE (SOP) SERVICES",
         body: `
         <p>Provider will provide up to one-hundred forty (140) hours towards developing Client Standard Operating Procedures with Provider's Strategic Product Consultants (SPCs) and one (1) named Training Management Specialist.</p>
+        <p><strong>Included Services:</strong></p>
         <ul>
             <li>Planning & discovery to align on timelines and outcomes.</li>
             <li>Virtual consultation services to provide guidance on SOPs and best practices.</li>
             <li>Documentation of SOPs within the Provider's training/knowledge center product.</li>
+            <li>General Q&A with Client’s internal team.</li>
         </ul>
-        <p><strong>Exclusions:</strong> Ongoing SOP management greater than 140 hours.</p>
+        <p><strong>Exclusions:</strong> Ongoing SOP management greater than 140 hours; Data entry; Staff augmentation.</p>
         `
     },
     "MOD_CONSULTING": {
         title: "VIRTUAL CONSULTING SERVICES",
         body: `
         <p>Provider will provide up to four-hundred (400) additional hours of Virtual Consulting Services. These hours are led by Strategic Product Consultants.</p>
+        <p><strong>Usage:</strong></p>
         <ul>
+            <li>Additional training sessions and deep dives on standard toolsets.</li>
             <li>Expert review of Client’s systems, processes, and operations.</li>
             <li>Usage monitoring and reviews with Client’s key stakeholders.</li>
             <li>Project administration duties, including coordination, planning, and management of project execution.</li>
         </ul>
+        <p><strong>Expiration:</strong> Consulting hours must be used within thirty-six (36) months of service start date.</p>
         `
     },
     "MOD_TRAINING": {
         title: "ONSITE TRAINING SERVICES",
         body: `
-        <p>Provider will provide fifteen (15) days of onsite training led by an Implementation Manager or Strategic Consultant.</p>
-        <ul>
+        <p>Provider will provide fifteen (15) days of onsite training led by an Implementation Manager or Strategic Consultant. Generally, four (4) weeks advance notice is required for scheduling.</p>
+        <p><strong>Anticipated Schedule:</strong></p>
+        <ol>
             <li><strong>Kickoff, Discovery and Planning Workshop (3 Days):</strong> To set project expectations and outline a project plan.</li>
             <li><strong>SOP End-User Trainings (6 Days):</strong> "Train the Trainer" workshops informed by the SOPs being developed.</li>
             <li><strong>Business Health Checks (6 Days):</strong> Stakeholder meetings to review milestone status and adoption progress.</li>
-        </ul>
+        </ol>
         <p><strong>Terms:</strong> Includes expenses. Limited to twenty (20) Client participants per session.</p>
         `
     },
@@ -170,7 +213,9 @@ const SOW_LIBRARY = {
         title: "INTEGRATION CONSULTING",
         body: `
         <p>Provider will provide up to twenty-five (25) hours of virtual Integration Consulting led by a Solutions Architect to assist with scoping and planning for Client’s anticipated integrations.</p>
+        <p><strong>Included Services:</strong></p>
         <ul>
+            <li>Integration discovery and planning for the tool suite.</li>
             <li>Guidance on integration best practices.</li>
             <li>Virtual Developer training on webhooks, authentication, or REST web services.</li>
             <li>Data migration feasibility analysis and guidance.</li>
@@ -182,41 +227,69 @@ const SOW_LIBRARY = {
         title: "CUSTOM SOLUTIONS",
         body: `
         <p>Provider will provide up to forty (40) hours for custom form and workflow development.</p>
+        <p><strong>Scope:</strong></p>
         <ul>
             <li>Customizing PDF item outputs.</li>
             <li>Creation of custom tools and custom workflows.</li>
         </ul>
         <p><strong>IP Rights:</strong> Any intellectual property created shall be owned solely by Provider, provided that Client is granted a non-exclusive right to use any custom forms/tools solely for internal business purposes.</p>
+        <p><strong>Expiration:</strong> Custom solutions hours must be used within twelve (12) months of service start date.</p>
         `
     },
     "MOD_ADMIN": {
         title: "PROJECT ADMINISTRATION",
         body: `
         <p>An Implementation Manager (IM) will be assigned for up to 140 virtual hours to partner with consultants in overseeing deliverables, timelines, and resource allocation.</p>
+        <p><strong>Responsibilities:</strong></p>
         <ul>
             <li>Coordinating services, deliverables, and resource scheduling.</li>
             <li>Driving milestone progress in the Project Plan.</li>
             <li>Progress calls, coaching, and KPI monitoring.</li>
+            <li>Evaluation and guidance on developing Standard Operating Procedures.</li>
         </ul>
         `
     }
 };
 
+// --- DYNAMIC CONTENT ASSEMBLER ---
+function getSOWContent(sowData) {
+    // 1. Determine Base Wrapper (Region + Audience)
+    let baseKey = "NAM_GC_BASE"; // Default
+    if (sowData.region === "APAC") baseKey = "APAC_BASE";
+    else if (sowData.region === "EMEA") baseKey = "EMEA_BASE";
+    else if (sowData.audience === "O") baseKey = "NAM_OWNER_BASE";
+
+    // 2. Determine Modules (Services)
+    let modules = [];
+    
+    // Look up modules based on the IDs saved in sowData.activeModules
+    if (sowData.activeModules && sowData.activeModules.length > 0) {
+        sowData.activeModules.forEach(modKey => {
+            if (SOW_LIBRARY[modKey]) {
+                modules.push(SOW_LIBRARY[modKey]);
+            }
+        });
+    }
+    
+    // Check Onsite Input specially
+    if (sowData.onsite > 0) modules.push(SOW_LIBRARY["MOD_TRAINING"]);
+
+    // Fallback: If modules list is empty, default to nothing
+    return { base: SOW_LIBRARY[baseKey], modules: modules };
+}
+
 // --- INITIALIZATION ---
 function initializeControls() {
     if (typeof app !== 'undefined') {
         app.customScope = new Set();
-        // Initialize State for Gap Analysis
         if (!app.state) app.state = {};
         if (!app.state.myStack) app.state.myStack = new Set();
-        app.state.calculatorMode = 'edit';
+        app.state.calculatorMode = 'edit'; 
     }
     
     // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
-        header.addEventListener('click', () => {
-            if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement);
-        });
+        header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
     });
 
     populateRegionFilter();
@@ -227,10 +300,7 @@ function initializeControls() {
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange); 
-    
-    d3.select("#persona-filter").on("change", () => {
-        if (typeof updateGraph === 'function') updateGraph(true)
-    });
+    d3.select("#persona-filter").on("change", () => { if (typeof updateGraph === 'function') updateGraph(true) });
     
     // Procore-Led Toggle
     const ledToggle = d3.select("#toggle-procore-led");
@@ -244,7 +314,6 @@ function initializeControls() {
     populateCategoryFilters();
     d3.select("#toggle-categories").on("click", toggleAllCategories);
     d3.select("#toggle-legend").on("click", toggleAllConnections);
-
     d3.select("#search-input").on("input", handleSearchInput);
     
     const teamSelector = d3.select("#team-selector");
@@ -273,8 +342,8 @@ function initializeControls() {
         const el = document.getElementById(id);
         if(el) el.addEventListener('input', calculateScoping);
     });
-
-    // Initialize Stack Builder Button (Gap Analysis V2)
+    
+    // Init Stack Builder Button
     setTimeout(() => {
         const existingBtn = d3.select("#stack-builder-btn");
         if (existingBtn.empty()) {
@@ -282,9 +351,8 @@ function initializeControls() {
              if (!container.empty()) {
                 container.insert("button", ":first-child")
                     .attr("id", "stack-builder-btn")
-                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed")
-                    .attr("disabled", true)
-                    .html('<i class="fas fa-layer-group mr-2"></i> Define Customer Stack')
+                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
+                    .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
                     .on("click", toggleStackBuilderMode);
              }
         }
@@ -307,7 +375,6 @@ function toggleCustomScopeItem(nodeId) {
 
 // --- GAP ANALYSIS V2 MANAGER ---
 function toggleStackBuilderMode() {
-    // Prevent usage if Region not selected
     if (d3.select("#region-filter").property("value") === "all") {
         if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
         return;
@@ -338,9 +405,8 @@ function toggleStackBuilderMode() {
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
         
-        // Return to normal view with "Gap Analysis" active if package selected
+        // Return to normal view
         if (typeof updateGraph === 'function') updateGraph(true);
-        
         if (app.state.myStack.size > 0 && typeof showToast === 'function') {
             showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
         }
@@ -428,7 +494,9 @@ function setComplexity(level) {
 function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
     if(revenueContainer.empty()) return;
-    revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200").html("");
+
+    revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
+    revenueContainer.html("");
     
     // --- COMPLEXITY BUTTONS (SOW V2) ---
     const complexityDiv = revenueContainer.append("div").attr("class", "mb-3 flex gap-2");
@@ -444,35 +512,60 @@ function renderSOWQuestionnaire() {
     const settingsGroup = revenueContainer.append("div").attr("class", "mb-1 w-full");
     const onsiteRow = settingsGroup.append("div").attr("class", "mb-3 border-b border-gray-100 pb-3");
     onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
-    onsiteRow.append("input").attr("type", "number").attr("id", "onsite-input").attr("value", "0").attr("min", "0").attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500").on("input", calculateScoping);
+    onsiteRow.append("input")
+        .attr("type", "number")
+        .attr("id", "onsite-input")
+        .attr("value", "0")
+        .attr("min", "0")
+        .attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500")
+        .on("input", calculateScoping);
     
     settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
     const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2 w-full");
     
     SOW_QUESTIONS.forEach(q => {
         const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 w-full");
-        label.append("input").attr("type", "checkbox").attr("id", q.id).attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500").on("change", calculateScoping);
+        
+        label.append("input")
+            .attr("type", "checkbox")
+            .attr("id", q.id)
+            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500")
+            .on("change", calculateScoping);
+        
         const textCol = label.append("div").attr("class", "ml-2 flex flex-col min-w-0");
         textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight truncate").text(q.label).attr("title", q.label);
-        if (q.type === 'cost') textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
+        
+        if (q.type === 'cost') {
+             textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
+        }
     });
     
+    // --- PRINT BUTTON MOVED TO TOTAL BOX ---
     const totalBox = d3.select("#sow-total").select(function() { return this.parentNode; });
     if (!totalBox.empty()) {
         totalBox.select("#print-sow-mini-btn").remove(); 
-        totalBox.append("button").attr("id", "print-sow-mini-btn").attr("class", "w-full mt-3 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold py-1.5 rounded text-[11px] flex items-center justify-center transition shadow-sm border border-indigo-600").html('<i class="fas fa-print mr-2"></i> Print Estimate').on("click", generateSOWPrintView);
+        
+        totalBox.append("button")
+            .attr("id", "print-sow-mini-btn")
+            .attr("class", "w-full mt-3 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold py-1.5 rounded text-[11px] flex items-center justify-center transition shadow-sm border border-indigo-600")
+            .html('<i class="fas fa-print mr-2"></i> Print Estimate')
+            .on("click", generateSOWPrintView);
     }
+
     setTimeout(refreshAccordionHeight, 50);
 }
 
-// --- SCOPING CALCULATOR (WITH RBAC) ---
+// --- SCOPING CALCULATOR (WITH RBAC CHECKS) ---
 function calculateScoping() {
+    // RBAC Check: If View Only, disable inputs programmatically (UI disabled separately)
     const isViewOnly = (app.state.calculatorMode === 'view');
+    
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
     const onsiteInput = document.getElementById('onsite-input');
     
+    // Disable/Enable Inputs based on Mode
     if (sliderMaturity) {
         [sliderMaturity, sliderData, sliderChange, onsiteInput].forEach(el => { if(el) el.disabled = isViewOnly; });
         d3.selectAll('.sow-question').property('disabled', isViewOnly);
@@ -520,12 +613,14 @@ function calculateScoping() {
     const customToolCount = app.customScope ? app.customScope.size : 0;
     const customScopeHours = customToolCount * 5; 
     let servicesHours = 0; let servicesCost = 0;
+    let activeModules = []; // NEW: Track selected modules
 
     SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => {
         const checkbox = document.getElementById(q.id);
         if (checkbox && checkbox.checked) {
             servicesHours += q.hrs;
             servicesCost += q.cost;
+            if (q.module) activeModules.push(q.module); // Capture ID
         }
     });
 
@@ -587,51 +682,31 @@ function calculateScoping() {
         packages: d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value),
         customTools: Array.from(app.customScope || []),
         services: SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label),
+        activeModules: activeModules, // Pass the IDs to the printer
         onsite: onsiteCount, multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) }
     };
     
     refreshAccordionHeight();
 }
 
-// --- DYNAMIC CONTENT ASSEMBLER ---
-function getSOWContent(sowData) {
-    let baseKey = "NAM_GC_BASE";
-    if (sowData.region === "APAC") baseKey = "APAC_BASE";
-    else if (sowData.region === "EMEA") baseKey = "EMEA_BASE";
-    else if (sowData.audience === "O") baseKey = "NAM_OWNER_BASE";
-
-    let modules = [];
-    if (sowData.services.some(s => s.includes("SOP"))) modules.push(SOW_LIBRARY["MOD_SOP"]);
-    if (sowData.services.some(s => s.includes("Virtual Consulting"))) modules.push(SOW_LIBRARY["MOD_CONSULTING"]);
-    if (sowData.services.some(s => s.includes("Admin"))) modules.push(SOW_LIBRARY["MOD_ADMIN"]);
-    if (sowData.services.some(s => s.includes("Integration"))) modules.push(SOW_LIBRARY["MOD_INTEGRATION"]);
-    if (sowData.services.some(s => s.includes("Custom Solutions"))) modules.push(SOW_LIBRARY["MOD_CUSTOM"]);
-    if (sowData.onsite > 0) modules.push(SOW_LIBRARY["MOD_TRAINING"]);
-
-    return { base: SOW_LIBRARY[baseKey], modules: modules };
-}
-
 // --- PRINT SOW (BRANDING + TEMPLATES) ---
 function generateSOWPrintView() {
     if (!app.currentSOW) { alert("Please configure a scope first."); return; }
     
-    // 1. Capture Branding
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
     
-    // 2. Logic: Use input or default Procore
     const logoHtml = (logoInput && logoInput.trim() !== "") 
         ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
         : `<div class="logo">PROCORE</div>`;
 
     const sow = app.currentSOW;
-    const templateData = getSOWContent(sow); // Retrieve dynamic content
+    const templateData = getSOWContent(sow); 
     const today = new Date().toLocaleDateString();
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) { alert("Please allow popups to print the SOW."); return; }
 
-    // Render Modules
     let modulesHtml = "";
     templateData.modules.forEach(mod => {
         modulesHtml += `<div class="module">
@@ -639,7 +714,6 @@ function generateSOWPrintView() {
         </div>`;
     });
 
-    // Populate Legal Wrapper
     let bodyContent = templateData.base.body
         .replace(/{{Client Name}}/g, clientName)
         .replace(/{{Date}}/g, today);
@@ -654,17 +728,13 @@ function generateSOWPrintView() {
             .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
             .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
             .title { font-size: 14px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
-            
             h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; }
             p, li { font-size: 13px; }
             .sow-section { margin-bottom: 20px; }
-            
             .module { background: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
             .module h2 { font-size: 16px; margin-top: 0; color: #111827; }
-            
             .total-box { background: #1f2937; color: white; padding: 20px; border-radius: 8px; text-align: right; margin-top: 40px; }
             .total-cost { font-size: 32px; font-weight: 800; margin-top: 5px; }
-            
             .disclaimer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
@@ -673,26 +743,19 @@ function generateSOWPrintView() {
             <div>${logoHtml}</div>
             <div class="title">${templateData.base.title}</div>
         </div>
-        
         ${bodyContent}
-
         <h3>Scope of Services</h3>
         ${modulesHtml}
-
         <div class="total-box">
             <div style="font-size: 12px; text-transform: uppercase; font-weight: bold; opacity: 0.8;">Total Implementation Investment</div>
             <div class="total-cost">$${sow.totalCost.toLocaleString()}</div>
             <div style="font-size: 14px; margin-top: 5px; opacity: 0.8;">Est. Timeline: ${sow.weeks} Weeks</div>
         </div>
-
         <div class="disclaimer">
             This document is a rough order of magnitude (ROM) estimate for simulation purposes only. <br>
             It does not constitute a binding contract or formal Statement of Work. Pricing is subject to change.
         </div>
-
-        <script>
-            window.print();
-        </script>
+        <script>window.print();</script>
     </body>
     </html>
     `;
@@ -715,7 +778,6 @@ function applyTeamView(team) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
-    // Handle Calculator Visibility & Mode
     const scopingContainer = d3.select("#scoping-ui-container");
     if (config.calculatorMode === 'hidden') {
         scopingContainer.classed("hidden", true);
@@ -723,7 +785,7 @@ function applyTeamView(team) {
         scopingContainer.classed("hidden", !config.showScoping);
         if (typeof app !== 'undefined' && app.state) {
             app.state.calculatorMode = config.calculatorMode;
-            calculateScoping(); // Re-run to apply disabled states
+            calculateScoping(); 
         }
     }
 
