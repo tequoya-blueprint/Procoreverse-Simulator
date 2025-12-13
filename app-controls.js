@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 115 (AI BUILDER ENABLED FOR SERVICES) - UNCOMPRESSED
+// VERSION: 120 (GAP ANALYSIS & STACK BUILDER ADDED)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -41,7 +41,7 @@ const TEAM_CONFIG = {
     },
     services: { 
         showTours: true, 
-        showAiBuilder: true, // UPDATED: Enabled for Prof. Services
+        showAiBuilder: true, 
         showManualBuilder: true, 
         showScoping: true, 
         showFilters: true, 
@@ -766,6 +766,12 @@ function resetView() {
     
     d3.selectAll(".sow-question").property("checked", false);
     
+    // RESET STACK BUILDER MODE
+    if (app.state && app.state.isBuildingStack) {
+        toggleStackBuilderMode(); // Toggles it off
+    }
+    app.state.myStack = new Set();
+    
     clearPackageDetails();
     if (typeof updateGraph === 'function') updateGraph(false);
     if (typeof resetZoom === 'function') resetZoom();
@@ -834,12 +840,11 @@ function updateActivePackageState() {
     } else {
         app.currentPackage = null;
     }
-    // --- [APPEND TO app-controls.js] ---
+}
 
-// --- CUSTOMER STACK & GAP ANALYSIS MANAGER ---
+// --- CUSTOMER STACK & GAP ANALYSIS MANAGER (NEW PHASE 3) ---
 
 // 1. Initialize State Logic
-// We ensure app state exists before modifying it to prevent race conditions
 if (typeof app !== 'undefined') {
     if (!app.state) app.state = {};
     if (!app.state.myStack) app.state.myStack = new Set();
@@ -848,13 +853,11 @@ if (typeof app !== 'undefined') {
 
 // 2. Toggle "Builder Mode"
 function toggleStackBuilderMode() {
-    // Toggle the boolean state
     app.state.isBuildingStack = !app.state.isBuildingStack;
     
     // UI: Find or Create the Builder Button
     let btn = d3.select("#stack-builder-btn");
     if (btn.empty()) {
-        // Fallback: If button isn't in HTML, inject it above the filters
         const container = d3.select("#packaging-container"); 
         if (!container.empty()) {
             btn = container.insert("button", ":first-child")
@@ -863,36 +866,28 @@ function toggleStackBuilderMode() {
         }
     }
 
-    const status = d3.select("#toast-notification"); 
-    
     if (app.state.isBuildingStack) {
         // --- ACTIVATE BUILDER MODE ---
         app.interactionState = 'building_stack';
         
-        // Update Button Visuals (Active State)
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
         
-        // Notification
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
         
-        // Visual: Dim everything slightly to make "Green" selections pop
+        // Visual: Dim everything to focus
         d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
-        
-        // Visual: Re-highlight any previously selected tools
         highlightOwnedNodes();
         
     } else {
         // --- DEACTIVATE BUILDER MODE ---
         app.interactionState = 'explore';
         
-        // Update Button Visuals (Inactive State)
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
         
-        // Trigger a full graph update to render the "Gap Analysis" (Green vs Orange)
         if (typeof updateGraph === 'function') updateGraph(true);
         
         if (app.state.myStack.size > 0 && typeof showToast === 'function') {
@@ -905,37 +900,34 @@ function toggleStackBuilderMode() {
 function toggleStackItem(d) {
     if (!app.state.myStack) app.state.myStack = new Set();
     
-    // Toggle logic: Add if missing, remove if present
     if (app.state.myStack.has(d.id)) {
         app.state.myStack.delete(d.id);
     } else {
         app.state.myStack.add(d.id);
     }
-    // Immediate visual feedback
     highlightOwnedNodes();
 }
 
 // 4. Visual Feedback Loop (Builder Mode Only)
 function highlightOwnedNodes() {
     if (!app.node) return;
-    
     app.node.transition().duration(200)
-        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) // Dim unowned
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") // Green Glow
+        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") 
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") // Green Stroke
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") 
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
-// 5. Calculate the "Gap" (The Upsell)
+// 5. Calculate the "Gap"
 function getGapAnalysis() {
-    const filters = getActiveFilters(); // Standard filter function
+    const filters = getActiveFilters(); 
     const targetPackageTools = filters.packageTools || new Set();
     
     const owned = app.state.myStack || new Set();
     const gap = new Set();
     
-    // Logic: Gap = Tools in Selected Package MINUS Owned Tools
+    // Logic: Gap = Tools in Package MINUS Owned Tools
     if (targetPackageTools.size > 0) {
         targetPackageTools.forEach(toolId => {
             if (!owned.has(toolId)) {
@@ -962,4 +954,3 @@ setTimeout(() => {
          }
     }
 }, 1000);
-}
