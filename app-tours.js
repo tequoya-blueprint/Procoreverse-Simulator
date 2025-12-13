@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 410 (FULL RESTORATION: NO MINIFICATION)
+// VERSION: 420 (FIXED: ROBUST LINEWORK & DYNAMIC INSTRUCTIONS)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -43,28 +43,18 @@ function initializeTourControls() {
                  if (tours.platform && tours.platform[tourId]) tourData = tours.platform[tourId];
                  if (tours.packages && tours.packages[tourId]) tourData = tours.packages[tourId];
             }
-            
-            if (tourData) {
-                previewTour(tourData);
-            }
+            if (tourData) previewTour(tourData);
         }
     });
 
     d3.select("#tour-prev").on("click", () => { 
-        if (app.currentStep > 0) { 
-            app.currentStep--; 
-            runTourStep(); 
-        } 
+        if (app.currentStep > 0) { app.currentStep--; runTourStep(); } 
     });
     
     d3.select("#tour-next").on("click", () => { 
-        if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { 
-            app.currentStep++; 
-            runTourStep(); 
-        } 
+        if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } 
     });
 
-    // AI Modal Triggers
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
@@ -143,7 +133,7 @@ function saveCurrentTour() {
 // --- MANUAL BUILDER LOGIC ---
 let manualBuilderSteps = [];
 
-// Helper to safely get the String ID from a Node or Link Source/Target
+// Helper to safely get the String ID
 function safeId(obj) {
     if (typeof obj === 'string') return obj;
     if (obj && obj.id) return obj.id;
@@ -155,13 +145,9 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Initial Visual State: Dim everything initially
+    // Dim Everything at Start
     app.node.transition().duration(500).style("opacity", 1);
-    
-    // Ensure we start clean by setting opacity on the element level
-    app.link.transition().duration(500)
-        .style("opacity", 0.1) // Dim element
-        .style("stroke-opacity", 0.1); // Dim stroke
+    app.link.transition().duration(500).style("opacity", 0.05).style("stroke-opacity", 0.05); 
 
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
@@ -170,7 +156,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Select a tool to start. <span style="color:#60A5FA">Blue dashed lines</span> show valid next steps.</p>
+            <p id="manual-instruction-text" class="text-sm italic text-gray-300">Select any tool to start your process.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -182,19 +168,19 @@ function startManualBuilder() {
     d3.select("#finish-manual-btn").on("click", finishManualBuilder);
     
     if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
-    if(typeof showToast === 'function') showToast("Recording started. Select the first tool.");
+    if(typeof showToast === 'function') showToast("Recording started.");
 }
 
 function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
-        // Remove step and anything after it (Undo logic)
+        // Undo Steps
         manualBuilderSteps = manualBuilderSteps.slice(0, existingIndex);
         if(typeof showToast === 'function') showToast(`Removed steps starting from: ${d.id}`);
     } else {
-        // Add step
-        const desc = d.description || `Standard workflow step involving the ${d.id} tool.`;
+        // Add Step
+        const desc = d.description || `Step involving ${d.id}.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
         
         // Pulse animation
@@ -209,22 +195,30 @@ function updateManualBuilderVisuals() {
     d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
 
+    // Update Text Instruction
+    const instructionText = d3.select("#manual-instruction-text");
+    if (manualBuilderSteps.length === 0) {
+        instructionText.html("Select a tool to start.");
+    } else {
+        instructionText.html(`<span style="color:#60A5FA; font-weight:bold;">Blue dashed lines</span> show valid next steps.`);
+    }
+
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
     let lastNodeId = null;
     if (manualBuilderSteps.length > 0) {
         lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
     }
 
-    // PRE-CALCULATE VALID PATHS FOR O(1) LOOKUP
+    // 1. Identify Path Keys (History) - BI-DIRECTIONAL
     const pathKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
         const v = manualBuilderSteps[i+1].nodeId;
         pathKeys.add(`${u}-${v}`);
-        pathKeys.add(`${v}-${u}`);
+        pathKeys.add(`${v}-${u}`); // Add both directions to ensure match
     }
 
-    // Identify Candidates
+    // 2. Identify Candidate Keys (Future) - BI-DIRECTIONAL
     const candidateKeys = new Set();
     const candidateNodes = new Set();
 
@@ -233,12 +227,14 @@ function updateManualBuilderVisuals() {
             const s = safeId(l.source);
             const t = safeId(l.target);
             
+            // Check connections to the LAST node
             if (s === lastNodeId && !activeIds.has(t)) {
                 candidateKeys.add(`${s}-${t}`);
+                candidateKeys.add(`${t}-${s}`); 
                 candidateNodes.add(t);
             } else if (t === lastNodeId && !activeIds.has(s)) {
-                candidateKeys.add(`${t}-${s}`); 
-                candidateKeys.add(`${s}-${t}`); // Add both directions just in case
+                candidateKeys.add(`${t}-${s}`);
+                candidateKeys.add(`${s}-${t}`);
                 candidateNodes.add(s);
             }
         });
@@ -247,44 +243,43 @@ function updateManualBuilderVisuals() {
     // --- NODE UPDATES ---
     app.node.transition().duration(200)
         .style("opacity", n => {
-            if (activeIds.has(n.id)) return 1.0;            // Active Path (History)
-            if (candidateNodes.has(n.id)) return 0.8;       // Candidate (Future)
-            return manualBuilderSteps.length === 0 ? 1 : 0.1; // Dim irrelevant
+            if (activeIds.has(n.id)) return 1.0;            // Path
+            if (candidateNodes.has(n.id)) return 0.9;       // Candidate (High Vis)
+            return manualBuilderSteps.length === 0 ? 1 : 0.1; // Dim others
         })
         .style("filter", n => {
-            if (activeIds.has(n.id)) return "drop-shadow(0 0 5px #F36C23)"; // Orange Glow (History)
-            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 4px #2563EB)"; // Blue Glow (Future)
+            if (activeIds.has(n.id)) return "drop-shadow(0 0 6px #F36C23)"; // Orange Glow
+            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 5px #2563EB)"; // Blue Glow
             return null;
         });
 
     // --- LINK UPDATES ---
     app.link.transition().duration(200)
-        // Restore Element Opacity to 1 for active links
         .style("opacity", l => {
             const s = safeId(l.source);
             const t = safeId(l.target);
             const key = `${s}-${t}`;
             
-            if (pathKeys.has(key) || candidateKeys.has(key)) return 1.0; // Fully visible
-            return 0.1; // Dimmed
+            if (pathKeys.has(key)) return 1.0;
+            if (candidateKeys.has(key)) return 1.0; // Make candidates fully visible too
+            return 0.02; // Very faint for irrelevant links
         })
         .style("stroke-opacity", l => {
             const s = safeId(l.source);
             const t = safeId(l.target);
             const key = `${s}-${t}`;
             
-            if (pathKeys.has(key)) return 1.0; // History = Full
-            if (candidateKeys.has(key)) return 0.8; // Candidate = Slightly less
-
-            return 0.1; // Dim irrelevant
+            if (pathKeys.has(key)) return 1.0;
+            if (candidateKeys.has(key)) return 0.8;
+            return 0.02;
         })
         .attr("stroke", l => {
              const s = safeId(l.source);
              const t = safeId(l.target);
              const key = `${s}-${t}`;
 
-            if (pathKeys.has(key)) return "var(--procore-orange)"; // History
-            if (candidateKeys.has(key)) return "#2563EB"; // Candidate
+            if (pathKeys.has(key)) return "#F36C23"; // Orange Hex directly
+            if (candidateKeys.has(key)) return "#2563EB"; // Blue Hex directly
             return "#a0a0a0";
         })
         .style("stroke-width", l => {
@@ -292,8 +287,8 @@ function updateManualBuilderVisuals() {
              const t = safeId(l.target);
              const key = `${s}-${t}`;
 
-            if (pathKeys.has(key)) return 3;
-            if (candidateKeys.has(key)) return 2;
+            if (pathKeys.has(key)) return 4; // Thick path
+            if (candidateKeys.has(key)) return 2; // Medium candidate
             return 1;
         })
         .attr("stroke-dasharray", l => {
@@ -301,8 +296,8 @@ function updateManualBuilderVisuals() {
             const t = safeId(l.target);
             const key = `${s}-${t}`;
 
-            if (pathKeys.has(key)) return "none"; // Solid for history
-            if (candidateKeys.has(key)) return "4, 2"; // Dashed for candidate
+            if (pathKeys.has(key)) return "none"; // Solid
+            if (candidateKeys.has(key)) return "6, 3"; // Dashed
             return "none";
         })
         .attr("marker-end", l => {
@@ -329,7 +324,7 @@ function finishManualBuilder() {
     app.currentTour = newTour;
     saveCurrentTour(); 
     
-    // Force immediate preview to show the export button
+    // Force immediate preview
     setTimeout(() => previewTour(newTour), 100);
 }
 
@@ -341,6 +336,8 @@ function previewTour(tourData) {
     app.interactionState = 'tour_preview';
     
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
+    
+    // Pre-calculate path
     const pathKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
@@ -356,19 +353,19 @@ function previewTour(tourData) {
             const s = safeId(l.source);
             const t = safeId(l.target);
             const key = `${s}-${t}`;
-            return pathKeys.has(key) ? 1.0 : 0.05;
+            return pathKeys.has(key) ? 1.0 : 0.02;
         })
         .style("stroke-opacity", l => {
             const s = safeId(l.source);
             const t = safeId(l.target);
             const key = `${s}-${t}`;
-            return pathKeys.has(key) ? 1.0 : 0.05;
+            return pathKeys.has(key) ? 1.0 : 0.02;
         })
         .attr("stroke", l => {
             const s = safeId(l.source);
             const t = safeId(l.target);
             const key = `${s}-${t}`;
-            return pathKeys.has(key) ? "var(--procore-orange)" : "#a0a0a0";
+            return pathKeys.has(key) ? "#F36C23" : "#a0a0a0";
         })
         .attr("marker-end", l => {
              const s = safeId(l.source);
@@ -400,7 +397,6 @@ function previewTour(tourData) {
     
     // BIND SOP CLICK EVENT
     d3.select("#export-sop-btn").on("click", function() {
-        console.log("Generating SOP for:", app.currentTour.name);
         generateSOP();
     });
     
