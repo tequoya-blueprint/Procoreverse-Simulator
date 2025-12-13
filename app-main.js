@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 155 (FIX: INTERACTION STATE SAFETY)
+// VERSION: 160 (FIXED: PROCESS BUILDER COMPATIBILITY)
 
 const app = {
     simulation: null,
@@ -46,20 +46,20 @@ function setupCategories() {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. STACK BUILDER INTERCEPT
+    // 1. MANUAL PROCESS BUILDER (Priority 1)
+    if (app.interactionState === 'manual_building') { 
+        if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
+        return; 
+    }
+
+    // 2. STACK BUILDER (Priority 2)
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
         return; 
     }
-
-    // 2. MANUAL BUILDING
-    if (app.interactionState === 'manual_building') { 
-        if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
-        return; 
-    }
     
-    // 3. STANDARD LOGIC
+    // 3. STANDARD EXPLORATION
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { procoreLedTools: new Set() };
     if (app.state.showProcoreLedOnly) {
         const isStandardLed = filters.procoreLedTools.has(d.id);
@@ -188,10 +188,12 @@ function ticked() {
     if(app.node) app.node.attr("transform", d => `translate(${d.x || 0},${d.y || 0})`);
 }
 
-// --- CORE RENDER FUNCTION: Now Respects Builder Mode Persistence ---
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
     
+    // CRITICAL FIX: If Manual Builder is active, DO NOT re-render graph styles.
+    if (app.interactionState === 'manual_building') return;
+
     // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
@@ -206,15 +208,14 @@ function updateGraph(isFilterChange = true) {
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        
         let inPackage = true;
+        
         if (isBuilderMode) {
             inPackage = true; 
         } else {
             // SHOW: Package Tools OR Outliers (Legacy tools owned by customer)
             inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         }
-        
         return inCategory && inPersona && inPackage;
     });
 
