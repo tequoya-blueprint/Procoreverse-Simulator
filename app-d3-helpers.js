@@ -1,5 +1,5 @@
 // --- app-d3-helpers.js ---
-// VERSION: 80 (FLAT-TOP NODE SHAPE + FULL LOGIC)
+// VERSION: 310 (FIXED: REMOVED CONFLICTING EVENT HANDLERS)
 
 /**
  * Generates a Hexagon Path (Flat-Top/Bottom).
@@ -45,59 +45,8 @@ function drag(simulation) {
 }
 
 /**
- * Central Node Click Handler.
- */
-function nodeClicked(event, d) {
-    event.stopPropagation();
-    
-    // 1. MANUAL BUILDER ROUTING
-    if (app.interactionState === 'manual_building') {
-        if (typeof handleManualNodeClick === 'function') {
-            handleManualNodeClick(d); 
-        }
-        return; 
-    }
-
-    // 2. SCOPING MODE IS HANDLED IN APP-MAIN.JS
-    // This file contains the Fallback/Standard logic only.
-    
-    // 3. STANDARD SELECTION (Info Panel)
-    if (app.selectedNode === d) {
-        resetHighlight();
-    } else {
-        app.interactionState = 'selected';
-        app.selectedNode = d;
-        applyHighlight(d);
-        
-        if (typeof showInfoPanel === 'function') {
-            showInfoPanel(d);
-        }
-        
-        centerViewOnNode(d);
-        d3.select('#graph-container').classed('selection-active', true);
-    }
-}
-
-function nodeDoubleClicked(event, d) {
-    event.stopPropagation();
-}
-
-function nodeMouseOver(event, d) {
-    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
-    if (typeof showTooltip === 'function') showTooltip(event, d);
-    if (app.interactionState === 'explore') applyHighlight(d);
-}
-
-function nodeMouseOut() {
-    if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
-    if (typeof hideTooltip === 'function') hideTooltip();
-    if (app.interactionState === 'explore') resetHighlight();
-}
-
-/**
  * Visual Highlight Logic.
+ * Used by app-main.js to dim unconnected nodes.
  */
 function applyHighlight(d) {
     if (!app.simulation) return;
@@ -115,9 +64,11 @@ function applyHighlight(d) {
 
     const opacity = 0.1; 
     
+    // Dim unrelated nodes
     app.node.transition().duration(300)
         .style("opacity", n => connectedNodeIds.has(n.id) ? 1 : opacity);
     
+    // Highlight specific links
     app.link.transition().duration(300)
         .style("stroke-opacity", l => connectedLinks.has(l) ? 1 : opacity * 0.5)
         .attr("marker-end", l => {
@@ -126,22 +77,21 @@ function applyHighlight(d) {
         });
 }
 
-function highlightConnection(element, d) {
-    if (!app.simulation) return;
-}
-
 /**
  * Resets the graph to neutral state.
  */
 function resetHighlight(hidePanel = true) {
-    if (!hidePanel && ['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return; 
+    // PROTECTED STATES: Do not reset visuals if we are in a special mode
+    if (!hidePanel && ['tour', 'tour_preview', 'selected', 'manual_building', 'building_stack'].includes(app.interactionState)) return; 
 
     app.interactionState = 'explore';
     app.selectedNode = null;
     
     if (app.node) {
         app.node.classed("selected", false);
-        app.node.transition().duration(400).style("opacity", 1);
+        // Let updateGraph handle opacity based on filters
+        if (typeof updateGraph === 'function') updateGraph(false);
+        else app.node.transition().duration(400).style("opacity", 1);
     }
     
     if (app.link) {
@@ -159,7 +109,9 @@ function resetHighlight(hidePanel = true) {
     }
         
     if (hidePanel) {
-        if (typeof hideInfoPanel === 'function') hideInfoPanel();
+        if (typeof hideInfoPanel === 'function') {
+            d3.select("#info-panel").classed("visible", false);
+        }
     }
     
     d3.select('#graph-container').classed('selection-active', false);
