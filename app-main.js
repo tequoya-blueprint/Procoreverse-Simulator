@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 300 (STABLE RESET: STATE PROTECTION & BRANDING)
+// VERSION: 300 (MASTER RESET: STATE PROTECTION & BRANDING)
 
 const app = {
     simulation: null,
