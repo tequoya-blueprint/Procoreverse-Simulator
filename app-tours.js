@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 145 (FIXED: OUTGOING CANDIDATE VISUALS & FULL SOP RESTORATION)
+// VERSION: 300 (FIXED: FUTURE FLOW GUIDES & FULL SOP)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -236,7 +236,7 @@ function updateManualBuilderVisuals() {
         .style("opacity", n => {
             if (activeIds.has(n.id)) return 1.0;            // Active Path
             if (candidateNodeIds.has(n.id)) return 0.9;     // Possible Next Step (High Vis)
-            return manualBuilderSteps.length === 0 ? 1 : 0.1; // Irrelevant
+            return manualBuilderSteps.length === 0 ? 1 : 0.15; // Dim others
         })
         .style("filter", n => {
             if (activeIds.has(n.id)) return "drop-shadow(0 0 5px #F36C23)"; // Orange Glow (Path)
@@ -279,7 +279,7 @@ function updateManualBuilderVisuals() {
              const dirKey = `${s}-${t}`;
              
              // Dashed lines for Candidates ("Ghost Lines")
-             if (candidateLinkKeys.has(dirKey)) return "4, 2";
+             if (candidateLinkKeys.has(dirKey) && !pathLinkKeys.has(dirKey)) return "4, 2";
              
              // Standard lines for established path
              return "none";
@@ -293,8 +293,7 @@ function updateManualBuilderVisuals() {
             if (pathLinkKeys.has(dirKey)) return `url(#arrow-highlighted)`;
             
             if (candidateLinkKeys.has(dirKey)) {
-                // If marker exists for type, use it, else default
-                return `url(#arrow-${l.type})` || `url(#arrow-pushes-data-to)`; 
+                return `url(#arrow-candidate)`; 
             }
             return null;
         });
@@ -519,6 +518,7 @@ function runTourStep() {
     const step = app.currentTour.steps[app.currentStep];
     const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
     
+    // UI Updates
     d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
@@ -529,27 +529,35 @@ function runTourStep() {
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
         
+        // Define Active and Past Sets
         const activeNodeId = step.nodeId;
         const pastNodeIds = new Set(app.currentTour.steps.slice(0, app.currentStep).map(s => s.nodeId));
         const allTourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
         
+        // --- POLISHED NODE OPACITY LOGIC ---
         app.node.transition().duration(400).style("opacity", d => {
-            if (d.id === activeNodeId) return 1;     
-            if (pastNodeIds.has(d.id)) return 0.4;   
-            if (allTourNodeIds.has(d.id)) return 0.1;
-            return 0.02;                             
+            if (d.id === activeNodeId) return 1;     // Active: Full Opacity
+            if (pastNodeIds.has(d.id)) return 0.4;   // Past: Dimmed but visible
+            if (allTourNodeIds.has(d.id)) return 0.1;// Future: Faint ghost
+            return 0.02;                             // Unrelated: Almost invisible
         });
         
+        // --- POLISHED LINK LOGIC ---
         let prevNodeId = app.currentStep > 0 ? app.currentTour.steps[app.currentStep - 1].nodeId : null;
         
         app.link.transition().duration(400)
             .style("stroke-opacity", l => {
                 const s = l.source.id || l.source;
                 const t = l.target.id || l.target;
+                
+                // Active Link (Previous -> Current)
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 if (isActiveLink) return 1;
+                
+                // Check if link is part of the tour history
                 const isHistoryLink = pastNodeIds.has(s) && pastNodeIds.has(t); 
                 if (isHistoryLink) return 0.2;
+                
                 return 0.01;
             })
             .attr("stroke", l => {
