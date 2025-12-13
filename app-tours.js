@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 110 (FIXED: SOP BUTTON & RICH DESCRIPTIONS)
+// VERSION: 130 (FIXED: SOP GEN, VISIBLE LINES)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -115,8 +115,11 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    app.node.transition().duration(500).style("opacity", 1);
-    app.link.transition().duration(500).style("opacity", 0.1); 
+    // VISIBILITY FIX: Force lines to be visible (0.4) instead of hidden (0.1)
+    setTimeout(() => {
+        app.node.transition().duration(500).style("opacity", 1);
+        app.link.transition().duration(500).style("stroke-opacity", 0.4); 
+    }, 100);
 
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
@@ -147,7 +150,7 @@ function handleManualNodeClick(d) {
         manualBuilderSteps.splice(existingIndex, 1);
         if(typeof showToast === 'function') showToast(`Removed step: ${d.id}`);
     } else {
-        // FIX: Grab the actual description from the node data
+        // USE RICH DESCRIPTIONS FROM DATA
         const desc = d.description || `Standard workflow step involving the ${d.id} tool.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
         
@@ -179,7 +182,8 @@ function updateManualBuilderVisuals() {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            return (pathLinks.has(key) || pathLinks.has(rKey)) ? 1 : 0.05;
+            // VISIBILITY FIX: Make non-path links 0.2 (visible) instead of 0.05
+            return (pathLinks.has(key) || pathLinks.has(rKey)) ? 1 : 0.2;
         })
         .attr("stroke", l => {
             const s = l.source.id || l.source;
@@ -202,7 +206,7 @@ function finishManualBuilder() {
     app.currentTour = newTour;
     saveCurrentTour(); 
     
-    // Force immediate preview to show the export button
+    // Force immediate preview to show SOP Button
     setTimeout(() => previewTour(newTour), 100);
 }
 
@@ -263,12 +267,7 @@ function previewTour(tourData) {
 
     d3.select("#start-tour-btn").on("click", startTour);
     d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
-    
-    // BIND SOP CLICK EVENT
-    d3.select("#export-sop-btn").on("click", function() {
-        console.log("Generating SOP for:", app.currentTour.name);
-        generateSOP();
-    });
+    d3.select("#export-sop-btn").on("click", generateSOP); 
     
     if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     resizeTourAccordion();
@@ -276,10 +275,7 @@ function previewTour(tourData) {
 
 // --- SOP GENERATOR V2 ---
 function generateSOP() {
-    if (!app.currentTour) {
-        alert("No active process to export.");
-        return;
-    }
+    if (!app.currentTour) return;
     
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
