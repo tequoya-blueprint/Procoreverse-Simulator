@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 120 (GHOST MODE & GAP VISUALIZATION)
+// VERSION: 130 (GAP ANALYSIS V2 - OUTLIERS SUPPORT)
 
 const app = {
     simulation: null,
@@ -46,13 +46,13 @@ function setupCategories() {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. STACK BUILDER INTERCEPT (NEW)
+    // 1. STACK BUILDER INTERCEPT
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
         return; 
     }
 
-    // 2. MANUAL BUILDING (Existing)
+    // 2. MANUAL BUILDING
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
         return; 
@@ -81,12 +81,9 @@ function setHexFoci() {
     if(!container) return;
     app.width = container.clientWidth;
     app.height = container.clientHeight;
-    
     const cx = app.width / 2;
     const cy = app.height / 2;
     const radius = Math.min(app.width, app.height) * 0.38; 
-
-    // Arrangement: Platform Center, others in a Hexagon Ring
     const layoutMap = {
         "Platform & Core": { angle: 0, dist: 0 },
         "Preconstruction": { angle: -90, dist: 1 },       
@@ -102,14 +99,10 @@ function setHexFoci() {
         "External Integrations": { angle: 30, dist: 1.3 }, 
         "Emails": { angle: 210, dist: 1.3 } 
     };
-
     Object.keys(app.categories).forEach(cat => {
         const config = layoutMap[cat] || { angle: 0, dist: 0 };
         const rad = (config.angle * Math.PI) / 180;
-        app.categoryFoci[cat] = {
-            x: cx + (radius * config.dist) * Math.cos(rad),
-            y: cy + (radius * config.dist) * Math.sin(rad)
-        };
+        app.categoryFoci[cat] = { x: cx + (radius * config.dist) * Math.cos(rad), y: cy + (radius * config.dist) * Math.sin(rad) };
     });
 }
 
@@ -138,18 +131,14 @@ function initializeSimulation() {
         app.node.selectAll("text").style("opacity", event.transform.k < 0.4 ? 0 : 1);
     });
     app.svg.call(app.zoom);
-
-    // PHYSICS CONFIGURATION
     app.simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(d => d.id).distance(100).strength(0.2))
         .force("charge", d3.forceManyBody().strength(-900))
         .force("collision", d3.forceCollide().radius(app.nodeCollisionRadius).strength(1))
         .force("center", d3.forceCenter(app.width / 2, app.height / 2))
         .on("tick", ticked);
-
     app.link = app.linkG.selectAll("path");
     app.node = app.nodeG.selectAll("g");
-    
     setHexFoci();
 }
 
@@ -198,6 +187,7 @@ function ticked() {
     if(app.node) app.node.attr("transform", d => `translate(${d.x || 0},${d.y || 0})`);
 }
 
+// --- CORE GAP ANALYSIS RENDERING ---
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
     
@@ -206,17 +196,19 @@ function updateGraph(isFilterChange = true) {
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
-    // 2. GAP ANALYSIS PRE-CALCULATION (NEW)
-    const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set() };
+    // 2. GAP ANALYSIS PRE-CALCULATION
+    const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
+    // Gap Mode is active if the user has defined a stack AND a package is selected
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
 
-    // 3. Filter Nodes (Ghost Mode Logic: Keep ALL relevant nodes in data for context)
+    // 3. Filter Nodes (Ghost Mode Logic)
+    // If in Gap Mode, we show Outliers (Legacy tools) even if they aren't in the selected package.
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
         
-        // STANDARD PACKAGE FILTERING + GHOST MODE EXCEPTION
-        const inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.owned.has(d.id));
+        // STANDARD PACKAGE FILTERING + OUTLIER EXCEPTION
+        const inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         
         return inCategory && inPersona && inPackage;
     });
@@ -243,17 +235,15 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
-            // TRANSITION START
             update.transition().duration(500)
-            
             // --- GHOST MODE: OPACITY ---
             .style("opacity", d => {
                 if (isGapMode) {
-                    if (gapAnalysis.owned.has(d.id)) return 1.0; // Owned
-                    if (gapAnalysis.gap.has(d.id)) return 1.0;   // Upsell Gap
+                    if (gapAnalysis.matched.has(d.id)) return 1.0; // Safe
+                    if (gapAnalysis.gap.has(d.id)) return 1.0;     // Upsell
+                    if (gapAnalysis.outlier.has(d.id)) return 1.0; // Legacy
                     return 0.15; // Ghost (Noise)
                 }
-                
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
                     if (filters.procoreLedTools.has(d.id)) return 1.0;
@@ -261,12 +251,12 @@ function updateGraph(isFilterChange = true) {
                 }
                 return 1.0;
             })
-
             // --- GHOST MODE: GLOW & SHADOW ---
             .style("filter", d => {
                 if (isGapMode) {
-                    if (gapAnalysis.owned.has(d.id)) return "drop-shadow(0 0 3px rgba(34, 197, 94, 0.5))"; // Green
-                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; // Orange
+                    if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 3px rgba(34, 197, 94, 0.5))"; // Green
+                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; // Orange Pulse
+                    if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 3px rgba(147, 51, 234, 0.6))"; // Purple
                 }
                 if (filters.showProcoreLed) {
                     if (filters.procoreLedTools.has(d.id)) return "drop-shadow(0 0 5px rgba(243, 108, 35, 0.5))"; 
@@ -280,14 +270,18 @@ function updateGraph(isFilterChange = true) {
                 .transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.owned.has(d.id)) return "#22c55e"; // Green Border
+                        if (gapAnalysis.matched.has(d.id)) return "#22c55e"; // Green Border
                         if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Orange Border
+                        if (gapAnalysis.outlier.has(d.id)) return "#9333ea"; // Purple Border
                     }
                     return "#ffffff"; 
                 })
                 .style("stroke-width", d => {
-                    if (isGapMode && gapAnalysis.gap.has(d.id)) return 4; 
-                    if (isGapMode && gapAnalysis.owned.has(d.id)) return 3; 
+                    if (isGapMode) {
+                        if (gapAnalysis.gap.has(d.id)) return 4; 
+                        if (gapAnalysis.matched.has(d.id)) return 3;
+                        if (gapAnalysis.outlier.has(d.id)) return 3;
+                    }
                     return 2;
                 });
 
@@ -330,7 +324,7 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isGapMode) return 0.15; // Dim links in Gap Mode
+        if (isGapMode) return 0.15; 
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
@@ -366,7 +360,7 @@ function addEmojiBadge(group, emoji, x, y, tooltipText) {
 window.addEventListener('resize', () => { 
     app.width = document.getElementById('graph-container').clientWidth; 
     app.height = document.getElementById('graph-container').clientHeight;
-    setHexFoci(); // Recalculate foci centers on resize
+    setHexFoci(); 
     if(app.simulation) app.simulation.alpha(0.5).restart();
 });
 
