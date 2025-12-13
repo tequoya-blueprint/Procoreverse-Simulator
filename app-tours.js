@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 100 (MASTER: SOP V2 + ROBUST BUILDER + BRANDING)
+// VERSION: 300 (MASTER RESET: FUTURE FLOW VISUALS & SOP V2)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -68,9 +68,11 @@ function initializeTourControls() {
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
+    
     aiModalOverlay.on("click", function(e) { 
         if (e.target === this) aiModalOverlay.classed("visible", false); 
     });
+    
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 
     // Manual Builder Trigger
@@ -142,13 +144,13 @@ function saveCurrentTour() {
 let manualBuilderSteps = [];
 
 function startManualBuilder() {
-    stopTour(false); // Don't full reset, just stop current playback
+    stopTour(false); 
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
     // Initial Visual State: Dim Links, Show All Nodes
     app.node.transition().duration(500).style("opacity", 1);
-    app.link.transition().duration(500).style("opacity", 0.1); 
+    app.link.transition().duration(500).style("opacity", 0.05); 
 
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
@@ -157,7 +159,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Click tools in order to record path. Click again to remove.</p>
+            <p class="text-sm italic text-gray-300">Select a tool to start. BLUE dashed lines show valid next steps.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -169,20 +171,22 @@ function startManualBuilder() {
     d3.select("#finish-manual-btn").on("click", finishManualBuilder);
     
     if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
-    if(typeof showToast === 'function') showToast("Recording started. Click nodes to build your process.");
+    if(typeof showToast === 'function') showToast("Recording started. Select the first tool.");
 }
 
 function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
-        // Remove if exists
+        // Remove step
         manualBuilderSteps.splice(existingIndex, 1);
         if(typeof showToast === 'function') showToast(`Removed step: ${d.id}`);
     } else {
-        // Add if new
-        manualBuilderSteps.push({ nodeId: d.id, info: `Step ${manualBuilderSteps.length + 1}: ${d.id}` });
-        // Pulse the node visually
+        // Add step
+        const desc = d.description || `Standard workflow step involving the ${d.id} tool.`;
+        manualBuilderSteps.push({ nodeId: d.id, info: desc });
+        
+        // Pulse animation
         d3.select(event.target)
             .transition().duration(100).attr("r", 30)
             .transition().duration(100).attr("r", 25);
@@ -196,38 +200,102 @@ function updateManualBuilderVisuals() {
 
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
     
-    // 1. Highlight Nodes (Keep them bright, dim others)
-    app.node.transition().duration(200)
-        .style("opacity", n => activeIds.has(n.id) ? 1 : 0.3)
-        .style("filter", n => activeIds.has(n.id) ? "drop-shadow(0 0 5px #F36C23)" : null);
-
-    // 2. Draw Temporary Path
-    const pathLinks = new Set();
+    // 1. Identify Path Links (History)
+    const pathLinkKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
         const v = manualBuilderSteps[i+1].nodeId;
-        pathLinks.add(`${u}-${v}`);
-        pathLinks.add(`${v}-${u}`);
+        pathLinkKeys.add(`${u}-${v}`); 
+        pathLinkKeys.add(`${v}-${u}`); // Allow bidirectional highlight for history
     }
 
+    // 2. Identify Candidate Links (Future Outgoing)
+    // CRITICAL: Only Highlight lines flowing AWAY from the last selected node
+    const candidateLinkKeys = new Set();
+    const candidateNodeIds = new Set();
+    
+    if (manualBuilderSteps.length > 0) {
+        const lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
+        
+        if (app.simulation) {
+            app.simulation.force("link").links().forEach(l => {
+                const s = l.source.id || l.source;
+                const t = l.target.id || l.target;
+                
+                // Direction Check: Source must be the last node clicked
+                if (s === lastNodeId && !activeIds.has(t)) {
+                    candidateLinkKeys.add(`${s}-${t}`);
+                    candidateNodeIds.add(t);
+                }
+            });
+        }
+    }
+
+    // --- NODE UPDATES ---
+    app.node.transition().duration(200)
+        .style("opacity", n => {
+            if (activeIds.has(n.id)) return 1.0;            // Active Path
+            if (candidateNodeIds.has(n.id)) return 0.9;     // Possible Next Step (High Vis)
+            return manualBuilderSteps.length === 0 ? 1 : 0.15; // Dim others
+        })
+        .style("filter", n => {
+            if (activeIds.has(n.id)) return "drop-shadow(0 0 5px #F36C23)"; // Orange Glow (Path)
+            if (candidateNodeIds.has(n.id)) return "drop-shadow(0 0 4px #2563EB)"; // Blue Glow (Next)
+            return null;
+        });
+
+    // --- LINK UPDATES ---
     app.link.transition().duration(200)
         .style("stroke-opacity", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
-            const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            return (pathLinks.has(key) || pathLinks.has(rKey)) ? 1 : 0.05;
+            const dirKey = `${s}-${t}`;
+            
+            if (pathLinkKeys.has(dirKey)) return 1.0;       // Path
+            if (candidateLinkKeys.has(dirKey)) return 0.9;  // Candidate (High Vis)
+            return 0.05;                                    // Irrelevant
         })
         .attr("stroke", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
-            const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            return (pathLinks.has(key) || pathLinks.has(rKey)) ? "var(--procore-orange)" : "#a0a0a0";
+            const dirKey = `${s}-${t}`;
+            
+            if (pathLinkKeys.has(dirKey)) return "var(--procore-orange)"; // History = Orange
+            if (candidateLinkKeys.has(dirKey)) return "#2563EB";          // Future = Blue
+            return "#a0a0a0";
         })
-        .attr("stroke-width", l => {
+        .style("stroke-width", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
-            const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            return (pathLinks.has(key) || pathLinks.has(rKey)) ? 3 : 1;
+            const dirKey = `${s}-${t}`;
+            
+            if (pathLinkKeys.has(dirKey)) return 3;
+            if (candidateLinkKeys.has(dirKey)) return 2;
+            return 1;
+        })
+        .attr("stroke-dasharray", l => {
+             const s = l.source.id || l.source;
+             const t = l.target.id || l.target;
+             const dirKey = `${s}-${t}`;
+             
+             // Dashed lines for Candidates ("Ghost Lines")
+             if (candidateLinkKeys.has(dirKey) && !pathLinkKeys.has(dirKey)) return "4, 2";
+             
+             // Standard lines for established path
+             return "none";
+        })
+        .attr("marker-end", l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            const dirKey = `${s}-${t}`;
+            
+            // Show arrow for both path and candidates to indicate flow
+            if (pathLinkKeys.has(dirKey)) return `url(#arrow-highlighted)`;
+            
+            if (candidateLinkKeys.has(dirKey)) {
+                return `url(#arrow-candidate)`; 
+            }
+            return null;
         });
 }
 
@@ -243,7 +311,9 @@ function finishManualBuilder() {
     
     app.currentTour = newTour;
     saveCurrentTour(); 
-    previewTour(newTour); 
+    
+    // Force immediate preview to show the export button
+    setTimeout(() => previewTour(newTour), 100);
 }
 
 // --- PREVIEW & RUN LOGIC ---
@@ -256,12 +326,10 @@ function previewTour(tourData) {
     // Highlight the path
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     const tourLinkKeys = new Set();
-    
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
         const v = tourData.steps[i+1].nodeId;
-        tourLinkKeys.add(`${u}-${v}`); 
-        tourLinkKeys.add(`${v}-${u}`);
+        tourLinkKeys.add(`${u}-${v}`); tourLinkKeys.add(`${v}-${u}`);
     }
 
     app.node.transition().duration(500).style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
@@ -307,7 +375,12 @@ function previewTour(tourData) {
 
     d3.select("#start-tour-btn").on("click", startTour);
     d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
-    d3.select("#export-sop-btn").on("click", generateSOP); 
+    
+    // BIND SOP CLICK EVENT
+    d3.select("#export-sop-btn").on("click", function() {
+        console.log("Generating SOP for:", app.currentTour.name);
+        generateSOP();
+    });
     
     if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     resizeTourAccordion();
@@ -315,16 +388,18 @@ function previewTour(tourData) {
 
 // --- SOP GENERATOR V2: SUPPORT DOCS & SMART BRANDING ---
 function generateSOP() {
-    if (!app.currentTour) return;
+    if (!app.currentTour) {
+        alert("No active process to export.");
+        return;
+    }
     
-    // 1. Capture Branding Info
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
     
     // Logic: Use input if provided, otherwise fallback to Procore text/logo
     const logoHtml = (logoInput && logoInput.trim() !== "") 
         ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
-        : `<div class="logo">PROCORE</div>`;
+        : `<div class="logo" style="font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px;">PROCORE</div>`;
     
     const tour = app.currentTour;
     const date = new Date().toLocaleDateString();
@@ -332,22 +407,20 @@ function generateSOP() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) { alert("Please allow popups to download the SOP."); return; }
 
-    // 2. Build Steps with Support References
     let stepsHtml = "";
     tour.steps.forEach((step, index) => {
-        // LOOKUP NODE DATA to find Support Link
         const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
         const supportLink = (nodeData && nodeData.supportDocUrl) 
-            ? `<div class="step-link"><a href="${nodeData.supportDocUrl}" target="_blank">View Standard Procedure <i class="fas fa-external-link-alt"></i></a></div>` 
+            ? `<div class="step-link" style="margin-left: 34px; font-size: 12px;"><a href="${nodeData.supportDocUrl}" target="_blank" style="color: #2563EB; text-decoration: none;">View Standard Procedure <i class="fas fa-external-link-alt"></i></a></div>` 
             : "";
 
         stepsHtml += `
-            <div class="step">
-                <div class="step-header">
-                    <span class="step-num">${index + 1}</span>
-                    <span class="step-tool">${step.nodeId}</span>
+            <div class="step" style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #F36C23; border-radius: 4px;">
+                <div class="step-header" style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <span class="step-num" style="background: #F36C23; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px;">${index + 1}</span>
+                    <span class="step-tool" style="font-weight: 700; font-size: 16px; color: #333;">${step.nodeId}</span>
                 </div>
-                <div class="step-desc">${step.info || "Execute standard workflow procedure for this tool."}</div>
+                <div class="step-desc" style="font-size: 14px; color: #555; margin-left: 34px; margin-bottom: 8px;">${step.info}</div>
                 ${supportLink}
             </div>
         `;
@@ -358,23 +431,15 @@ function generateSOP() {
     <html>
     <head>
         <title>SOP: ${tour.name}</title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
-            body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; max-width: 800px; margin: 0 auto; }
+            body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; line-height: 1.6; max-width: 800px; margin: 0 auto; }
             .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
             .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
             .doc-title { font-size: 28px; font-weight: 700; margin-top: 5px; color: #111; }
             .client-name { font-size: 14px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
             .section { margin-bottom: 30px; }
             .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
-            .step { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #F36C23; border-radius: 4px; }
-            .step-header { display: flex; align-items: center; margin-bottom: 8px; }
-            .step-num { background: #F36C23; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px; }
-            .step-tool { font-weight: 700; font-size: 16px; color: #333; }
-            .step-desc { font-size: 14px; color: #555; margin-left: 34px; margin-bottom: 8px; }
-            .step-link { margin-left: 34px; font-size: 12px; }
-            .step-link a { color: #2563EB; text-decoration: none; font-weight: 500; }
-            .step-link a:hover { text-decoration: underline; }
             .footer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
@@ -389,21 +454,25 @@ function generateSOP() {
                 <div style="font-size: 12px; color: #888;">Generated ${date}</div>
             </div>
         </div>
+        
         <div class="section">
             <div class="section-title">1. Purpose & Scope</div>
             <p>This Standard Operating Procedure (SOP) outlines the required workflow for the <strong>${tour.name.replace(/^[✨📝]\s*/, '')}</strong> process using the Procore Platform. It is intended to standardize data entry and ensure compliance across the <strong>${clientName}</strong> project portfolio.</p>
         </div>
+
         <div class="section">
             <div class="section-title">2. Procedure Steps</div>
             ${stepsHtml}
         </div>
+
         <div class="section">
             <div class="section-title">3. Approval</div>
             <div style="display: flex; justify-content: space-between; margin-top: 40px;">
-                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px;">Process Owner Signature</div>
-                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px;">Date</div>
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px; color: #888;">Process Owner Signature</div>
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px; color: #888;">Date</div>
             </div>
         </div>
+
         <div class="footer">
             Generated by Procoreverse Simulator. Confidential and Proprietary.
         </div>
@@ -441,6 +510,7 @@ function runTourStep() {
     const step = app.currentTour.steps[app.currentStep];
     const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
     
+    // UI Updates
     d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
@@ -451,27 +521,35 @@ function runTourStep() {
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
         
+        // Define Active and Past Sets
         const activeNodeId = step.nodeId;
         const pastNodeIds = new Set(app.currentTour.steps.slice(0, app.currentStep).map(s => s.nodeId));
         const allTourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
         
+        // --- POLISHED NODE OPACITY LOGIC ---
         app.node.transition().duration(400).style("opacity", d => {
-            if (d.id === activeNodeId) return 1;     
-            if (pastNodeIds.has(d.id)) return 0.4;   
-            if (allTourNodeIds.has(d.id)) return 0.1;
-            return 0.02;                             
+            if (d.id === activeNodeId) return 1;     // Active: Full Opacity
+            if (pastNodeIds.has(d.id)) return 0.4;   // Past: Dimmed but visible
+            if (allTourNodeIds.has(d.id)) return 0.1;// Future: Faint ghost
+            return 0.02;                             // Unrelated: Almost invisible
         });
         
+        // --- POLISHED LINK LOGIC ---
         let prevNodeId = app.currentStep > 0 ? app.currentTour.steps[app.currentStep - 1].nodeId : null;
         
         app.link.transition().duration(400)
             .style("stroke-opacity", l => {
                 const s = l.source.id || l.source;
                 const t = l.target.id || l.target;
+                
+                // Active Link (Previous -> Current)
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 if (isActiveLink) return 1;
+                
+                // Check if link is part of the tour history
                 const isHistoryLink = pastNodeIds.has(s) && pastNodeIds.has(t); 
                 if (isHistoryLink) return 0.2;
+                
                 return 0.01;
             })
             .attr("stroke", l => {
