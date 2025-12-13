@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 160 (FIXED: PROCESS BUILDER COMPATIBILITY)
+// VERSION: 300 (MASTER RESET: STATE PROTECTION & BRANDING)
 
 const app = {
     simulation: null,
@@ -46,15 +46,16 @@ function setupCategories() {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. MANUAL PROCESS BUILDER (Priority 1)
+    // 1. MANUAL PROCESS BUILDER (Priority 1: Absolute Override)
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
         return; 
     }
 
-    // 2. STACK BUILDER (Priority 2)
+    // 2. CUSTOMER STACK BUILDER (Priority 2)
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
+        // Force a visual refresh for the stack builder specifically
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
         return; 
     }
@@ -155,6 +156,8 @@ function setupMarkers() {
         });
     }
     defs.append("marker").attr("id", "arrow-highlighted").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "var(--procore-orange)");
+    // Add Blue Marker for Candidates
+    defs.append("marker").attr("id", "arrow-candidate").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#2563EB");
 }
 
 function populateLegend() {
@@ -191,7 +194,9 @@ function ticked() {
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour) stopTour();
     
-    // CRITICAL FIX: If Manual Builder is active, DO NOT re-render graph styles.
+    // --- CRITICAL GUARD CLAUSE ---
+    // If the Manual Builder is active, we MUST NOT update the graph visuals based on
+    // standard filtering logic. The builder has exclusive control over the visuals.
     if (app.interactionState === 'manual_building') return;
 
     // 1. Retrieve Filters & Data
@@ -208,14 +213,14 @@ function updateGraph(isFilterChange = true) {
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        let inPackage = true;
         
+        let inPackage = true;
         if (isBuilderMode) {
             inPackage = true; 
         } else {
-            // SHOW: Package Tools OR Outliers (Legacy tools owned by customer)
             inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         }
+        
         return inCategory && inPersona && inPackage;
     });
 
@@ -242,7 +247,7 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
-            // PRIORITY 1: BUILDER MODE VISUALS
+            // PRIORITY 1: STACK BUILDER VISUALS
             if (isBuilderMode) {
                 update.transition().duration(500)
                     .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
@@ -256,7 +261,7 @@ function updateGraph(isFilterChange = true) {
                 return update;
             }
 
-            // PRIORITY 2: GAP ANALYSIS VISUALS (BRANDED COLORS)
+            // PRIORITY 2: GAP ANALYSIS VISUALS
             update.transition().duration(500)
             .style("opacity", d => {
                 if (isGapMode) {
