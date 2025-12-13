@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 60 (VISUAL POLISH + AI SIMULATION) - UNCOMPRESSED
+// VERSION: 80 (FIXED: BUILDER HIGHLIGHTS & SOP GENERATOR)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -53,12 +53,15 @@ function initializeTourControls() {
 
     // Manual Builder Trigger
     const container = d3.select("#tour-container");
-    container.append("button")
-        .attr("id", "manual-workflow-builder-btn")
-        .attr("class", "w-full mt-2 btn-indigo bg-gray-600 hover:bg-gray-700") 
-        .style("display", "none") 
-        .html('<i class="fas fa-hand-pointer mr-2"></i> Build Custom Process')
-        .on("click", startManualBuilder);
+    // Ensure we don't duplicate the button
+    if (container.select("#manual-workflow-builder-btn").empty()) {
+        container.append("button")
+            .attr("id", "manual-workflow-builder-btn")
+            .attr("class", "w-full mt-2 btn-indigo bg-gray-600 hover:bg-gray-700") 
+            .style("display", "none") 
+            .html('<i class="fas fa-hand-pointer mr-2"></i> Build Custom Process')
+            .on("click", startManualBuilder);
+    }
 }
 
 // --- PERSISTENCE ---
@@ -82,7 +85,7 @@ function loadSavedTours() {
 function saveCurrentTour() {
     if (!app.currentTour) return;
     let tourId = app.currentTour.id;
-    if (!tourId) {
+    if (!tourId || tourId.startsWith('custom_')) {
         tourId = `custom_tour_${Date.now()}`;
         app.currentTour.id = tourId;
     }
@@ -109,13 +112,13 @@ function saveCurrentTour() {
 let manualBuilderSteps = [];
 
 function startManualBuilder() {
-    stopTour(); 
+    stopTour(false); // Don't full reset, just stop current
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
     // Initial Visual State: Dim Links, Show All Nodes
     app.node.transition().duration(500).style("opacity", 1);
-    app.link.transition().duration(500).style("stroke-opacity", 0.1); 
+    app.link.transition().duration(500).style("opacity", 0.1); 
 
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
@@ -124,28 +127,34 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Click a tool to Add. Click again to Remove.</p>
+            <p class="text-sm italic text-gray-300">Click tools in order. Click again to remove.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
-            <button id="finish-manual-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded disabled:opacity-50" disabled>Finish & Save</button>
+            <button id="finish-manual-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded disabled:opacity-50" disabled>Finish & Preview</button>
         </div>
     `);
 
-    d3.select("#cancel-manual-btn").on("click", stopTour);
+    d3.select("#cancel-manual-btn").on("click", () => stopTour(true));
     d3.select("#finish-manual-btn").on("click", finishManualBuilder);
     
     if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
-    if(typeof showToast === 'function') showToast("Recording started.");
+    if(typeof showToast === 'function') showToast("Recording started. Click tools to build path.");
 }
 
 function handleManualNodeClick(d) {
+    // Toggle Logic
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
+    
     if (existingIndex !== -1) {
+        // Remove if exists
         manualBuilderSteps.splice(existingIndex, 1);
-        if(typeof showToast === 'function') showToast(`Removed ${d.id}`);
+        if(typeof showToast === 'function') showToast(`Removed step: ${d.id}`);
     } else {
-        manualBuilderSteps.push({ nodeId: d.id, info: `Maps to ${d.id} tool.` });
+        // Add if new
+        manualBuilderSteps.push({ nodeId: d.id, info: `Step ${manualBuilderSteps.length + 1}: ${d.id}` });
+        // Pulse the node visually
+        d3.select(event.target).transition().duration(100).attr("r", 30).transition().duration(100).attr("r", 25);
     }
     updateManualBuilderVisuals();
 }
@@ -155,67 +164,40 @@ function updateManualBuilderVisuals() {
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
 
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
-    const activeLinkKeys = new Set();
     
+    // 1. Highlight Nodes (Keep them bright, dim others)
+    app.node.transition().duration(200)
+        .style("opacity", n => activeIds.has(n.id) ? 1 : 0.3)
+        .style("filter", n => activeIds.has(n.id) ? "drop-shadow(0 0 5px #F36C23)" : null);
+
+    // 2. Draw Temporary Path
+    // We create a temporary path set to visualize the flow
+    const pathLinks = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
         const v = manualBuilderSteps[i+1].nodeId;
-        activeLinkKeys.add(`${u}-${v}`); 
-        activeLinkKeys.add(`${v}-${u}`);
+        pathLinks.add(`${u}-${v}`);
+        pathLinks.add(`${v}-${u}`);
     }
-
-    // Directional Candidates
-    const candidateIds = new Set();
-    const candidateLinkKeys = new Set();
-    
-    if (manualBuilderSteps.length > 0) {
-        const lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
-        app.simulation.force("link").links().forEach(l => {
-            const s = l.source.id || l.source;
-            const t = l.target.id || l.target;
-            // Highlight downstream targets only
-            if (s === lastNodeId && !activeIds.has(t)) {
-                candidateIds.add(t);
-                candidateLinkKeys.add(`${s}-${t}`);
-            }
-        });
-    } else {
-        if(app.node) app.node.each(d => candidateIds.add(d.id));
-    }
-
-    app.node.transition().duration(200).style("opacity", n => {
-        if (activeIds.has(n.id)) return 1;
-        if (candidateIds.has(n.id)) return 0.6;
-        return 0.1;
-    });
 
     app.link.transition().duration(200)
         .style("stroke-opacity", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return 1;
-            if (candidateLinkKeys.has(key) || candidateLinkKeys.has(rKey)) return 0.3;
-            return 0.05;
+            return (pathLinks.has(key) || pathLinks.has(rKey)) ? 1 : 0.05;
         })
         .attr("stroke", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return "var(--procore-orange)";
-            return "#a0a0a0";
+            return (pathLinks.has(key) || pathLinks.has(rKey)) ? "var(--procore-orange)" : "#a0a0a0";
         })
-        .attr("marker-end", l => {
+        .attr("stroke-width", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            if (activeLinkKeys.has(key) || activeLinkKeys.has(rKey)) return `url(#arrow-highlighted)`;
-            // Show candidate arrows
-            if (candidateLinkKeys.has(key) || candidateLinkKeys.has(rKey)) {
-                 const legend = legendData.find(leg => leg.type_id === l.type);
-                 return (legend && legend.visual_style.includes("one arrow")) ? `url(#arrow-${l.type})` : null;
-            }
-            return null;
+            return (pathLinks.has(key) || pathLinks.has(rKey)) ? 3 : 1;
         });
 }
 
@@ -235,8 +217,8 @@ function previewTour(tourData) {
     app.currentStep = -1; 
     app.interactionState = 'tour_preview';
     
+    // Highlight the path
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
-    
     const tourLinkKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
@@ -257,13 +239,6 @@ function previewTour(tourData) {
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
             return (tourLinkKeys.has(key) || tourLinkKeys.has(rKey)) ? "var(--procore-orange)" : "#a0a0a0";
-        })
-        .attr("marker-end", l => {
-             const s = l.source.id || l.source;
-             const t = l.target.id || l.target;
-             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-             if (tourLinkKeys.has(key) || tourLinkKeys.has(rKey)) return `url(#arrow-highlighted)`;
-             return null;
         });
 
     let isSaved = false;
@@ -280,13 +255,100 @@ function previewTour(tourData) {
                 <button class="save-tour-btn flex-1 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-200 text-xs font-bold py-2 px-2 rounded shadow-sm transition flex items-center justify-center" title="Save to Browser"><i class="fas fa-save mr-2"></i> Save</button>
                 <button id="start-tour-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-2 rounded shadow-md transition flex items-center justify-center">Start <i class="fas fa-play ml-2"></i></button>
             </div>
+            <button id="export-sop-btn" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold py-2 rounded border border-gray-300 transition flex items-center justify-center mt-2"><i class="fas fa-file-alt mr-2"></i> Generate SOP Document</button>
         </div>
     `);
 
     d3.select("#start-tour-btn").on("click", startTour);
     d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
+    d3.select("#export-sop-btn").on("click", generateSOP); // THIS IS THE SOP GENERATOR TRIGGER
+    
     if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     resizeTourAccordion();
+}
+
+// --- SOP GENERATOR (NEW PHASE 4) ---
+function generateSOP() {
+    if (!app.currentTour) return;
+    
+    const tour = app.currentTour;
+    const date = new Date().toLocaleDateString();
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) { alert("Please allow popups to download the SOP."); return; }
+
+    let stepsHtml = "";
+    tour.steps.forEach((step, index) => {
+        stepsHtml += `
+            <div class="step">
+                <div class="step-header">
+                    <span class="step-num">${index + 1}</span>
+                    <span class="step-tool">${step.nodeId}</span>
+                </div>
+                <div class="step-desc">${step.info || "Execute standard workflow procedure for this tool."}</div>
+            </div>
+        `;
+    });
+
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Standard Operating Procedure: ${tour.name}</title>
+        <style>
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; max-width: 800px; margin: 0 auto; }
+            .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; }
+            .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
+            .doc-title { font-size: 28px; font-weight: 700; margin-top: 10px; margin-bottom: 5px; color: #111; }
+            .meta { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+            
+            .section { margin-bottom: 30px; }
+            .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
+            
+            .step { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #F36C23; border-radius: 4px; }
+            .step-header { display: flex; align-items: center; margin-bottom: 8px; }
+            .step-num { background: #F36C23; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px; }
+            .step-tool { font-weight: 700; font-size: 16px; color: #333; }
+            .step-desc { font-size: 14px; color: #555; margin-left: 34px; }
+            
+            .footer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="logo">PROCORE</div>
+            <div class="doc-title">${tour.name.replace(/^[✨📝]\s*/, '')}</div>
+            <div class="meta">Standard Operating Procedure • Generated ${date}</div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">1. Purpose & Scope</div>
+            <p>This document outlines the standard workflow for the <strong>${tour.name.replace(/^[✨📝]\s*/, '')}</strong> process using the Procore Platform. It is intended for Project Managers and Administrators to ensure data consistency and compliance.</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">2. Procedure Steps</div>
+            ${stepsHtml}
+        </div>
+
+        <div class="section">
+            <div class="section-title">3. Approval</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 40px;">
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px;">Process Owner Signature</div>
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px;">Date</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Generated by Procoreverse Simulator. Confidential and Proprietary.
+        </div>
+        <script>window.print();</script>
+    </body>
+    </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
 }
 
 function startTour() {
