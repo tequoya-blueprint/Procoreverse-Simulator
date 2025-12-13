@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 120 (GAP ANALYSIS & STACK BUILDER ADDED)
+// VERSION: 135 (GAP ANALYSIS V2 - FULL RESTORATION)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -92,6 +92,9 @@ const SOW_QUESTIONS = [
 function initializeControls() {
     if (typeof app !== 'undefined') {
         app.customScope = new Set();
+        // Ensure state object exists for Gap Analysis
+        if (!app.state) app.state = {};
+        if (!app.state.myStack) app.state.myStack = new Set();
     }
     if (typeof packagingData === 'undefined') {
         console.warn("Procoreverse: Packaging data missing.");
@@ -159,6 +162,21 @@ function initializeControls() {
         const el = document.getElementById(id);
         if(el) el.addEventListener('input', calculateScoping);
     });
+
+    // Initialize Stack Builder Button (Gap Analysis V2)
+    setTimeout(() => {
+        const existingBtn = d3.select("#stack-builder-btn");
+        if (existingBtn.empty()) {
+             const container = d3.select("#packaging-container"); 
+             if (!container.empty()) {
+                container.insert("button", ":first-child")
+                    .attr("id", "stack-builder-btn")
+                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
+                    .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
+                    .on("click", toggleStackBuilderMode);
+             }
+        }
+    }, 500);
 }
 
 // --- CUSTOM SCOPE MANAGER ---
@@ -174,6 +192,104 @@ function toggleCustomScopeItem(nodeId) {
     if (typeof updateGraph === 'function') updateGraph(false); 
     calculateScoping();
 }
+
+// --- GAP ANALYSIS V2 MANAGER ---
+// Updated to handle "Outlier" logic and 4-state visualization
+
+function toggleStackBuilderMode() {
+    // Toggle state
+    app.state.isBuildingStack = !app.state.isBuildingStack;
+    
+    let btn = d3.select("#stack-builder-btn");
+    
+    if (app.state.isBuildingStack) {
+        // --- ACTIVATE BUILDER MODE ---
+        app.interactionState = 'building_stack';
+        
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
+           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
+           .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
+        
+        if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
+        
+        // Visual: Dim everything slightly to focus on selection
+        d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
+        
+        // Highlight already selected
+        highlightOwnedNodes();
+        
+    } else {
+        // --- DEACTIVATE BUILDER MODE ---
+        app.interactionState = 'explore';
+        
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
+           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
+           .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
+        
+        // Return to normal view with "Gap Analysis" active if package selected
+        if (typeof updateGraph === 'function') updateGraph(true);
+        
+        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
+            showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
+        }
+    }
+}
+
+function toggleStackItem(d) {
+    if (!app.state.myStack) app.state.myStack = new Set();
+    
+    if (app.state.myStack.has(d.id)) {
+        app.state.myStack.delete(d.id);
+    } else {
+        app.state.myStack.add(d.id);
+    }
+    highlightOwnedNodes();
+}
+
+function highlightOwnedNodes() {
+    // Visual feedback during "Building" phase
+    if (!app.node) return;
+    
+    app.node.transition().duration(200)
+        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) // Dim unowned
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") // Green Glow
+        .select("path")
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") // Green Stroke
+        .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
+}
+
+// UPDATED LOGIC: Calculates Gap, Matched, and OUTLIERS
+function getGapAnalysis() {
+    const filters = getActiveFilters(); 
+    const targetPackageTools = filters.packageTools || new Set();
+    
+    const owned = app.state.myStack || new Set();
+    
+    const gap = new Set();      // In Package, NOT Owned (Upsell)
+    const matched = new Set();  // In Package, AND Owned (Safe)
+    const outlier = new Set();  // NOT in Package, BUT Owned (Legacy/Extra)
+    
+    if (targetPackageTools.size > 0) {
+        targetPackageTools.forEach(toolId => {
+            if (owned.has(toolId)) {
+                matched.add(toolId);
+            } else {
+                gap.add(toolId);
+            }
+        });
+        
+        // Calculate Outliers
+        owned.forEach(toolId => {
+            if (!targetPackageTools.has(toolId)) {
+                outlier.add(toolId);
+            }
+        });
+    }
+    
+    return { owned, gap, matched, outlier, target: targetPackageTools };
+}
+
+// --- STANDARD FILTER FUNCTIONS ---
 
 function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
@@ -703,6 +819,10 @@ function clearPackageDetails() {
     d3.select("#package-services-container").classed('hidden', true);
     if (app && app.customScope) app.customScope.clear();
     d3.selectAll(".sow-question").property("checked", false);
+    
+    // Reset Stack if user changes region entirely
+    // app.state.myStack = new Set(); 
+    
     calculateScoping();
 }
 
@@ -876,8 +996,10 @@ function toggleStackBuilderMode() {
         
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
         
-        // Visual: Dim everything to focus
+        // Visual: Dim everything slightly to focus on selection
         d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
+        
+        // Highlight already selected
         highlightOwnedNodes();
         
     } else {
@@ -888,10 +1010,11 @@ function toggleStackBuilderMode() {
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
         
+        // Return to normal view with "Gap Analysis" active if package selected
         if (typeof updateGraph === 'function') updateGraph(true);
         
         if (app.state.myStack.size > 0 && typeof showToast === 'function') {
-            showToast("Stack Saved! Select a Package to see the Upsell Gap.", 3000);
+            showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
         }
     }
 }
@@ -900,22 +1023,25 @@ function toggleStackBuilderMode() {
 function toggleStackItem(d) {
     if (!app.state.myStack) app.state.myStack = new Set();
     
+    // Toggle logic: Add if missing, remove if present
     if (app.state.myStack.has(d.id)) {
         app.state.myStack.delete(d.id);
     } else {
         app.state.myStack.add(d.id);
     }
+    // Immediate visual feedback
     highlightOwnedNodes();
 }
 
 // 4. Visual Feedback Loop (Builder Mode Only)
 function highlightOwnedNodes() {
     if (!app.node) return;
+    
     app.node.transition().duration(200)
-        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") 
+        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) // Dim unowned
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") // Green Glow
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") 
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") // Green Stroke
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
@@ -925,18 +1051,29 @@ function getGapAnalysis() {
     const targetPackageTools = filters.packageTools || new Set();
     
     const owned = app.state.myStack || new Set();
-    const gap = new Set();
     
-    // Logic: Gap = Tools in Package MINUS Owned Tools
+    const gap = new Set();      // In Package, NOT Owned (Upsell)
+    const matched = new Set();  // In Package, AND Owned (Safe)
+    const outlier = new Set();  // NOT in Package, BUT Owned (Legacy/Extra)
+    
     if (targetPackageTools.size > 0) {
         targetPackageTools.forEach(toolId => {
-            if (!owned.has(toolId)) {
+            if (owned.has(toolId)) {
+                matched.add(toolId);
+            } else {
                 gap.add(toolId);
+            }
+        });
+        
+        // Calculate Outliers (Legacy tools)
+        owned.forEach(toolId => {
+            if (!targetPackageTools.has(toolId)) {
+                outlier.add(toolId);
             }
         });
     }
     
-    return { owned, gap, target: targetPackageTools };
+    return { owned, gap, matched, outlier, target: targetPackageTools };
 }
 
 // 6. Init Helper (Run once on load)
