@@ -1,6 +1,5 @@
 /* --- style.css --- */
-/* --- style.css --- */
-/* VERSION: 115 (FIXED PULSE MARGINS) */
+/* VERSION: 120 (DARKER LINEWORK) */
 
 :root {
     /* Core Procore Colors */
@@ -105,10 +104,11 @@ body {
     font-size: 13px;
 }
 
+/* UPDATED LINK STYLING: Darker & More Opaque */
 .link {
     fill: none;
-    stroke: #a0a0a0;
-    stroke-opacity: 0.6; 
+    stroke: #666666; /* Darker Grey */
+    stroke-opacity: 0.8; /* Higher Opacity */
     transition: stroke-opacity 0.4s ease, stroke 0.4s ease, stroke-width 0.4s ease;
     will-change: stroke-opacity, stroke, stroke-width;
 }
