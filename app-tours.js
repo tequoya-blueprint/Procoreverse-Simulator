@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 130 (FIXED: SOP GEN, VISIBLE LINES)
+// VERSION: 150 (FIXED: CANDIDATE HIGHLIGHTING & LINE VISIBILITY)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -115,10 +115,16 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // VISIBILITY FIX: Force lines to be visible (0.4) instead of hidden (0.1)
+    // VISIBILITY FIX: Reset graph to base state first
+    if (typeof updateGraph === 'function') updateGraph(false);
+
+    // Initial Visual State: Show lines clearly (0.3) so user can see structure
     setTimeout(() => {
         app.node.transition().duration(500).style("opacity", 1);
-        app.link.transition().duration(500).style("stroke-opacity", 0.4); 
+        app.link.transition().duration(500)
+            .style("stroke-opacity", 0.3) 
+            .attr("stroke", "#a0a0a0")
+            .attr("stroke-width", 1);
     }, 100);
 
     const controls = d3.select("#tour-controls");
@@ -128,7 +134,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Click tools in order. Click again to remove.</p>
+            <p class="text-sm italic text-gray-300">Click a tool to start. Valid next steps will highlight in blue.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -140,35 +146,73 @@ function startManualBuilder() {
     d3.select("#finish-manual-btn").on("click", finishManualBuilder);
     
     if(typeof resizeTourAccordion === 'function') resizeTourAccordion();
-    if(typeof showToast === 'function') showToast("Recording started. Click tools to build path.");
+    if(typeof showToast === 'function') showToast("Recording started. Select the first tool.");
 }
 
 function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
+        // Remove Step
         manualBuilderSteps.splice(existingIndex, 1);
         if(typeof showToast === 'function') showToast(`Removed step: ${d.id}`);
     } else {
-        // USE RICH DESCRIPTIONS FROM DATA
+        // Add Step
         const desc = d.description || `Standard workflow step involving the ${d.id} tool.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
-        
+        // Visual Pulse
         d3.select(event.target).transition().duration(100).attr("r", 30).transition().duration(100).attr("r", 25);
     }
     updateManualBuilderVisuals();
 }
 
+// FIX: CANDIDATE HIGHLIGHTING LOGIC
 function updateManualBuilderVisuals() {
     d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
 
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
     
-    app.node.transition().duration(200)
-        .style("opacity", n => activeIds.has(n.id) ? 1 : 0.3)
-        .style("filter", n => activeIds.has(n.id) ? "drop-shadow(0 0 5px #F36C23)" : null);
+    // Identify "Candidates" (Neighbors of the last selected node)
+    const candidateNodes = new Set();
+    const candidateLinks = new Set();
+    
+    if (manualBuilderSteps.length > 0) {
+        const lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
+        
+        // Find links connected to the last node
+        app.simulation.force("link").links().forEach(l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            
+            // If Source is LastNode -> Target is Candidate
+            if (s === lastNodeId && !activeIds.has(t)) {
+                candidateNodes.add(t);
+                candidateLinks.add(`${s}-${t}`);
+            }
+            // If Target is LastNode -> Source is Candidate (Bi-directional)
+            if (t === lastNodeId && !activeIds.has(s)) {
+                candidateNodes.add(s);
+                candidateLinks.add(`${s}-${t}`);
+                candidateLinks.add(`${t}-${s}`);
+            }
+        });
+    }
 
+    // 1. UPDATE NODES
+    app.node.transition().duration(200)
+        .style("opacity", n => {
+            if (activeIds.has(n.id)) return 1.0; // Selected = Bright
+            if (candidateNodes.has(n.id)) return 0.9; // Candidate = Visible
+            return 0.3; // Background = Dim but visible
+        })
+        .style("filter", n => {
+            if (activeIds.has(n.id)) return "drop-shadow(0 0 6px #F36C23)"; // Orange Glow
+            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 5px #3B82F6)"; // Blue Glow (Next Step Hint)
+            return null;
+        });
+
+    // 2. UPDATE LINKS
     const pathLinks = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -182,20 +226,28 @@ function updateManualBuilderVisuals() {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            // VISIBILITY FIX: Make non-path links 0.2 (visible) instead of 0.05
-            return (pathLinks.has(key) || pathLinks.has(rKey)) ? 1 : 0.2;
+            
+            if (pathLinks.has(key) || pathLinks.has(rKey)) return 1.0; // Path = Solid
+            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return 0.6; // Candidate = Visible hint
+            return 0.15; // Background = Faint but there
         })
         .attr("stroke", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            return (pathLinks.has(key) || pathLinks.has(rKey)) ? "var(--procore-orange)" : "#a0a0a0";
+            
+            if (pathLinks.has(key) || pathLinks.has(rKey)) return "var(--procore-orange)"; // Path
+            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return "#3B82F6"; // Candidate (Blue)
+            return "#a0a0a0"; // Default
         })
         .attr("stroke-width", l => {
             const s = l.source.id || l.source;
             const t = l.target.id || l.target;
             const key = `${s}-${t}`; const rKey = `${t}-${s}`;
-            return (pathLinks.has(key) || pathLinks.has(rKey)) ? 3 : 1;
+            
+            if (pathLinks.has(key) || pathLinks.has(rKey)) return 3;
+            if (candidateLinks.has(key) || candidateLinks.has(rKey)) return 2;
+            return 1;
         });
 }
 
@@ -267,7 +319,12 @@ function previewTour(tourData) {
 
     d3.select("#start-tour-btn").on("click", startTour);
     d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
-    d3.select("#export-sop-btn").on("click", generateSOP); 
+    
+    // BIND SOP CLICK EVENT
+    d3.select("#export-sop-btn").on("click", function() {
+        console.log("Generating SOP for:", app.currentTour.name);
+        generateSOP();
+    });
     
     if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     resizeTourAccordion();
@@ -275,7 +332,10 @@ function previewTour(tourData) {
 
 // --- SOP GENERATOR V2 ---
 function generateSOP() {
-    if (!app.currentTour) return;
+    if (!app.currentTour) {
+        alert("No active process to export.");
+        return;
+    }
     
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
