@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 120 (FIXED: BUILDER VISUALS, SOP GENERATOR & RICH DESCRIPTIONS)
+// VERSION: 130 (FULL RESTORATION: SOP GENERATOR & BUILDER VISUALS)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -8,10 +8,14 @@ function initializeTourControls() {
     
     // Load Standard Tours
     if (typeof tours !== 'undefined' && tours.platform) {
-        Object.entries(tours.platform).forEach(([id, tour]) => platformGroup.append("option").attr("value", id).text(tour.name));
+        Object.entries(tours.platform).forEach(([id, tour]) => {
+            platformGroup.append("option").attr("value", id).text(tour.name);
+        });
     }
     if (typeof tours !== 'undefined' && tours.packages) {
-        Object.entries(tours.packages).forEach(([id, tour]) => packageGroup.append("option").attr("value", id).text(tour.name));
+        Object.entries(tours.packages).forEach(([id, tour]) => {
+            packageGroup.append("option").attr("value", id).text(tour.name);
+        });
     }
 
     // Load AI/Saved Tours
@@ -31,24 +35,44 @@ function initializeTourControls() {
             stopTour();
         } else {
             let tourData = null;
-            if (typeof flatTours !== 'undefined' && flatTours[tourId]) tourData = flatTours[tourId];
-            else if (typeof tours !== 'undefined' && tours.ai && tours.ai[tourId]) tourData = tours.ai[tourId];
-            else if (typeof tours !== 'undefined') {
+            if (typeof flatTours !== 'undefined' && flatTours[tourId]) {
+                tourData = flatTours[tourId];
+            } else if (typeof tours !== 'undefined' && tours.ai && tours.ai[tourId]) {
+                tourData = tours.ai[tourId];
+            } else if (typeof tours !== 'undefined') {
                  if (tours.platform && tours.platform[tourId]) tourData = tours.platform[tourId];
                  if (tours.packages && tours.packages[tourId]) tourData = tours.packages[tourId];
             }
-            if (tourData) previewTour(tourData);
+            
+            if (tourData) {
+                previewTour(tourData);
+            }
         }
     });
 
-    d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
-    d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
+    d3.select("#tour-prev").on("click", () => { 
+        if (app.currentStep > 0) { 
+            app.currentStep--; 
+            runTourStep(); 
+        } 
+    });
+    
+    d3.select("#tour-next").on("click", () => { 
+        if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { 
+            app.currentStep++; 
+            runTourStep(); 
+        } 
+    });
 
     // AI Modal Triggers
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
-    aiModalOverlay.on("click", function(e) { if (e.target === this) aiModalOverlay.classed("visible", false); });
+    
+    aiModalOverlay.on("click", function(e) { 
+        if (e.target === this) aiModalOverlay.classed("visible", false); 
+    });
+    
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 
     // Manual Builder Trigger
@@ -71,29 +95,37 @@ function loadSavedTours() {
             const parsedTours = JSON.parse(saved);
             const aiGroup = d3.select("#ai-tours");
             if (!tours.ai) tours.ai = {};
+            
             Object.entries(parsedTours).forEach(([id, tour]) => {
                 tours.ai[id] = tour;
                 if(aiGroup.select(`option[value="${id}"]`).empty()) {
                     aiGroup.append("option").attr("value", id).text(tour.name);
                 }
             });
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error("Error loading saved tours:", e); 
+        }
     }
 }
 
 function saveCurrentTour() {
     if (!app.currentTour) return;
+    
     let tourId = app.currentTour.id;
     if (!tourId || tourId.startsWith('custom_')) {
         tourId = `custom_tour_${Date.now()}`;
         app.currentTour.id = tourId;
     }
+    
     if (!tours.ai) tours.ai = {};
     tours.ai[tourId] = app.currentTour;
 
     let saved = {};
     const existing = localStorage.getItem('procoreverse_saved_tours');
-    if (existing) { try { saved = JSON.parse(existing); } catch(e) {} }
+    if (existing) { 
+        try { saved = JSON.parse(existing); } catch(e) {} 
+    }
+    
     saved[tourId] = app.currentTour;
     localStorage.setItem('procoreverse_saved_tours', JSON.stringify(saved));
     
@@ -101,6 +133,7 @@ function saveCurrentTour() {
     if (aiGroup.select(`option[value="${tourId}"]`).empty()) {
         aiGroup.append("option").attr("value", tourId).text(app.currentTour.name);
     }
+    
     d3.select("#tour-select").property("value", tourId);
     
     if(typeof showToast === 'function') showToast("Process Saved!");
@@ -126,7 +159,7 @@ function startManualBuilder() {
                 <span class="font-bold text-xs uppercase tracking-wide text-gray-400">Recording Mode</span>
                 <span id="manual-step-count" class="bg-indigo-600 px-2 py-0.5 rounded text-xs font-bold">0 Steps</span>
             </div>
-            <p class="text-sm italic text-gray-300">Click tools in order. Click again to remove.</p>
+            <p class="text-sm italic text-gray-300">Click tools in order to record path. Click again to remove.</p>
         </div>
         <div class="flex gap-2">
             <button id="cancel-manual-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 rounded">Cancel</button>
@@ -145,14 +178,18 @@ function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
+        // Remove if exists
         manualBuilderSteps.splice(existingIndex, 1);
         if(typeof showToast === 'function') showToast(`Removed step: ${d.id}`);
     } else {
-        // Grab actual description from node data
+        // Add if new - Grab Rich Description
         const desc = d.description || `Standard workflow step involving the ${d.id} tool.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
         
-        d3.select(event.target).transition().duration(100).attr("r", 30).transition().duration(100).attr("r", 25);
+        // Visual Pulse
+        d3.select(event.target)
+            .transition().duration(100).attr("r", 30)
+            .transition().duration(100).attr("r", 25);
     }
     updateManualBuilderVisuals();
 }
@@ -168,7 +205,7 @@ function updateManualBuilderVisuals() {
         .style("opacity", n => activeIds.has(n.id) ? 1 : 0.3)
         .style("filter", n => activeIds.has(n.id) ? "drop-shadow(0 0 5px #F36C23)" : null);
 
-    // 2. Draw Temporary Path
+    // 2. Draw Temporary Path Links
     const pathLinks = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -201,7 +238,13 @@ function updateManualBuilderVisuals() {
 function finishManualBuilder() {
     const name = prompt("Enter a name for this Custom Process:", "New SOP Process");
     if (!name) return;
-    const newTour = { name: `📝 ${name}`, steps: manualBuilderSteps, id: `custom_${Date.now()}` };
+    
+    const newTour = { 
+        name: `📝 ${name}`, 
+        steps: manualBuilderSteps, 
+        id: `custom_${Date.now()}` 
+    };
+    
     app.currentTour = newTour;
     saveCurrentTour(); 
     
@@ -216,15 +259,19 @@ function previewTour(tourData) {
     app.currentStep = -1; 
     app.interactionState = 'tour_preview';
     
+    // Highlight the path
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     const tourLinkKeys = new Set();
+    
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
         const v = tourData.steps[i+1].nodeId;
-        tourLinkKeys.add(`${u}-${v}`); tourLinkKeys.add(`${v}-${u}`);
+        tourLinkKeys.add(`${u}-${v}`); 
+        tourLinkKeys.add(`${v}-${u}`);
     }
 
     app.node.transition().duration(500).style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
+    
     app.link.transition().duration(500)
         .style("stroke-opacity", l => {
             const s = l.source.id || l.source;
@@ -277,15 +324,18 @@ function previewTour(tourData) {
     resizeTourAccordion();
 }
 
-// --- SOP GENERATOR V2 ---
+// --- SOP GENERATOR V2: SUPPORT DOCS & SMART BRANDING ---
 function generateSOP() {
     if (!app.currentTour) {
         alert("No active process to export.");
         return;
     }
     
+    // 1. Capture Branding Info
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
+    
+    // Logic: Use input if provided, otherwise fallback to Procore text/logo
     const logoHtml = (logoInput && logoInput.trim() !== "") 
         ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
         : `<div class="logo" style="font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px;">PROCORE</div>`;
@@ -296,8 +346,10 @@ function generateSOP() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) { alert("Please allow popups to download the SOP."); return; }
 
+    // 2. Build Steps with Support References
     let stepsHtml = "";
     tour.steps.forEach((step, index) => {
+        // LOOKUP NODE DATA to find Support Link
         const nodeData = app.simulation.nodes().find(n => n.id === step.nodeId);
         const supportLink = (nodeData && nodeData.supportDocUrl) 
             ? `<div class="step-link" style="margin-left: 34px; font-size: 12px;"><a href="${nodeData.supportDocUrl}" target="_blank" style="color: #2563EB; text-decoration: none;">View Standard Procedure <i class="fas fa-external-link-alt"></i></a></div>` 
@@ -324,10 +376,22 @@ function generateSOP() {
         <style>
             body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; line-height: 1.6; max-width: 800px; margin: 0 auto; }
             .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
             .doc-title { font-size: 28px; font-weight: 700; margin-top: 5px; color: #111; }
             .client-name { font-size: 14px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+            
             .section { margin-bottom: 30px; }
             .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
+            
+            .step { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #F36C23; border-radius: 4px; }
+            .step-header { display: flex; align-items: center; margin-bottom: 8px; }
+            .step-num { background: #F36C23; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px; }
+            .step-tool { font-weight: 700; font-size: 16px; color: #333; }
+            .step-desc { font-size: 14px; color: #555; margin-left: 34px; margin-bottom: 8px; }
+            .step-link { margin-left: 34px; font-size: 12px; }
+            .step-link a { color: #2563EB; text-decoration: none; font-weight: 500; }
+            .step-link a:hover { text-decoration: underline; }
+            
             .footer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
@@ -356,8 +420,8 @@ function generateSOP() {
         <div class="section">
             <div class="section-title">3. Approval</div>
             <div style="display: flex; justify-content: space-between; margin-top: 40px;">
-                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px; color: #888;">Process Owner Signature</div>
-                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px; color: #888;">Date</div>
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px;">Process Owner Signature</div>
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px;">Date</div>
             </div>
         </div>
 
