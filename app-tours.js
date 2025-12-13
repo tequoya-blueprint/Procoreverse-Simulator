@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 450 (FIXED: VISIBILITY, CSS OVERRIDES, DATA FLOW LOGIC)
+// VERSION: 480 (FIXED: STRICT LOGIC + FULL HTML RESTORATION)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -43,24 +43,38 @@ function initializeTourControls() {
                  if (tours.platform && tours.platform[tourId]) tourData = tours.platform[tourId];
                  if (tours.packages && tours.packages[tourId]) tourData = tours.packages[tourId];
             }
-            if (tourData) previewTour(tourData);
+            if (tourData) {
+                previewTour(tourData);
+            }
         }
     });
 
     d3.select("#tour-prev").on("click", () => { 
-        if (app.currentStep > 0) { app.currentStep--; runTourStep(); } 
+        if (app.currentStep > 0) { 
+            app.currentStep--; 
+            runTourStep(); 
+        } 
     });
     
     d3.select("#tour-next").on("click", () => { 
-        if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } 
+        if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { 
+            app.currentStep++; 
+            runTourStep(); 
+        } 
     });
 
+    // AI Modal Triggers
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
-    aiModalOverlay.on("click", function(e) { if (e.target === this) aiModalOverlay.classed("visible", false); });
+    
+    aiModalOverlay.on("click", function(e) { 
+        if (e.target === this) aiModalOverlay.classed("visible", false); 
+    });
+    
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 
+    // Manual Builder Trigger
     const container = d3.select("#tour-container");
     if (container.select("#manual-workflow-builder-btn").empty()) {
         container.append("button")
@@ -72,6 +86,7 @@ function initializeTourControls() {
     }
 }
 
+// --- PERSISTENCE ---
 function loadSavedTours() {
     const saved = localStorage.getItem('procoreverse_saved_tours');
     if (saved) {
@@ -79,39 +94,52 @@ function loadSavedTours() {
             const parsedTours = JSON.parse(saved);
             const aiGroup = d3.select("#ai-tours");
             if (!tours.ai) tours.ai = {};
+            
             Object.entries(parsedTours).forEach(([id, tour]) => {
                 tours.ai[id] = tour;
                 if(aiGroup.select(`option[value="${id}"]`).empty()) {
                     aiGroup.append("option").attr("value", id).text(tour.name);
                 }
             });
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error("Error loading saved tours:", e); 
+        }
     }
 }
 
 function saveCurrentTour() {
     if (!app.currentTour) return;
+    
     let tourId = app.currentTour.id;
     if (!tourId || tourId.startsWith('custom_')) {
         tourId = `custom_tour_${Date.now()}`;
         app.currentTour.id = tourId;
     }
+    
     if (!tours.ai) tours.ai = {};
     tours.ai[tourId] = app.currentTour;
+
     let saved = {};
     const existing = localStorage.getItem('procoreverse_saved_tours');
-    if (existing) { try { saved = JSON.parse(existing); } catch(e) {} }
+    if (existing) { 
+        try { saved = JSON.parse(existing); } catch(e) {} 
+    }
+    
     saved[tourId] = app.currentTour;
     localStorage.setItem('procoreverse_saved_tours', JSON.stringify(saved));
+    
     const aiGroup = d3.select("#ai-tours");
     if (aiGroup.select(`option[value="${tourId}"]`).empty()) {
         aiGroup.append("option").attr("value", tourId).text(app.currentTour.name);
     }
+    
     d3.select("#tour-select").property("value", tourId);
+    
     if(typeof showToast === 'function') showToast("Process Saved!");
     d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
 }
 
+// --- MANUAL BUILDER LOGIC ---
 let manualBuilderSteps = [];
 
 // Helper to safely get the String ID
@@ -126,12 +154,13 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Dim Everything at Start
+    // Dim Everything at Start to clean slate
     app.node.transition().duration(500).style("opacity", 1);
-    // FORCE reset style to avoid CSS conflicts
+    
+    // Explicitly set stroke to default before logic takes over
     app.link.transition().duration(500)
-        .style("opacity", 0.05)
-        .style("stroke-opacity", 0.05)
+        .style("opacity", 0.02) // Nearly invisible
+        .style("stroke-opacity", 0.02)
         .style("stroke", "#a0a0a0"); 
 
     const controls = d3.select("#tour-controls");
@@ -185,7 +214,7 @@ function updateManualBuilderVisuals() {
     if (manualBuilderSteps.length === 0) {
         instructionText.html("Select a tool to start.");
     } else {
-        instructionText.html(`<span style="color:#60A5FA; font-weight:bold;">Blue dashed lines</span> show valid next steps.`);
+        instructionText.html(`<span style="color:#2563EB; font-weight:bold;">Blue dashed lines</span> show valid next steps.`);
     }
 
     const activeIds = new Set(manualBuilderSteps.map(s => s.nodeId));
@@ -194,7 +223,7 @@ function updateManualBuilderVisuals() {
         lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
     }
 
-    // 1. Path Keys (History) - Bi-directional matching
+    // 1. PATH KEYS (HISTORY)
     const pathKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -203,26 +232,26 @@ function updateManualBuilderVisuals() {
         pathKeys.add(`${v}-${u}`);
     }
 
-    // 2. Candidate Keys (Strict Data Flow)
-    const candidateKeys = new Set();
-    const candidateNodes = new Set();
+    // 2. CANDIDATE KEYS (FUTURE - STRICT DATA FLOW)
+    const candidateLinkKeys = new Set();
+    const candidateNodeIds = new Set();
 
     if (lastNodeId && app.simulation) {
         app.simulation.force("link").links().forEach(l => {
             const s = safeId(l.source);
             const t = safeId(l.target);
             
-            // LOGIC: Outgoing (Source -> Target) OR Syncs (Target -> Source)
-            // If current node is Source, Target is next step
+            // STRICT LOGIC:
+            // A. OUTGOING: Source == LastNode -> Target (Always Valid)
             if (s === lastNodeId && !activeIds.has(t)) {
-                candidateKeys.add(`${s}-${t}`);
-                candidateNodes.add(t);
+                candidateLinkKeys.add(`${s}-${t}`);
+                candidateNodeIds.add(t);
             } 
-            // If current node is Target, Source is next step ONLY if it's a sync (bi-directional)
+            // B. BI-DIRECTIONAL: Target == LastNode -> Source (Only if Syncs)
             else if (t === lastNodeId && !activeIds.has(s)) {
                 if (l.type === 'syncs') {
-                     candidateKeys.add(`${s}-${t}`); 
-                     candidateNodes.add(s);
+                    candidateLinkKeys.add(`${s}-${t}`); // Add key in correct direction for iteration
+                    candidateNodeIds.add(s);
                 }
             }
         });
@@ -232,72 +261,69 @@ function updateManualBuilderVisuals() {
     app.node.transition().duration(200)
         .style("opacity", n => {
             if (activeIds.has(n.id)) return 1.0;            
-            if (candidateNodes.has(n.id)) return 0.9;       
+            if (candidateNodeIds.has(n.id)) return 0.9;       
             return manualBuilderSteps.length === 0 ? 1 : 0.1;
         })
         .style("filter", n => {
             if (activeIds.has(n.id)) return "drop-shadow(0 0 6px #F36C23)"; 
-            if (candidateNodes.has(n.id)) return "drop-shadow(0 0 5px #2563EB)"; 
+            if (candidateNodeIds.has(n.id)) return "drop-shadow(0 0 5px #2563EB)"; 
             return null;
         });
 
-    // --- LINK UPDATES ---
-    // Using .style() to override CSS classes
-    app.link.transition().duration(200)
-        .style("opacity", l => {
-            const s = safeId(l.source);
-            const t = safeId(l.target);
-            const key = `${s}-${t}`;
-            
-            if (pathKeys.has(key)) return 1.0;
-            if (candidateKeys.has(key)) return 1.0; 
-            return 0.05; // Hide irrelevant
-        })
-        .style("stroke-opacity", l => {
-            const s = safeId(l.source);
-            const t = safeId(l.target);
-            const key = `${s}-${t}`;
-            
-            if (pathKeys.has(key)) return 1.0;
-            if (candidateKeys.has(key)) return 0.8;
-            return 0.05;
-        })
-        .style("stroke", l => {
-             const s = safeId(l.source);
-             const t = safeId(l.target);
-             const key = `${s}-${t}`;
+    // --- LINK UPDATES (DIRECT ITERATION) ---
+    app.link.each(function(d) {
+        const s = safeId(d.source);
+        const t = safeId(d.target);
+        const el = d3.select(this);
+        const key = `${s}-${t}`;
 
-            if (pathKeys.has(key)) return "#F36C23"; // FORCE ORANGE
-            if (candidateKeys.has(key)) return "#2563EB"; // FORCE BLUE
-            return "#a0a0a0";
-        })
-        .style("stroke-width", l => {
-             const s = safeId(l.source);
-             const t = safeId(l.target);
-             const key = `${s}-${t}`;
+        let isPath = false;
+        // Check History (Bi-directional match)
+        for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
+            const u = manualBuilderSteps[i].nodeId;
+            const v = manualBuilderSteps[i+1].nodeId;
+            if ((s === u && t === v) || (s === v && t === u)) {
+                isPath = true;
+                break;
+            }
+        }
 
-            if (pathKeys.has(key)) return "3px";
-            if (candidateKeys.has(key)) return "2px";
-            return "1px";
-        })
-        .attr("stroke-dasharray", l => {
-            const s = safeId(l.source);
-            const t = safeId(l.target);
-            const key = `${s}-${t}`;
+        let isCandidate = false;
+        // Check Candidates (Strict match)
+        if (!isPath && lastNodeId) {
+            // Forward check
+            if (s === lastNodeId && candidateNodeIds.has(t)) isCandidate = true;
+            // Reverse check (only for syncs)
+            if (t === lastNodeId && candidateNodeIds.has(s) && d.type === 'syncs') isCandidate = true;
+        }
 
-            if (pathKeys.has(key)) return "none"; // Solid
-            if (candidateKeys.has(key)) return "6, 3"; // Dashed
-            return "none";
-        })
-        .attr("marker-end", l => {
-            const s = safeId(l.source);
-            const t = safeId(l.target);
-            const key = `${s}-${t}`;
-            
-            if (pathKeys.has(key)) return `url(#arrow-highlighted)`;
-            if (candidateKeys.has(key)) return `url(#arrow-candidate)`;
-            return null;
-        });
+        // APPLY VISUALS
+        if (isPath) {
+            // HISTORY: Solid Orange
+            el.transition().duration(200)
+              .style("stroke", "#F36C23")
+              .style("opacity", 1)
+              .style("stroke-opacity", 1)
+              .style("stroke-width", "3px")
+              .attr("stroke-dasharray", "none")
+              .attr("marker-end", "url(#arrow-highlighted)");
+        } else if (isCandidate) {
+            // FUTURE: Dashed Blue
+            el.transition().duration(200)
+              .style("stroke", "#2563EB")
+              .style("opacity", 1)
+              .style("stroke-opacity", 1)
+              .style("stroke-width", "2px")
+              .attr("stroke-dasharray", "6,3")
+              .attr("marker-end", "url(#arrow-candidate)");
+        } else {
+            // IRRELEVANT: Hidden
+            el.transition().duration(200)
+              .style("stroke", "#a0a0a0")
+              .style("opacity", 0.02) // Near invisible
+              .style("stroke-opacity", 0.02);
+        }
+    });
 }
 
 function finishManualBuilder() {
@@ -326,7 +352,7 @@ function previewTour(tourData) {
     
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     
-    // Pre-calculate path
+    // Path Calculation
     const pathKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
@@ -337,37 +363,37 @@ function previewTour(tourData) {
 
     app.node.transition().duration(500).style("opacity", d => nodeIds.has(d.id) ? 1 : 0.1);
     
-    app.link.transition().duration(500)
-        .style("opacity", l => {
-            const s = safeId(l.source);
-            const t = safeId(l.target);
-            const key = `${s}-${t}`;
-            return pathKeys.has(key) ? 1.0 : 0.05;
-        })
-        .style("stroke-opacity", l => {
-            const s = safeId(l.source);
-            const t = safeId(l.target);
-            const key = `${s}-${t}`;
-            return pathKeys.has(key) ? 1.0 : 0.05;
-        })
-        .style("stroke", l => {
-            const s = safeId(l.source);
-            const t = safeId(l.target);
-            const key = `${s}-${t}`;
-            return pathKeys.has(key) ? "#F36C23" : "#a0a0a0";
-        })
-        .style("stroke-width", l => {
-            const s = safeId(l.source);
-            const t = safeId(l.target);
-            const key = `${s}-${t}`;
-            return pathKeys.has(key) ? "3px" : "1px";
-        })
-        .attr("marker-end", l => {
-             const s = safeId(l.source);
-             const t = safeId(l.target);
-             const key = `${s}-${t}`;
-             return pathKeys.has(key) ? `url(#arrow-highlighted)` : null;
-        });
+    app.link.each(function(d) {
+        const s = safeId(d.source);
+        const t = safeId(d.target);
+        const el = d3.select(this);
+        const key = `${s}-${t}`;
+        
+        // Check match bi-directionally
+        let isPath = false;
+        for (let i = 0; i < tourData.steps.length - 1; i++) {
+            const u = tourData.steps[i].nodeId;
+            const v = tourData.steps[i+1].nodeId;
+            if ((s === u && t === v) || (s === v && t === u)) {
+                isPath = true;
+                break;
+            }
+        }
+
+        if (isPath) {
+            el.transition().duration(500)
+              .style("stroke", "#F36C23")
+              .style("opacity", 1)
+              .style("stroke-opacity", 1)
+              .style("stroke-width", "3px")
+              .attr("marker-end", "url(#arrow-highlighted)");
+        } else {
+            el.transition().duration(500)
+              .style("stroke", "#a0a0a0")
+              .style("opacity", 0.05)
+              .style("stroke-opacity", 0.05);
+        }
+    });
 
     let isSaved = false;
     if (tours.ai) isSaved = Object.values(tours.ai).some(t => t.name === tourData.name);
@@ -579,7 +605,7 @@ function runTourStep() {
                 
                 return 0.01;
             })
-            .style("stroke", l => {
+            .attr("stroke", l => {
                 const s = safeId(l.source);
                 const t = safeId(l.target);
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
@@ -589,7 +615,7 @@ function runTourStep() {
                 const s = safeId(l.source);
                 const t = safeId(l.target);
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
-                return isActiveLink ? "3px" : "2px";
+                return isActiveLink ? 3 : 2;
             })
             .attr("marker-end", l => {
                 const s = safeId(l.source);
