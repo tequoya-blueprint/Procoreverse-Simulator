@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 350 (FIXED: RESTORED FULL READABILITY + LOGIC FIXES)
+// VERSION: 360 (FIXED: SAFE ID HELPER + VISIBILITY ENFORCEMENT)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -143,6 +143,13 @@ function saveCurrentTour() {
 // --- MANUAL BUILDER LOGIC ---
 let manualBuilderSteps = [];
 
+// Helper to safely get the String ID from a Node or Link Source/Target
+function safeId(obj) {
+    if (typeof obj === 'string') return obj;
+    if (obj && obj.id) return obj.id;
+    return String(obj);
+}
+
 function startManualBuilder() {
     stopTour(false); 
     app.interactionState = 'manual_building';
@@ -205,7 +212,6 @@ function updateManualBuilderVisuals() {
     }
 
     // PRE-CALCULATE VALID PATHS FOR O(1) LOOKUP
-    // FIX: Using String() to ensure compatibility between data objects and ID strings
     const pathKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -220,15 +226,15 @@ function updateManualBuilderVisuals() {
 
     if (lastNodeId && app.simulation) {
         app.simulation.force("link").links().forEach(l => {
-            const s = String(l.source.id || l.source);
-            const t = String(l.target.id || l.target);
+            const s = safeId(l.source);
+            const t = safeId(l.target);
             
             if (s === lastNodeId && !activeIds.has(t)) {
                 candidateKeys.add(`${s}-${t}`);
                 candidateNodes.add(t);
             } else if (t === lastNodeId && !activeIds.has(s)) {
-                candidateKeys.add(`${t}-${s}`); // Direction matters for key, but bi-directional for logic
-                candidateKeys.add(`${s}-${t}`);
+                candidateKeys.add(`${t}-${s}`); 
+                candidateKeys.add(`${s}-${t}`); // Add both directions just in case
                 candidateNodes.add(s);
             }
         });
@@ -251,16 +257,16 @@ function updateManualBuilderVisuals() {
     app.link.transition().duration(200)
         // CRITICAL FIX: Restore Element Opacity to 1 for active links
         .style("opacity", l => {
-            const s = String(l.source.id || l.source);
-            const t = String(l.target.id || l.target);
+            const s = safeId(l.source);
+            const t = safeId(l.target);
             const key = `${s}-${t}`;
             
             if (pathKeys.has(key) || candidateKeys.has(key)) return 1.0; // Fully visible
             return 0.1; // Dimmed
         })
         .style("stroke-opacity", l => {
-            const s = String(l.source.id || l.source);
-            const t = String(l.target.id || l.target);
+            const s = safeId(l.source);
+            const t = safeId(l.target);
             const key = `${s}-${t}`;
             
             if (pathKeys.has(key)) return 1.0; // History = Full
@@ -269,8 +275,8 @@ function updateManualBuilderVisuals() {
             return 0.1; // Dim irrelevant
         })
         .attr("stroke", l => {
-             const s = String(l.source.id || l.source);
-             const t = String(l.target.id || l.target);
+             const s = safeId(l.source);
+             const t = safeId(l.target);
              const key = `${s}-${t}`;
 
             if (pathKeys.has(key)) return "var(--procore-orange)"; // History
@@ -278,8 +284,8 @@ function updateManualBuilderVisuals() {
             return "#a0a0a0";
         })
         .style("stroke-width", l => {
-             const s = String(l.source.id || l.source);
-             const t = String(l.target.id || l.target);
+             const s = safeId(l.source);
+             const t = safeId(l.target);
              const key = `${s}-${t}`;
 
             if (pathKeys.has(key)) return 3;
@@ -287,8 +293,8 @@ function updateManualBuilderVisuals() {
             return 1;
         })
         .attr("stroke-dasharray", l => {
-            const s = String(l.source.id || l.source);
-            const t = String(l.target.id || l.target);
+            const s = safeId(l.source);
+            const t = safeId(l.target);
             const key = `${s}-${t}`;
 
             if (pathKeys.has(key)) return "none"; // Solid for history
@@ -296,8 +302,8 @@ function updateManualBuilderVisuals() {
             return "none";
         })
         .attr("marker-end", l => {
-            const s = String(l.source.id || l.source);
-            const t = String(l.target.id || l.target);
+            const s = safeId(l.source);
+            const t = safeId(l.target);
             const key = `${s}-${t}`;
             
             if (pathKeys.has(key)) return `url(#arrow-highlighted)`;
@@ -331,8 +337,6 @@ function previewTour(tourData) {
     app.interactionState = 'tour_preview';
     
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
-    
-    // Pre-calculate path for fast matching
     const pathKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
@@ -345,26 +349,26 @@ function previewTour(tourData) {
     
     app.link.transition().duration(500)
         .style("opacity", l => {
-            const s = String(l.source.id || l.source);
-            const t = String(l.target.id || l.target);
+            const s = safeId(l.source);
+            const t = safeId(l.target);
             const key = `${s}-${t}`;
             return pathKeys.has(key) ? 1.0 : 0.05;
         })
         .style("stroke-opacity", l => {
-            const s = String(l.source.id || l.source);
-            const t = String(l.target.id || l.target);
+            const s = safeId(l.source);
+            const t = safeId(l.target);
             const key = `${s}-${t}`;
             return pathKeys.has(key) ? 1.0 : 0.05;
         })
         .attr("stroke", l => {
-            const s = String(l.source.id || l.source);
-            const t = String(l.target.id || l.target);
+            const s = safeId(l.source);
+            const t = safeId(l.target);
             const key = `${s}-${t}`;
             return pathKeys.has(key) ? "var(--procore-orange)" : "#a0a0a0";
         })
         .attr("marker-end", l => {
-             const s = String(l.source.id || l.source);
-             const t = String(l.target.id || l.target);
+             const s = safeId(l.source);
+             const t = safeId(l.target);
              const key = `${s}-${t}`;
              return pathKeys.has(key) ? `url(#arrow-highlighted)` : null;
         });
@@ -553,8 +557,8 @@ function runTourStep() {
         
         app.link.transition().duration(400)
             .style("opacity", l => {
-                const s = String(l.source.id || l.source);
-                const t = String(l.target.id || l.target);
+                const s = safeId(l.source);
+                const t = safeId(l.target);
                 
                 // Active Link (Previous -> Current)
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
@@ -567,8 +571,8 @@ function runTourStep() {
                 return 0.05;
             })
             .style("stroke-opacity", l => {
-                const s = String(l.source.id || l.source);
-                const t = String(l.target.id || l.target);
+                const s = safeId(l.source);
+                const t = safeId(l.target);
                 
                 // Active Link (Previous -> Current)
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
@@ -581,20 +585,20 @@ function runTourStep() {
                 return 0.01;
             })
             .attr("stroke", l => {
-                const s = String(l.source.id || l.source);
-                const t = String(l.target.id || l.target);
+                const s = safeId(l.source);
+                const t = safeId(l.target);
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 return isActiveLink ? "var(--procore-orange)" : "#a0a0a0";
             })
             .style("stroke-width", l => {
-                const s = String(l.source.id || l.source);
-                const t = String(l.target.id || l.target);
+                const s = safeId(l.source);
+                const t = safeId(l.target);
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 return isActiveLink ? 3 : 2;
             })
             .attr("marker-end", l => {
-                const s = String(l.source.id || l.source);
-                const t = String(l.target.id || l.target);
+                const s = safeId(l.source);
+                const t = safeId(l.target);
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 if (isActiveLink) return `url(#arrow-highlighted)`;
                 return null; 
