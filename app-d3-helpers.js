@@ -1,11 +1,14 @@
 // --- app-d3-helpers.js ---
-// VERSION: 370 (CLEANED: REMOVED CONFLICTING LOGIC)
+// VERSION: 410 (FULL RESTORATION: NO MINIFICATION)
 
 /**
  * Generates a Hexagon Path (Flat-Top/Bottom).
+ * Starts at 0 degrees to create flat top/bottom edges.
  */
 function generateHexagonPath(size) {
     const points = Array.from({length: 6}, (_, i) => {
+        // 0-degree start = Vertices at 0, 60, 120... 
+        // This creates a hexagon with Flat Top and Bottom edges.
         const a = (Math.PI / 180 * (60 * i)); 
         return [size * Math.cos(a), size * Math.sin(a)];
     });
@@ -30,7 +33,8 @@ function drag(simulation) {
     
     function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
+        // We release the fixed position so physics takes over again
+        d.fx = null; 
         d.fy = null;
     }
     
