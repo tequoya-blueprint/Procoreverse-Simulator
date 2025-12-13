@@ -693,23 +693,20 @@ function calculateScoping() {
 function generateSOWPrintView() {
     if (!app.currentSOW) { alert("Please configure a scope first."); return; }
     
-    // 1. Capture Branding
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
     
-    // 2. Logic: Use input or default Procore
     const logoHtml = (logoInput && logoInput.trim() !== "") 
         ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
         : `<div class="logo">PROCORE</div>`;
 
     const sow = app.currentSOW;
-    const templateData = getSOWContent(sow); // Retrieve dynamic content
+    const templateData = getSOWContent(sow); 
     const today = new Date().toLocaleDateString();
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) { alert("Please allow popups to print the SOW."); return; }
 
-    // Render Modules
     let modulesHtml = "";
     templateData.modules.forEach(mod => {
         modulesHtml += `<div class="module">
@@ -717,7 +714,6 @@ function generateSOWPrintView() {
         </div>`;
     });
 
-    // Populate Legal Wrapper
     let bodyContent = templateData.base.body
         .replace(/{{Client Name}}/g, clientName)
         .replace(/{{Date}}/g, today);
@@ -732,17 +728,13 @@ function generateSOWPrintView() {
             .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
             .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
             .title { font-size: 14px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
-            
             h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; }
             p, li { font-size: 13px; }
             .sow-section { margin-bottom: 20px; }
-            
             .module { background: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
             .module h2 { font-size: 16px; margin-top: 0; color: #111827; }
-            
             .total-box { background: #1f2937; color: white; padding: 20px; border-radius: 8px; text-align: right; margin-top: 40px; }
             .total-cost { font-size: 32px; font-weight: 800; margin-top: 5px; }
-            
             .disclaimer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
@@ -751,26 +743,19 @@ function generateSOWPrintView() {
             <div>${logoHtml}</div>
             <div class="title">${templateData.base.title}</div>
         </div>
-        
         ${bodyContent}
-
         <h3>Scope of Services</h3>
         ${modulesHtml}
-
         <div class="total-box">
             <div style="font-size: 12px; text-transform: uppercase; font-weight: bold; opacity: 0.8;">Total Implementation Investment</div>
             <div class="total-cost">$${sow.totalCost.toLocaleString()}</div>
             <div style="font-size: 14px; margin-top: 5px; opacity: 0.8;">Est. Timeline: ${sow.weeks} Weeks</div>
         </div>
-
         <div class="disclaimer">
             This document is a rough order of magnitude (ROM) estimate for simulation purposes only. <br>
             It does not constitute a binding contract or formal Statement of Work. Pricing is subject to change.
         </div>
-
-        <script>
-            window.print();
-        </script>
+        <script>window.print();</script>
     </body>
     </html>
     `;
@@ -793,7 +778,6 @@ function applyTeamView(team) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
-    // Handle Calculator Visibility & Mode
     const scopingContainer = d3.select("#scoping-ui-container");
     if (config.calculatorMode === 'hidden') {
         scopingContainer.classed("hidden", true);
@@ -801,7 +785,7 @@ function applyTeamView(team) {
         scopingContainer.classed("hidden", !config.showScoping);
         if (typeof app !== 'undefined' && app.state) {
             app.state.calculatorMode = config.calculatorMode;
-            calculateScoping(); // Re-run to apply disabled states
+            calculateScoping(); 
         }
     }
 
