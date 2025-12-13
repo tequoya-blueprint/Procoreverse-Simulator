@@ -362,8 +362,13 @@ function initializeControls() {
 // --- CUSTOM SCOPE MANAGER ---
 function toggleCustomScopeItem(nodeId) {
     if (!app || !app.customScope) return;
-    if (app.customScope.has(nodeId)) app.customScope.delete(nodeId);
-    else app.customScope.add(nodeId);
+    if (app.customScope.has(nodeId)) {
+        app.customScope.delete(nodeId);
+        if(typeof showToast === 'function') showToast(`Removed ${nodeId} from Custom Scope`);
+    } else {
+        app.customScope.add(nodeId);
+        if(typeof showToast === 'function') showToast(`Added ${nodeId} to Custom Scope`);
+    }
     if (typeof updateGraph === 'function') updateGraph(false); 
     calculateScoping();
 }
@@ -374,68 +379,101 @@ function toggleStackBuilderMode() {
         if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
         return;
     }
+
     app.state.isBuildingStack = !app.state.isBuildingStack;
+    
     let btn = d3.select("#stack-builder-btn");
     
     if (app.state.isBuildingStack) {
+        // --- ACTIVATE BUILDER MODE ---
         app.interactionState = 'building_stack';
+        
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
+        
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
+        
         d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
         highlightOwnedNodes();
+        
     } else {
+        // --- DEACTIVATE BUILDER MODE ---
         app.interactionState = 'explore';
+        
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
+        
+        // Return to normal view
         if (typeof updateGraph === 'function') updateGraph(true);
-        if (app.state.myStack.size > 0 && typeof showToast === 'function') showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
+        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
+            showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
+        }
     }
 }
 
 function toggleStackItem(d) {
     if (!app.state.myStack) app.state.myStack = new Set();
-    if (app.state.myStack.has(d.id)) app.state.myStack.delete(d.id);
-    else app.state.myStack.add(d.id);
+    
+    if (app.state.myStack.has(d.id)) {
+        app.state.myStack.delete(d.id);
+    } else {
+        app.state.myStack.add(d.id);
+    }
     highlightOwnedNodes();
 }
 
 function highlightOwnedNodes() {
     if (!app.node) return;
+    
     app.node.transition().duration(200)
         .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") 
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") 
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
+// UPDATED LOGIC: Calculates Gap, Matched, and OUTLIERS
 function getGapAnalysis() {
     const filters = getActiveFilters(); 
     const targetPackageTools = filters.packageTools || new Set();
+    
     const owned = app.state.myStack || new Set();
-    const gap = new Set(); const matched = new Set(); const outlier = new Set();
+    
+    const gap = new Set();      // In Package, NOT Owned (Upsell)
+    const matched = new Set();  // In Package, AND Owned (Safe)
+    const outlier = new Set();  // NOT in Package, BUT Owned (Legacy/Extra)
     
     if (targetPackageTools.size > 0) {
         targetPackageTools.forEach(toolId => {
-            if (owned.has(toolId)) matched.add(toolId);
-            else gap.add(toolId);
+            if (owned.has(toolId)) {
+                matched.add(toolId);
+            } else {
+                gap.add(toolId);
+            }
         });
+        
+        // Calculate Outliers
         owned.forEach(toolId => {
-            if (!targetPackageTools.has(toolId)) outlier.add(toolId);
+            if (!targetPackageTools.has(toolId)) {
+                outlier.add(toolId);
+            }
         });
     }
+    
     return { owned, gap, matched, outlier, target: targetPackageTools };
 }
 
-// --- SOW V2: COMPLEXITY ---
+// --- SOW V2: COMPLEXITY & T-SHIRT SIZING ---
 function setComplexity(level) {
+    // Only allow if not in Read-Only mode
     if (app.state.calculatorMode === 'view') {
         if(typeof showToast === 'function') showToast("View Only: Complexity cannot be edited.");
         return;
     }
+
     const map = {
         'standard': { mat: 1.0, data: 1.0, change: 1.0 },
         'complex': { mat: 1.4, data: 1.5, change: 1.3 },
@@ -447,6 +485,7 @@ function setComplexity(level) {
         document.getElementById('slider-data').value = vals.data;
         document.getElementById('slider-change').value = vals.change;
         calculateScoping();
+        // Update Button States
         d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
         d3.select(`#btn-${level}`).classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
     }
@@ -455,9 +494,11 @@ function setComplexity(level) {
 function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
     if(revenueContainer.empty()) return;
-    revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200").html("");
+
+    revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
+    revenueContainer.html("");
     
-    // Complexity Buttons
+    // --- COMPLEXITY BUTTONS (SOW V2) ---
     const complexityDiv = revenueContainer.append("div").attr("class", "mb-3 flex gap-2");
     ['Standard', 'Complex', 'Transform'].forEach(label => {
         const key = label.toLowerCase();
@@ -471,35 +512,60 @@ function renderSOWQuestionnaire() {
     const settingsGroup = revenueContainer.append("div").attr("class", "mb-1 w-full");
     const onsiteRow = settingsGroup.append("div").attr("class", "mb-3 border-b border-gray-100 pb-3");
     onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
-    onsiteRow.append("input").attr("type", "number").attr("id", "onsite-input").attr("value", "0").attr("min", "0").attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500").on("input", calculateScoping);
+    onsiteRow.append("input")
+        .attr("type", "number")
+        .attr("id", "onsite-input")
+        .attr("value", "0")
+        .attr("min", "0")
+        .attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500")
+        .on("input", calculateScoping);
     
     settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
     const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2 w-full");
     
     SOW_QUESTIONS.forEach(q => {
         const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 w-full");
-        label.append("input").attr("type", "checkbox").attr("id", q.id).attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500").on("change", calculateScoping);
+        
+        label.append("input")
+            .attr("type", "checkbox")
+            .attr("id", q.id)
+            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500")
+            .on("change", calculateScoping);
+        
         const textCol = label.append("div").attr("class", "ml-2 flex flex-col min-w-0");
         textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight truncate").text(q.label).attr("title", q.label);
-        if (q.type === 'cost') textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
+        
+        if (q.type === 'cost') {
+             textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
+        }
     });
     
+    // --- PRINT BUTTON MOVED TO TOTAL BOX ---
     const totalBox = d3.select("#sow-total").select(function() { return this.parentNode; });
     if (!totalBox.empty()) {
         totalBox.select("#print-sow-mini-btn").remove(); 
-        totalBox.append("button").attr("id", "print-sow-mini-btn").attr("class", "w-full mt-3 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold py-1.5 rounded text-[11px] flex items-center justify-center transition shadow-sm border border-indigo-600").html('<i class="fas fa-print mr-2"></i> Print Estimate').on("click", generateSOWPrintView);
+        
+        totalBox.append("button")
+            .attr("id", "print-sow-mini-btn")
+            .attr("class", "w-full mt-3 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold py-1.5 rounded text-[11px] flex items-center justify-center transition shadow-sm border border-indigo-600")
+            .html('<i class="fas fa-print mr-2"></i> Print Estimate')
+            .on("click", generateSOWPrintView);
     }
+
     setTimeout(refreshAccordionHeight, 50);
 }
 
-// --- SCOPING CALCULATOR (WITH RBAC) ---
+// --- SCOPING CALCULATOR (WITH RBAC CHECKS) ---
 function calculateScoping() {
+    // RBAC Check: If View Only, disable inputs programmatically (UI disabled separately)
     const isViewOnly = (app.state.calculatorMode === 'view');
+    
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
     const onsiteInput = document.getElementById('onsite-input');
     
+    // Disable/Enable Inputs based on Mode
     if (sliderMaturity) {
         [sliderMaturity, sliderData, sliderChange, onsiteInput].forEach(el => { if(el) el.disabled = isViewOnly; });
         d3.selectAll('.sow-question').property('disabled', isViewOnly);
@@ -627,20 +693,23 @@ function calculateScoping() {
 function generateSOWPrintView() {
     if (!app.currentSOW) { alert("Please configure a scope first."); return; }
     
+    // 1. Capture Branding
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
     
+    // 2. Logic: Use input or default Procore
     const logoHtml = (logoInput && logoInput.trim() !== "") 
         ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
         : `<div class="logo">PROCORE</div>`;
 
     const sow = app.currentSOW;
-    const templateData = getSOWContent(sow); 
+    const templateData = getSOWContent(sow); // Retrieve dynamic content
     const today = new Date().toLocaleDateString();
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) { alert("Please allow popups to print the SOW."); return; }
 
+    // Render Modules
     let modulesHtml = "";
     templateData.modules.forEach(mod => {
         modulesHtml += `<div class="module">
@@ -648,6 +717,7 @@ function generateSOWPrintView() {
         </div>`;
     });
 
+    // Populate Legal Wrapper
     let bodyContent = templateData.base.body
         .replace(/{{Client Name}}/g, clientName)
         .replace(/{{Date}}/g, today);
@@ -662,13 +732,17 @@ function generateSOWPrintView() {
             .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
             .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
             .title { font-size: 14px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+            
             h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; }
             p, li { font-size: 13px; }
             .sow-section { margin-bottom: 20px; }
+            
             .module { background: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
             .module h2 { font-size: 16px; margin-top: 0; color: #111827; }
+            
             .total-box { background: #1f2937; color: white; padding: 20px; border-radius: 8px; text-align: right; margin-top: 40px; }
             .total-cost { font-size: 32px; font-weight: 800; margin-top: 5px; }
+            
             .disclaimer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
@@ -677,19 +751,26 @@ function generateSOWPrintView() {
             <div>${logoHtml}</div>
             <div class="title">${templateData.base.title}</div>
         </div>
+        
         ${bodyContent}
+
         <h3>Scope of Services</h3>
         ${modulesHtml}
+
         <div class="total-box">
             <div style="font-size: 12px; text-transform: uppercase; font-weight: bold; opacity: 0.8;">Total Implementation Investment</div>
             <div class="total-cost">$${sow.totalCost.toLocaleString()}</div>
             <div style="font-size: 14px; margin-top: 5px; opacity: 0.8;">Est. Timeline: ${sow.weeks} Weeks</div>
         </div>
+
         <div class="disclaimer">
             This document is a rough order of magnitude (ROM) estimate for simulation purposes only. <br>
             It does not constitute a binding contract or formal Statement of Work. Pricing is subject to change.
         </div>
-        <script>window.print();</script>
+
+        <script>
+            window.print();
+        </script>
     </body>
     </html>
     `;
