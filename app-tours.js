@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 300 (FIXED: FUTURE FLOW GUIDES & FULL SOP)
+// VERSION: 300 (MASTER RESET: FUTURE FLOW VISUALS & SOP V2)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -440,14 +440,6 @@ function generateSOP() {
             .client-name { font-size: 14px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
             .section { margin-bottom: 30px; }
             .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
-            .step { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #F36C23; border-radius: 4px; }
-            .step-header { display: flex; align-items: center; margin-bottom: 8px; }
-            .step-num { background: #F36C23; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px; }
-            .step-tool { font-weight: 700; font-size: 16px; color: #333; }
-            .step-desc { font-size: 14px; color: #555; margin-left: 34px; margin-bottom: 8px; }
-            .step-link { margin-left: 34px; font-size: 12px; }
-            .step-link a { color: #2563EB; text-decoration: none; font-weight: 500; }
-            .step-link a:hover { text-decoration: underline; }
             .footer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
@@ -476,8 +468,8 @@ function generateSOP() {
         <div class="section">
             <div class="section-title">3. Approval</div>
             <div style="display: flex; justify-content: space-between; margin-top: 40px;">
-                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px;">Process Owner Signature</div>
-                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px;">Date</div>
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px; color: #888;">Process Owner Signature</div>
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px; color: #888;">Date</div>
             </div>
         </div>
 
