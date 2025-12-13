@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 350 (FIXED: RESTORED MISSING MOUSE EVENT HANDLERS)
+// VERSION: 360 (FIXED: REORDERED EVENT HANDLERS TO PREVENT REFERENCE ERRORS)
 
 const app = {
     simulation: null,
@@ -28,22 +28,7 @@ const app = {
     customScope: new Set() 
 };
 
-function setupCategories() {
-    const rootStyles = getComputedStyle(document.documentElement);
-    const procoreColors = { 
-        orange: rootStyles.getPropertyValue('--procore-orange').trim() || "#F36C23", 
-        lumber: rootStyles.getPropertyValue('--procore-lumber').trim() || "#D1C4E9", 
-        earth: rootStyles.getPropertyValue('--procore-earth').trim() || "#8D6E63", 
-        metal: rootStyles.getPropertyValue('--procore-metal').trim() || "#607D8B"
-    };
-    const colorMap = { "Preconstruction": procoreColors.lumber, "Project Management": procoreColors.orange, "Financial Management": procoreColors.earth, "Workforce Management": "#3a8d8c", "Quality & Safety": "#5B8D7E", "Platform & Core": "#757575", "Construction Intelligence": "#4A4A4A", "External Integrations": "#B0B0B0", "Helix": procoreColors.metal, "Project Execution": procoreColors.orange, "Resource Management": procoreColors.metal, "Emails": "#c94b4b", "Project Map": procoreColors.orange };
-    app.categories = {}; 
-    if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
-        nodesData.forEach(node => { if (!app.categories[node.group]) app.categories[node.group] = { color: colorMap[node.group] || "#" + Math.floor(Math.random()*16777215).toString(16) }; });
-    }
-}
-
-// --- CORE INTERACTION HANDLERS (THESE WERE MISSING) ---
+// --- 1. CORE INTERACTION HANDLERS (DEFINED FIRST TO PREVENT ERRORS) ---
 
 function nodeClicked(event, d) {
     event.stopPropagation();
@@ -67,13 +52,14 @@ function nodeClicked(event, d) {
         const isStandardLed = filters.procoreLedTools.has(d.id);
         if (!isStandardLed) { if (typeof toggleCustomScopeItem === 'function') toggleCustomScopeItem(d.id); return; }
     }
-    if (app.selectedNode === d) { resetHighlight(); } 
-    else {
+    if (app.selectedNode === d) { 
+        if(typeof resetHighlight === 'function') resetHighlight(); 
+    } else {
         app.interactionState = 'selected';
         app.selectedNode = d;
-        applyHighlight(d);
+        if(typeof applyHighlight === 'function') applyHighlight(d);
         if (typeof showInfoPanel === 'function') showInfoPanel(d); 
-        centerViewOnNode(d);
+        if(typeof centerViewOnNode === 'function') centerViewOnNode(d);
         d3.select('#graph-container').classed('selection-active', true);
     }
 }
@@ -83,7 +69,7 @@ function nodeMouseOver(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
     
     if (typeof showTooltip === 'function') showTooltip(event, d);
-    if (app.interactionState === 'explore') applyHighlight(d);
+    if (app.interactionState === 'explore' && typeof applyHighlight === 'function') applyHighlight(d);
 }
 
 function nodeMouseOut(event, d) {
@@ -91,15 +77,30 @@ function nodeMouseOut(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
     
     if (typeof hideTooltip === 'function') hideTooltip();
-    if (app.interactionState === 'explore') resetHighlight();
+    if (app.interactionState === 'explore' && typeof resetHighlight === 'function') resetHighlight();
 }
 
 function nodeDoubleClicked(event, d) {
     event.stopPropagation();
-    // Placeholder for future zoom-to-fit logic
 }
 
-// --- SEMANTIC LAYOUT ---
+// --- 2. SETUP & LAYOUT LOGIC ---
+
+function setupCategories() {
+    const rootStyles = getComputedStyle(document.documentElement);
+    const procoreColors = { 
+        orange: rootStyles.getPropertyValue('--procore-orange').trim() || "#F36C23", 
+        lumber: rootStyles.getPropertyValue('--procore-lumber').trim() || "#D1C4E9", 
+        earth: rootStyles.getPropertyValue('--procore-earth').trim() || "#8D6E63", 
+        metal: rootStyles.getPropertyValue('--procore-metal').trim() || "#607D8B"
+    };
+    const colorMap = { "Preconstruction": procoreColors.lumber, "Project Management": procoreColors.orange, "Financial Management": procoreColors.earth, "Workforce Management": "#3a8d8c", "Quality & Safety": "#5B8D7E", "Platform & Core": "#757575", "Construction Intelligence": "#4A4A4A", "External Integrations": "#B0B0B0", "Helix": procoreColors.metal, "Project Execution": procoreColors.orange, "Resource Management": procoreColors.metal, "Emails": "#c94b4b", "Project Map": procoreColors.orange };
+    app.categories = {}; 
+    if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
+        nodesData.forEach(node => { if (!app.categories[node.group]) app.categories[node.group] = { color: colorMap[node.group] || "#" + Math.floor(Math.random()*16777215).toString(16) }; });
+    }
+}
+
 function setHexFoci() {
     const container = document.getElementById('graph-container');
     if(!container) return;
@@ -215,7 +216,7 @@ function ticked() {
 }
 
 function updateGraph(isFilterChange = true) {
-    if (isFilterChange && app.currentTour) stopTour();
+    if (isFilterChange && app.currentTour && typeof stopTour === 'function') stopTour();
     
     // --- CRITICAL GUARD CLAUSE ---
     if (app.interactionState === 'manual_building') return;
@@ -387,7 +388,7 @@ function updateGraph(isFilterChange = true) {
     app.simulation.force("link").links(filteredLinks);
     app.simulation.alpha(1).restart();
     if(typeof updateTourDropdown === 'function') updateTourDropdown(filters.packageTools); 
-    resetHighlight(); 
+    if(typeof resetHighlight === 'function') resetHighlight(); 
 }
 
 function addBadge(group, iconCode, color, x, y, tooltipText) {
