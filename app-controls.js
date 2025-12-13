@@ -1,7 +1,7 @@
 // --- app-controls.js ---
-// VERSION: 170 (SOW V2: CONDITIONAL TEMPLATES & RBAC)
+// VERSION: 210 (FIXED: ROBUST SOW CONTENT GENERATION)
 
-// --- TEAM CONFIGURATION RULES ---
+// --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
     admin: { 
         showTours: true, showAiBuilder: true, showManualBuilder: true, 
@@ -45,51 +45,228 @@ const audienceDataToKeyMap = { "Contractor": "GC", "General Contractor": "GC", "
 const audienceKeyToLabelMap = { "GC": "General Contractor", "SC": "Specialty Contractor", "O": "Owner" };
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
+// "module" key corresponds to SOW_LIBRARY keys
 const SOW_QUESTIONS = [
-    { id: "q-erp", label: "ERP Connector", type: "cost", hrs: 20, cost: 5000 },
-    { id: "q-analytics", label: "Analytics", type: "cost", hrs: 10, cost: 2500 },
-    { id: "q-integration", label: "Custom Integration", type: "cost", hrs: 15, cost: 5000 },
-    { id: "q-reports", label: "Custom Reports", type: "cost", hrs: 8, cost: 1500 },
-    { id: "q-ras", label: "RAS / Data Pop", type: "cost", hrs: 40, cost: 6000 },
-    { id: "q-pdf", label: "Custom PDFs", type: "cost", hrs: 6, cost: 1200 },
-    { id: "q-sop", label: "SOP Docs", type: "cost", hrs: 20, cost: 3000 },
-    { id: "q-admin", label: "Dedicated Admin", type: "risk", factor: -0.2, target: "change" }, 
-    { id: "q-financials", label: "Complex Finance", type: "risk", factor: 0.3, target: "data" } 
+    { id: "q-sop", label: "SOP Development", type: "cost", hrs: 140, cost: 35000, module: "MOD_SOP" },
+    { id: "q-consulting", label: "Virtual Consulting", type: "cost", hrs: 400, cost: 100000, module: "MOD_CONSULTING" },
+    { id: "q-admin", label: "Project Admin", type: "cost", hrs: 140, cost: 35000, module: "MOD_ADMIN" },
+    { id: "q-integration", label: "Integration Consulting", type: "cost", hrs: 25, cost: 6250, module: "MOD_INTEGRATION" },
+    { id: "q-custom", label: "Custom Solutions", type: "cost", hrs: 40, cost: 10000, module: "MOD_CUSTOM" },
+    
+    // Risk Factors (Modifiers)
+    { id: "q-financials", label: "Complex Finance", type: "risk", factor: 0.3, target: "data" },
+    { id: "q-ent", label: "Enterprise Scale", type: "risk", factor: 0.2, target: "change" }
 ];
 
-// --- CONDITIONAL TEMPLATE LOGIC ---
-function getSOWTemplate(sowData) {
-    // Default Template
-    let templateId = "STD_IMPL";
-    let title = "Standard Implementation SOW";
-    let terms = "Standard Professional Services Terms apply.";
+// --- SOW TEMPLATE LIBRARY (FULL TEXT) ---
+const SOW_LIBRARY = {
+    // 1. LEGAL WRAPPERS
+    "NAM_GC_BASE": {
+        title: "STATEMENT OF WORK (GENERAL CONTRACTOR)",
+        body: `
+        <div class="sow-section">
+            <h3>PARTIES</h3>
+            <p><strong>Provider:</strong> Procore Technologies, Inc., a Delaware corporation.<br>
+            <strong>Client:</strong> {{Client Name}}</p>
+        </div>
+        <div class="sow-section">
+            <h3>OVERVIEW</h3>
+            <p>Client is currently implementing project management software products and has identified a need for standardizing processes and content. To support Client’s strategic initiative, Client and Provider agree to the custom scope of services outlined below.</p>
+        </div>
+        <div class="sow-section">
+            <h3>TERM</h3>
+            <p>Unless otherwise noted in a specific module, access to resources and service hours must be used within thirty-six (36) months of the service start date.</p>
+        </div>
+        <div class="sow-section">
+            <h3>GOVERNING TERMS</h3>
+            <p>This SOW is governed by the Master Services Agreement ("MSA") or Subscription Terms currently in place between the parties. All fees are in USD.</p>
+        </div>
+        `
+    },
+    "NAM_OWNER_BASE": {
+        title: "STATEMENT OF WORK (OWNER/DEVELOPER)",
+        body: `
+        <div class="sow-section">
+            <h3>PARTIES</h3>
+            <p><strong>Provider:</strong> Procore Technologies, Inc.<br>
+            <strong>Client:</strong> {{Client Name}}</p>
+        </div>
+        <div class="sow-section">
+            <h3>OVERVIEW</h3>
+            <p>Client requires specialized assistance to standardize capital project controls and financial workflows. Client and Provider agree to the custom scope of services outlined below to ensure successful onboarding of future assets.</p>
+        </div>
+        <div class="sow-section">
+            <h3>TERM</h3>
+            <p>Services outlined herein are valid for thirty-six (36) months from execution.</p>
+        </div>
+        <div class="sow-section">
+            <h3>GOVERNING TERMS</h3>
+            <p>This SOW is governed by the Master Services Agreement ("MSA") executed by the Client. All fees are in USD.</p>
+        </div>
+        `
+    },
+    "APAC_BASE": {
+        title: "STATEMENT OF WORK (APAC)",
+        body: `
+        <div class="sow-section">
+            <h3>PARTIES</h3>
+            <p><strong>Provider:</strong> Procore Technologies Pty Ltd.<br>
+            <strong>Client:</strong> {{Client Name}}</p>
+        </div>
+        <div class="sow-section">
+            <h3>OVERVIEW</h3>
+            <p>Client and Provider agree to the custom scope of services outlined below.</p>
+        </div>
+        <div class="sow-section">
+            <h3>REGIONAL TERMS</h3>
+            <ul>
+                <li><strong>Currency:</strong> All fees are listed in AUD/SGD unless otherwise specified.</li>
+                <li><strong>GST/Tax:</strong> Fees are exclusive of Goods and Services Tax (GST).</li>
+                <li><strong>Jurisdiction:</strong> This agreement is governed by the laws of New South Wales (or relevant APAC jurisdiction).</li>
+            </ul>
+        </div>
+        <div class="sow-section">
+            <h3>TERM</h3>
+            <p>Services must be utilized within thirty-six (36) months of the service start date.</p>
+        </div>
+        `
+    },
+    "EMEA_BASE": {
+        title: "STATEMENT OF WORK (EMEA)",
+        body: `
+        <div class="sow-section">
+            <h3>PARTIES</h3>
+            <p><strong>Provider:</strong> Procore Technologies Ltd.<br>
+            <strong>Client:</strong> {{Client Name}}</p>
+        </div>
+        <div class="sow-section">
+            <h3>OVERVIEW</h3>
+            <p>Client and Provider agree to the custom scope of services outlined below to support Client's standardization and implementation initiatives.</p>
+        </div>
+        <div class="sow-section">
+            <h3>REGIONAL TERMS</h3>
+            <ul>
+                <li><strong>Data Protection:</strong> Both parties agree to comply with all applicable provisions of the General Data Protection Regulation (GDPR).</li>
+                <li><strong>VAT:</strong> All fees are exclusive of VAT.</li>
+                <li><strong>Jurisdiction:</strong> This agreement is governed by the laws of England and Wales.</li>
+            </ul>
+        </div>
+        <div class="sow-section">
+            <h3>TERM</h3>
+            <p>Services must be utilized within thirty-six (36) months of the service start date.</p>
+        </div>
+        `
+    },
 
-    // Logic: Region + Audience + Key Add-ons determine the template
-    if (sowData.region === "APAC") {
-        templateId = "APAC_STD";
-        title = "APAC Service Agreement";
-        terms = " governed by APAC localized terms.";
-    } 
+    // 2. SCOPE MODULES
+    "MOD_SOP": {
+        title: "STANDARD OPERATING PROCEDURE (SOP) SERVICES",
+        body: `
+        <p>Provider will provide up to one-hundred forty (140) hours towards developing Client Standard Operating Procedures with Provider's Strategic Product Consultants (SPCs) and one (1) named Training Management Specialist.</p>
+        <p><strong>Included Services:</strong></p>
+        <ul>
+            <li>Planning & discovery to align on timelines and outcomes.</li>
+            <li>Virtual consultation services to provide guidance on SOPs and best practices.</li>
+            <li>Documentation of SOPs within the Provider's training/knowledge center product.</li>
+            <li>General Q&A with Client’s internal team.</li>
+        </ul>
+        <p><strong>Exclusions:</strong> Ongoing SOP management greater than 140 hours; Data entry; Staff augmentation.</p>
+        `
+    },
+    "MOD_CONSULTING": {
+        title: "VIRTUAL CONSULTING SERVICES",
+        body: `
+        <p>Provider will provide up to four-hundred (400) additional hours of Virtual Consulting Services. These hours are led by Strategic Product Consultants.</p>
+        <p><strong>Usage:</strong></p>
+        <ul>
+            <li>Additional training sessions and deep dives on standard toolsets.</li>
+            <li>Expert review of Client’s systems, processes, and operations.</li>
+            <li>Usage monitoring and reviews with Client’s key stakeholders.</li>
+            <li>Project administration duties, including coordination, planning, and management of project execution.</li>
+        </ul>
+        <p><strong>Expiration:</strong> Consulting hours must be used within thirty-six (36) months of service start date.</p>
+        `
+    },
+    "MOD_TRAINING": {
+        title: "ONSITE TRAINING SERVICES",
+        body: `
+        <p>Provider will provide fifteen (15) days of onsite training led by an Implementation Manager or Strategic Consultant. Generally, four (4) weeks advance notice is required for scheduling.</p>
+        <p><strong>Anticipated Schedule:</strong></p>
+        <ol>
+            <li><strong>Kickoff, Discovery and Planning Workshop (3 Days):</strong> To set project expectations and outline a project plan.</li>
+            <li><strong>SOP End-User Trainings (6 Days):</strong> "Train the Trainer" workshops informed by the SOPs being developed.</li>
+            <li><strong>Business Health Checks (6 Days):</strong> Stakeholder meetings to review milestone status and adoption progress.</li>
+        </ol>
+        <p><strong>Terms:</strong> Includes expenses. Limited to twenty (20) Client participants per session.</p>
+        `
+    },
+    "MOD_INTEGRATION": {
+        title: "INTEGRATION CONSULTING",
+        body: `
+        <p>Provider will provide up to twenty-five (25) hours of virtual Integration Consulting led by a Solutions Architect to assist with scoping and planning for Client’s anticipated integrations.</p>
+        <p><strong>Included Services:</strong></p>
+        <ul>
+            <li>Integration discovery and planning for the tool suite.</li>
+            <li>Guidance on integration best practices.</li>
+            <li>Virtual Developer training on webhooks, authentication, or REST web services.</li>
+            <li>Data migration feasibility analysis and guidance.</li>
+        </ul>
+        <p><strong>Exclusions:</strong> Actual integration code development.</p>
+        `
+    },
+    "MOD_CUSTOM": {
+        title: "CUSTOM SOLUTIONS",
+        body: `
+        <p>Provider will provide up to forty (40) hours for custom form and workflow development.</p>
+        <p><strong>Scope:</strong></p>
+        <ul>
+            <li>Customizing PDF item outputs.</li>
+            <li>Creation of custom tools and custom workflows.</li>
+        </ul>
+        <p><strong>IP Rights:</strong> Any intellectual property created shall be owned solely by Provider, provided that Client is granted a non-exclusive right to use any custom forms/tools solely for internal business purposes.</p>
+        <p><strong>Expiration:</strong> Custom solutions hours must be used within twelve (12) months of service start date.</p>
+        `
+    },
+    "MOD_ADMIN": {
+        title: "PROJECT ADMINISTRATION",
+        body: `
+        <p>An Implementation Manager (IM) will be assigned for up to 140 virtual hours to partner with consultants in overseeing deliverables, timelines, and resource allocation.</p>
+        <p><strong>Responsibilities:</strong></p>
+        <ul>
+            <li>Coordinating services, deliverables, and resource scheduling.</li>
+            <li>Driving milestone progress in the Project Plan.</li>
+            <li>Progress calls, coaching, and KPI monitoring.</li>
+            <li>Evaluation and guidance on developing Standard Operating Procedures.</li>
+        </ul>
+        `
+    }
+};
+
+// --- DYNAMIC CONTENT ASSEMBLER ---
+function getSOWContent(sowData) {
+    // 1. Determine Base Wrapper (Region + Audience)
+    let baseKey = "NAM_GC_BASE"; // Default
+    if (sowData.region === "APAC") baseKey = "APAC_BASE";
+    else if (sowData.region === "EMEA") baseKey = "EMEA_BASE";
+    else if (sowData.audience === "O") baseKey = "NAM_OWNER_BASE";
+
+    // 2. Determine Modules (Services)
+    let modules = [];
     
-    if (sowData.packages.some(p => p.includes("Premier"))) {
-        templateId = "PREMIER_ENT";
-        title = "Premier Enterprise Implementation";
-        terms = "Includes dedicated consultant and weekly status calls.";
+    // Look up modules based on the IDs saved in sowData.activeModules
+    if (sowData.activeModules && sowData.activeModules.length > 0) {
+        sowData.activeModules.forEach(modKey => {
+            if (SOW_LIBRARY[modKey]) {
+                modules.push(SOW_LIBRARY[modKey]);
+            }
+        });
     }
+    
+    // Check Onsite Input specially
+    if (sowData.onsite > 0) modules.push(SOW_LIBRARY["MOD_TRAINING"]);
 
-    if (sowData.services.includes("ERP Connector")) {
-        templateId += "_ERP";
-        title += " + ERP Integration";
-        terms += " Includes technical validation phase for ERP.";
-    }
-
-    if (sowData.services.includes("Custom Integration")) {
-        templateId += "_CUSTOM";
-        title += " (Custom Scope)";
-        terms += " Custom development requires separate sign-off on technical specs.";
-    }
-
-    return { id: templateId, title: title, terms: terms };
+    // Fallback: If modules list is empty, default to nothing
+    return { base: SOW_LIBRARY[baseKey], modules: modules };
 }
 
 // --- INITIALIZATION ---
@@ -101,7 +278,6 @@ function initializeControls() {
         app.state.calculatorMode = 'edit'; 
     }
     
-    // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
     });
@@ -110,13 +286,11 @@ function initializeControls() {
     populatePersonaFilter();
     renderSOWQuestionnaire();
    
-    // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange); 
     d3.select("#persona-filter").on("change", () => { if (typeof updateGraph === 'function') updateGraph(true) });
     
-    // Procore-Led Toggle
     const ledToggle = d3.select("#toggle-procore-led");
     if (!ledToggle.empty()) {
         ledToggle.on("change", function() {
@@ -157,7 +331,6 @@ function initializeControls() {
         if(el) el.addEventListener('input', calculateScoping);
     });
     
-    // Init Stack Builder Button
     setTimeout(() => {
         const existingBtn = d3.select("#stack-builder-btn");
         if (existingBtn.empty()) {
@@ -309,7 +482,6 @@ function renderSOWQuestionnaire() {
 // --- SCOPING CALCULATOR (WITH RBAC) ---
 function calculateScoping() {
     const isViewOnly = (app.state.calculatorMode === 'view');
-    
     const sliderMaturity = document.getElementById('slider-maturity');
     const sliderData = document.getElementById('slider-data');
     const sliderChange = document.getElementById('slider-change');
@@ -362,12 +534,14 @@ function calculateScoping() {
     const customToolCount = app.customScope ? app.customScope.size : 0;
     const customScopeHours = customToolCount * 5; 
     let servicesHours = 0; let servicesCost = 0;
+    let activeModules = []; // NEW: Track selected modules
 
     SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => {
         const checkbox = document.getElementById(q.id);
         if (checkbox && checkbox.checked) {
             servicesHours += q.hrs;
             servicesCost += q.cost;
+            if (q.module) activeModules.push(q.module); // Capture ID
         }
     });
 
@@ -429,92 +603,80 @@ function calculateScoping() {
         packages: d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value),
         customTools: Array.from(app.customScope || []),
         services: SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label),
+        activeModules: activeModules, // Pass the IDs to the printer
         onsite: onsiteCount, multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) }
     };
     
     refreshAccordionHeight();
 }
 
-// --- PRINT SOW LOGIC (CONDITIONAL TEMPLATES) ---
+// --- PRINT SOW (BRANDING + TEMPLATES) ---
 function generateSOWPrintView() {
-    if (!app.currentSOW) {
-        alert("Please configure a scope first.");
-        return;
-    }
-    const sow = app.currentSOW;
-    const template = getSOWTemplate(sow); // Retrieve the conditional template
-    const today = new Date().toLocaleDateString();
+    if (!app.currentSOW) { alert("Please configure a scope first."); return; }
+    
+    const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
+    const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
+    
+    const logoHtml = (logoInput && logoInput.trim() !== "") 
+        ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
+        : `<div class="logo">PROCORE</div>`;
 
+    const sow = app.currentSOW;
+    const templateData = getSOWContent(sow); 
+    const today = new Date().toLocaleDateString();
+    
     const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-        alert("Please allow popups to print the SOW.");
-        return;
-    }
+    if (!printWindow) { alert("Please allow popups to print the SOW."); return; }
+
+    let modulesHtml = "";
+    templateData.modules.forEach(mod => {
+        modulesHtml += `<div class="module">
+            ${mod.body}
+        </div>`;
+    });
+
+    let bodyContent = templateData.base.body
+        .replace(/{{Client Name}}/g, clientName)
+        .replace(/{{Date}}/g, today);
 
     const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
-        <title>${template.title}</title>
+        <title>SOW: ${templateData.base.title}</title>
         <style>
-            body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.5; }
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.5; max-width: 800px; margin: 0 auto; }
             .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
             .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
             .title { font-size: 14px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
-            .doc-id { font-size: 10px; color: #aaa; margin-top: 5px; }
-            h2 { font-size: 18px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; color: #555; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
-            .item { margin-bottom: 8px; font-size: 14px; }
-            .label { font-weight: bold; color: #555; display: inline-block; width: 140px; }
-            .total-box { background: #f9f9f9; padding: 20px; border-radius: 8px; text-align: right; margin-top: 40px; border: 1px solid #eee; }
-            .total-cost { font-size: 32px; font-weight: 800; color: #111; margin-top: 5px; }
-            .terms-box { margin-top: 30px; padding: 15px; background: #fff5f0; border-left: 4px solid #F36C23; font-size: 12px; color: #666; }
+            h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; }
+            p, li { font-size: 13px; }
+            .sow-section { margin-bottom: 20px; }
+            .module { background: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+            .module h2 { font-size: 16px; margin-top: 0; color: #111827; }
+            .total-box { background: #1f2937; color: white; padding: 20px; border-radius: 8px; text-align: right; margin-top: 40px; }
+            .total-cost { font-size: 32px; font-weight: 800; margin-top: 5px; }
             .disclaimer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         </style>
     </head>
     <body>
         <div class="header">
-            <div>
-                <div class="logo">PROCORE</div>
-                <div class="doc-id">Template ID: ${template.id}</div>
-            </div>
-            <div class="title">${template.title} • ${today}</div>
+            <div>${logoHtml}</div>
+            <div class="title">${templateData.base.title}</div>
         </div>
-        
-        <div class="grid">
-            <div>
-                <h2>Client Profile</h2>
-                <div class="item"><span class="label">Region:</span> ${sow.region}</div>
-                <div class="item"><span class="label">Audience:</span> ${sow.audience}</div>
-                <div class="item"><span class="label">Complexity:</span> Mat: ${sow.multipliers.mat}, Data: ${sow.multipliers.data}, Chg: ${sow.multipliers.change}</div>
-            </div>
-            <div>
-                 <h2>Project Scope</h2>
-                 <div class="item"><span class="label">Packages:</span> ${sow.packages.length > 0 ? sow.packages.join(", ") : "None"}</div>
-                 <div class="item"><span class="label">Custom Tools:</span> ${sow.customTools.length > 0 ? sow.customTools.join(", ") : "None"}</div>
-                 <div class="item"><span class="label">Add-on Services:</span> ${sow.services.length > 0 ? sow.services.join(", ") : "None"}</div>
-                 <div class="item"><span class="label">On-Site Visits:</span> ${sow.onsite}</div>
-            </div>
-        </div>
-
-        <div class="terms-box">
-            <strong>Applicable Terms:</strong> ${template.terms}
-        </div>
-
+        ${bodyContent}
+        <h3>Scope of Services</h3>
+        ${modulesHtml}
         <div class="total-box">
-            <div style="font-size: 12px; text-transform: uppercase; color: #888; font-weight: bold;">Estimated Implementation Investment</div>
+            <div style="font-size: 12px; text-transform: uppercase; font-weight: bold; opacity: 0.8;">Total Implementation Investment</div>
             <div class="total-cost">$${sow.totalCost.toLocaleString()}</div>
-            <div style="font-size: 14px; color: #666; margin-top: 5px;">Est. Timeline: ${sow.weeks} Weeks</div>
+            <div style="font-size: 14px; margin-top: 5px; opacity: 0.8;">Est. Timeline: ${sow.weeks} Weeks</div>
         </div>
-
         <div class="disclaimer">
             This document is a rough order of magnitude (ROM) estimate for simulation purposes only. <br>
             It does not constitute a binding contract or formal Statement of Work. Pricing is subject to change.
         </div>
-
-        <script>
-            window.print();
-        </script>
+        <script>window.print();</script>
     </body>
     </html>
     `;
@@ -523,6 +685,7 @@ function generateSOWPrintView() {
     printWindow.document.close();
 }
 
+// --- TEAM VIEW MANAGER ---
 function applyTeamView(team) {
     const config = TEAM_CONFIG[team];
     if (!config) return;
@@ -536,7 +699,6 @@ function applyTeamView(team) {
         manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
 
-    // Handle Calculator Visibility & Mode
     const scopingContainer = d3.select("#scoping-ui-container");
     if (config.calculatorMode === 'hidden') {
         scopingContainer.classed("hidden", true);
@@ -544,7 +706,7 @@ function applyTeamView(team) {
         scopingContainer.classed("hidden", !config.showScoping);
         if (typeof app !== 'undefined' && app.state) {
             app.state.calculatorMode = config.calculatorMode;
-            calculateScoping(); // Re-run to apply disabled states
+            calculateScoping(); 
         }
     }
 
@@ -592,29 +754,24 @@ function populateRegionFilter() {
     });
 }
 
-// --- HIERARCHY ENFORCER: LEVEL 1 (Region) ---
 function onRegionChange() {
     const region = d3.select(this).property("value");
     const audienceFilter = d3.select("#audience-filter");
     const stackBtn = d3.select("#stack-builder-btn");
     
-    // 1. Reset Downstream Filters
     audienceFilter.property("value", "all").property("disabled", region === "all");
     audienceFilter.html('<option value="all">All Audiences</option>');
     
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
     
-    // 2. Reset App State (Stack, etc.)
     if(typeof app !== 'undefined') {
         app.state.myStack.clear();
         if (app.state.isBuildingStack) toggleStackBuilderMode(); // Turn off if on
     }
     clearPackageDetails();
     
-    // 3. Configure Audience based on Region
     if (region !== "all") {
-        // Unlock Stack Builder
         stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", false)
                 .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", true)
                 .attr("disabled", null);
@@ -631,7 +788,6 @@ function onRegionChange() {
              audienceFilter.append("option").attr("value", audKey).text(audienceKeyToLabelMap[audKey]);
         });
     } else {
-        // Disable Stack Builder if no region
         stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", true)
                 .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", false)
                 .attr("disabled", true);
@@ -640,7 +796,6 @@ function onRegionChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-// --- HIERARCHY ENFORCER: LEVEL 2 (Audience) ---
 function onAudienceChange() {
     const region = d3.select("#region-filter").property("value");
     const audience = d3.select(this).property("value");
@@ -685,7 +840,6 @@ function onAudienceChange() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-// FIX: AUTO-EXIT BUILDER MODE ON PACKAGE SELECTION
 function onPackageChange() {
     if (app.state.isBuildingStack) toggleStackBuilderMode(); // FORCE OFF
     
@@ -706,7 +860,6 @@ function onPackageChange() {
 }
 
 function updatePackageAddOns() {
-    // FORCE EXIT BUILDER MODE HERE TOO (Since this is triggered by checkboxes)
     if (app.state.isBuildingStack) toggleStackBuilderMode();
 
     const region = d3.select("#region-filter").property('value');
