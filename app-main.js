@@ -1,5 +1,5 @@
 // --- app-main.js ---
-// VERSION: 150 (BRAND ALIGNMENT & AUTO-EXIT FIX)
+// VERSION: 155 (FIX: INTERACTION STATE SAFETY)
 
 const app = {
     simulation: null,
