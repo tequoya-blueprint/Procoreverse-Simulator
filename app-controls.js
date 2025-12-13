@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 135 (GAP ANALYSIS V2 - FULL RESTORATION)
+// VERSION: 145 (STRICT REGION HIERARCHY)
 
 // --- TEAM CONFIGURATION RULES ---
 const TEAM_CONFIG = {
@@ -92,7 +92,6 @@ const SOW_QUESTIONS = [
 function initializeControls() {
     if (typeof app !== 'undefined') {
         app.customScope = new Set();
-        // Ensure state object exists for Gap Analysis
         if (!app.state) app.state = {};
         if (!app.state.myStack) app.state.myStack = new Set();
     }
@@ -112,7 +111,7 @@ function initializeControls() {
     populatePersonaFilter();
     renderSOWQuestionnaire();
    
-    // Filter Listeners
+    // Filter Listeners - Enforcing Hierarchy
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange); 
@@ -163,7 +162,7 @@ function initializeControls() {
         if(el) el.addEventListener('input', calculateScoping);
     });
 
-    // Initialize Stack Builder Button (Gap Analysis V2)
+    // Initialize Stack Builder Button (Hidden until Region Selected)
     setTimeout(() => {
         const existingBtn = d3.select("#stack-builder-btn");
         if (existingBtn.empty()) {
@@ -171,8 +170,9 @@ function initializeControls() {
              if (!container.empty()) {
                 container.insert("button", ":first-child")
                     .attr("id", "stack-builder-btn")
-                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
-                    .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
+                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed")
+                    .attr("disabled", true)
+                    .html('<i class="fas fa-layer-group mr-2"></i> Define Customer Stack')
                     .on("click", toggleStackBuilderMode);
              }
         }
@@ -194,10 +194,13 @@ function toggleCustomScopeItem(nodeId) {
 }
 
 // --- GAP ANALYSIS V2 MANAGER ---
-// Updated to handle "Outlier" logic and 4-state visualization
-
 function toggleStackBuilderMode() {
-    // Toggle state
+    // Prevent usage if Region not selected
+    if (d3.select("#region-filter").property("value") === "all") {
+        if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
+        return;
+    }
+
     app.state.isBuildingStack = !app.state.isBuildingStack;
     
     let btn = d3.select("#stack-builder-btn");
@@ -212,10 +215,7 @@ function toggleStackBuilderMode() {
         
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
         
-        // Visual: Dim everything slightly to focus on selection
         d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
-        
-        // Highlight already selected
         highlightOwnedNodes();
         
     } else {
@@ -247,14 +247,13 @@ function toggleStackItem(d) {
 }
 
 function highlightOwnedNodes() {
-    // Visual feedback during "Building" phase
     if (!app.node) return;
     
     app.node.transition().duration(200)
-        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) // Dim unowned
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") // Green Glow
+        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") 
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") // Green Stroke
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") 
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
@@ -278,7 +277,7 @@ function getGapAnalysis() {
             }
         });
         
-        // Calculate Outliers
+        // Calculate Outliers (Legacy tools)
         owned.forEach(toolId => {
             if (!targetPackageTools.has(toolId)) {
                 outlier.add(toolId);
@@ -618,19 +617,33 @@ function populateRegionFilter() {
     });
 }
 
+// --- HIERARCHY ENFORCER: LEVEL 1 (Region) ---
 function onRegionChange() {
     const region = d3.select(this).property("value");
     const audienceFilter = d3.select("#audience-filter");
+    const stackBtn = d3.select("#stack-builder-btn");
     
+    // 1. Reset Downstream Filters
     audienceFilter.property("value", "all").property("disabled", region === "all");
     audienceFilter.html('<option value="all">All Audiences</option>');
     
     d3.select("#package-selection-area").classed("hidden", true);
     d3.select("#package-checkboxes").html("");
     
+    // 2. Reset App State (Stack, etc.)
+    if(typeof app !== 'undefined') {
+        app.state.myStack.clear();
+        if (app.state.isBuildingStack) toggleStackBuilderMode(); // Turn off if on
+    }
     clearPackageDetails();
     
+    // 3. Configure Audience based on Region
     if (region !== "all") {
+        // Unlock Stack Builder
+        stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", false)
+                .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", true)
+                .attr("disabled", null);
+
         const availableAudiences = new Set();
         packagingData.filter(pkg => 
             pkg.region === region || (region === 'NAMER' && pkg.region === 'NAM')
@@ -642,15 +655,23 @@ function onRegionChange() {
         [...availableAudiences].sort().forEach(audKey => {
              audienceFilter.append("option").attr("value", audKey).text(audienceKeyToLabelMap[audKey]);
         });
+    } else {
+        // Disable Stack Builder if no region
+        stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", true)
+                .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", false)
+                .attr("disabled", true);
     }
+    
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
+// --- HIERARCHY ENFORCER: LEVEL 2 (Audience) ---
 function onAudienceChange() {
     const region = d3.select("#region-filter").property("value");
     const audience = d3.select(this).property("value");
     const packageArea = d3.select("#package-selection-area");
     const packageList = d3.select("#package-checkboxes");
+    
     packageList.html("");
     clearPackageDetails();
     
@@ -819,10 +840,6 @@ function clearPackageDetails() {
     d3.select("#package-services-container").classed('hidden', true);
     if (app && app.customScope) app.customScope.clear();
     d3.selectAll(".sow-question").property("checked", false);
-    
-    // Reset Stack if user changes region entirely
-    // app.state.myStack = new Set(); 
-    
     calculateScoping();
 }
 
@@ -892,6 +909,12 @@ function resetView() {
     }
     app.state.myStack = new Set();
     
+    // Disable Stack Button on Reset (Because region is cleared)
+    d3.select("#stack-builder-btn")
+      .classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", true)
+      .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", false)
+      .attr("disabled", true);
+
     clearPackageDetails();
     if (typeof updateGraph === 'function') updateGraph(false);
     if (typeof resetZoom === 'function') resetZoom();
@@ -961,133 +984,3 @@ function updateActivePackageState() {
         app.currentPackage = null;
     }
 }
-
-// --- CUSTOMER STACK & GAP ANALYSIS MANAGER (NEW PHASE 3) ---
-
-// 1. Initialize State Logic
-if (typeof app !== 'undefined') {
-    if (!app.state) app.state = {};
-    if (!app.state.myStack) app.state.myStack = new Set();
-    app.state.isBuildingStack = false;
-}
-
-// 2. Toggle "Builder Mode"
-function toggleStackBuilderMode() {
-    app.state.isBuildingStack = !app.state.isBuildingStack;
-    
-    // UI: Find or Create the Builder Button
-    let btn = d3.select("#stack-builder-btn");
-    if (btn.empty()) {
-        const container = d3.select("#packaging-container"); 
-        if (!container.empty()) {
-            btn = container.insert("button", ":first-child")
-                .attr("id", "stack-builder-btn")
-                .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 border");
-        }
-    }
-
-    if (app.state.isBuildingStack) {
-        // --- ACTIVATE BUILDER MODE ---
-        app.interactionState = 'building_stack';
-        
-        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
-           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
-           .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
-        
-        if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
-        
-        // Visual: Dim everything slightly to focus on selection
-        d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
-        
-        // Highlight already selected
-        highlightOwnedNodes();
-        
-    } else {
-        // --- DEACTIVATE BUILDER MODE ---
-        app.interactionState = 'explore';
-        
-        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
-           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
-           .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
-        
-        // Return to normal view with "Gap Analysis" active if package selected
-        if (typeof updateGraph === 'function') updateGraph(true);
-        
-        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
-            showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
-        }
-    }
-}
-
-// 3. Handle Node Selection in Builder Mode
-function toggleStackItem(d) {
-    if (!app.state.myStack) app.state.myStack = new Set();
-    
-    // Toggle logic: Add if missing, remove if present
-    if (app.state.myStack.has(d.id)) {
-        app.state.myStack.delete(d.id);
-    } else {
-        app.state.myStack.add(d.id);
-    }
-    // Immediate visual feedback
-    highlightOwnedNodes();
-}
-
-// 4. Visual Feedback Loop (Builder Mode Only)
-function highlightOwnedNodes() {
-    if (!app.node) return;
-    
-    app.node.transition().duration(200)
-        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) // Dim unowned
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))" : "none") // Green Glow
-        .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#22c55e" : "#fff") // Green Stroke
-        .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
-}
-
-// 5. Calculate the "Gap"
-function getGapAnalysis() {
-    const filters = getActiveFilters(); 
-    const targetPackageTools = filters.packageTools || new Set();
-    
-    const owned = app.state.myStack || new Set();
-    
-    const gap = new Set();      // In Package, NOT Owned (Upsell)
-    const matched = new Set();  // In Package, AND Owned (Safe)
-    const outlier = new Set();  // NOT in Package, BUT Owned (Legacy/Extra)
-    
-    if (targetPackageTools.size > 0) {
-        targetPackageTools.forEach(toolId => {
-            if (owned.has(toolId)) {
-                matched.add(toolId);
-            } else {
-                gap.add(toolId);
-            }
-        });
-        
-        // Calculate Outliers (Legacy tools)
-        owned.forEach(toolId => {
-            if (!targetPackageTools.has(toolId)) {
-                outlier.add(toolId);
-            }
-        });
-    }
-    
-    return { owned, gap, matched, outlier, target: targetPackageTools };
-}
-
-// 6. Init Helper (Run once on load)
-setTimeout(() => {
-    // Check if the button needs to be created on load
-    const existingBtn = d3.select("#stack-builder-btn");
-    if (existingBtn.empty()) {
-         const container = d3.select("#packaging-container"); 
-         if (!container.empty()) {
-            container.insert("button", ":first-child")
-                .attr("id", "stack-builder-btn")
-                .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
-                .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
-                .on("click", toggleStackBuilderMode);
-         }
-    }
-}, 1000);
