@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 360 (FIXED: SAFE ID HELPER + VISIBILITY ENFORCEMENT)
+// VERSION: 410 (FULL RESTORATION: NO MINIFICATION)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -157,7 +157,11 @@ function startManualBuilder() {
     
     // Initial Visual State: Dim everything initially
     app.node.transition().duration(500).style("opacity", 1);
-    app.link.transition().duration(500).style("opacity", 0.1).style("stroke-opacity", 0.1); 
+    
+    // Ensure we start clean by setting opacity on the element level
+    app.link.transition().duration(500)
+        .style("opacity", 0.1) // Dim element
+        .style("stroke-opacity", 0.1); // Dim stroke
 
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
@@ -255,7 +259,7 @@ function updateManualBuilderVisuals() {
 
     // --- LINK UPDATES ---
     app.link.transition().duration(200)
-        // CRITICAL FIX: Restore Element Opacity to 1 for active links
+        // Restore Element Opacity to 1 for active links
         .style("opacity", l => {
             const s = safeId(l.source);
             const t = safeId(l.target);
