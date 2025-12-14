@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 600 (FIXED: CLICK PRIORITY, BADGE PASSTHROUGH, EVENT ORDER)
+// VERSION: 610 (FIXED: BUILDER SIDE PANEL & GAP VISIBILITY)
 
-console.log("App Main 600: Loading...");
+console.log("App Main 610: Loading...");
 
 const app = {
     simulation: null,
@@ -30,7 +30,7 @@ const app = {
     customScope: new Set() 
 };
 
-// --- 1. EVENT HANDLERS ---
+// --- 1. CORE INTERACTION HANDLERS ---
 
 function nodeMouseOver(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
@@ -45,11 +45,13 @@ function nodeMouseOut(event, d) {
 }
 
 function nodeClicked(event, d) {
-    event.stopPropagation(); // Stop background click
+    event.stopPropagation();
     
     // 1. MANUAL PROCESS BUILDER
     if (app.interactionState === 'manual_building') { 
-        if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d); 
+        if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d);
+        // FIX: Show Info Panel so user can see connections/context while building
+        if (typeof showInfoPanel === 'function') showInfoPanel(d);
         return; 
     }
 
@@ -168,8 +170,8 @@ function initializeSimulation() {
 
 function setupMarkers() {
     const defs = app.svg.select("defs");
+    // Standard Markers
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
-    
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
@@ -216,36 +218,43 @@ function ticked() {
 
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour && typeof stopTour === 'function') stopTour();
+    
+    // --- CRITICAL GUARD CLAUSE ---
     if (app.interactionState === 'manual_building') return;
 
+    // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
+    // 2. GAP ANALYSIS PRE-CALCULATION
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
     const isBuilderMode = app.state && app.state.isBuildingStack;
 
+    // 3. Filter Nodes
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
+        
         let inPackage = true;
         if (isBuilderMode) {
             inPackage = true; 
         } else {
             inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         }
+        
         return inCategory && inPersona && inPackage;
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
-    // D3 Update Pattern
+    // 4. D3 Join & Update
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node")
-                // ATTACH CLICK LISTENERS
+                // ATTACH CLICK LISTENERS - CRITICAL FOR INTERACTION
                 .on("mouseenter", nodeMouseOver)
                 .on("mouseleave", nodeMouseOut)
                 .on("click", nodeClicked)
@@ -267,36 +276,44 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
+            // PRIORITY 1: STACK BUILDER VISUALS
             if (isBuilderMode) {
                 update.transition().duration(500)
                     .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
                     .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
+                
                 update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") 
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") // Brand Green
                     .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
+                    
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
 
+            // PRIORITY 2: GAP ANALYSIS VISUALS
             update.transition().duration(500)
             .style("opacity", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return 1.0; 
                     if (gapAnalysis.gap.has(d.id)) return 1.0;     
                     if (gapAnalysis.outlier.has(d.id)) return 1.0; 
-                    return 0.15; 
+                    return 0.15; // Ghost
                 }
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
                     if (filters.procoreLedTools.has(d.id)) return 1.0;
-                    return 0.1;
+                    // FIX: Self-Led (Excluded) Opacity bumped to 0.4 for visibility
+                    return 0.4; 
                 }
                 return 1.0;
             })
             .style("filter", d => {
                 if (isGapMode) {
+                    // MATCHED = BRAND GREEN GLOW
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
+                    // GAP = BRAND ORANGE PULSE
                     if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
+                    // OUTLIER = BRAND METAL GLOW
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 if (filters.showProcoreLed) {
@@ -306,12 +323,13 @@ function updateGraph(isFilterChange = true) {
                 return null;
             });
 
-            update.select("path").transition().duration(500)
+            update.select("path")
+                .transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23"; 
-                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
+                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; // Brand Green
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Brand Orange
+                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; // Brand Metal
                     }
                     return "#ffffff"; 
                 })
@@ -328,7 +346,7 @@ function updateGraph(isFilterChange = true) {
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    if (isGapMode) return 0; 
+                    if (isGapMode) return 0; // Reduce noise
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
@@ -366,7 +384,7 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isBuilderMode || isGapMode) return 0.15;
+        if (isBuilderMode || isGapMode) return 0.15; // Dim links in special modes
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
@@ -384,29 +402,28 @@ function updateGraph(isFilterChange = true) {
 }
 
 function addBadge(group, iconCode, color, x, y, tooltipText, d) {
-    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`)
-        .style("cursor", "pointer")
-        .style("pointer-events", "all")
-        // BADGE PASSTHROUGH CLICK
-        .on("click", function(event) { 
-            nodeClicked(event, d); 
-        }); 
-
+    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`).style("cursor", "help").style("pointer-events", "all");
     badge.append("rect").attr("x", -6).attr("y", -6).attr("width", 12).attr("height", 12).attr("fill", "transparent");
     badge.append("text").attr("class", "fas").text(iconCode).attr("text-anchor", "middle").attr("dy", 3).attr("fill", color).attr("font-size", "10px").style("font-family", "'Font Awesome 6 Free'").style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))").style("pointer-events", "none");
+    
+    // ADDED CLICK LISTENER TO BADGE
+    badge.on("click", function(e) {
+        nodeClicked(e, d);
+    });
+
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: ${color};">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
 }
 function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
-    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`)
-        .style("cursor", "pointer")
-        .style("pointer-events", "all")
-        .on("click", function(event) { 
-            nodeClicked(event, d); 
-        });
-
+    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`).style("cursor", "help").style("pointer-events", "all");
     badge.append("rect").attr("x", -6).attr("y", -6).attr("width", 12).attr("height", 12).attr("fill", "transparent");
     badge.append("text").text(emoji).attr("text-anchor", "middle").attr("dy", 3).attr("font-size", "12px").style("font-weight", "bold").style("pointer-events", "none");
+    
+    // ADDED CLICK LISTENER TO BADGE
+    badge.on("click", function(e) {
+        nodeClicked(e, d);
+    });
+
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: #4A4A4A;">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
 }
