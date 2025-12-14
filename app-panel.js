@@ -1,10 +1,12 @@
 // --- app-panel.js ---
-// VERSION: 550 (FIXED: RESTORED MISSING FUNCTIONS & TEMPLATES)
+// VERSION: 580 (FIXED: FULL RESTORATION, CLEAR DIRECTIONAL ICONS, HIDE FUNCTION)
 
 function initializeInfoPanel() {
     const closeBtn = d3.select("#info-close");
     if (!closeBtn.empty()) {
         closeBtn.on("click", () => {
+            // If we are in a tour/builder mode, just hide the panel
+            // If in explore mode, reset the graph highlights
             if (typeof resetHighlight === 'function') {
                 resetHighlight(true);
             } else {
@@ -43,7 +45,7 @@ function showInfoPanel(d) {
     // 4. Set Description
     infoPanel.select("#info-description").text(d.description || "No description available.");
 
-    // 5. Render Support Links (Handle multiple URLs split by pipe |)
+    // 5. Render Support Links
     const linkContainer = infoPanel.select("#info-link-container").html("");
     if (d.supportDocUrl && d.supportDocUrl.trim() !== "") {
         const urls = d.supportDocUrl.split("|");
@@ -97,21 +99,20 @@ function populateConnectionList(d) {
             // Determine "Other" Node
             const isSource = (l.source.id === d.id || l.source === d);
             const otherNode = isSource ? l.target : l.source;
-            const otherId = otherNode.id || otherNode; // Handle object vs string
+            const otherId = otherNode.id || otherNode; 
             
             // Determine Direction & Icon
             let iconHtml = "";
-            let directionClass = "text-gray-400";
             
             if (l.type === 'syncs') {
-                iconHtml = '<i class="fas fa-exchange-alt mx-2" title="Two-way Sync"></i>';
-                directionClass = "text-procore-metal";
+                // Bi-directional
+                iconHtml = '<i class="fas fa-exchange-alt text-gray-400 mr-3 w-4 text-center" title="Syncs with"></i>';
             } else if (isSource) {
-                // Outgoing
-                iconHtml = '<i class="fas fa-arrow-right mx-2" title="Outgoing"></i>';
+                // Outgoing (This node -> Other node)
+                iconHtml = '<i class="fas fa-long-arrow-alt-right text-gray-400 mr-3 w-4 text-center" title="Outgoing to"></i>';
             } else {
-                // Incoming
-                iconHtml = '<i class="fas fa-arrow-left mx-2" title="Incoming"></i>';
+                // Incoming (Other node -> This node)
+                iconHtml = '<i class="fas fa-long-arrow-alt-left text-gray-400 mr-3 w-4 text-center" title="Incoming from"></i>';
             }
 
             // Lookup Friendly Type Label
@@ -128,32 +129,31 @@ function populateConnectionList(d) {
                     if(typeof highlightConnection === 'function') highlightConnection(this, d); 
                 }) 
                 .on("mouseleave", () => { 
-                    // Only reset if we are not in a locked mode
-                    if(app.interactionState === 'selected' && typeof resetHighlight === 'function') {
-                        // Keep the selected node highlighted, just remove the specific connection hover?
-                        // Actually, standard behavior is usually sufficient.
-                    }
+                    // Optional visual reset
                 })
                 .on("click", function() {
-                    // Navigate to the connected node
+                    // Navigate to connected node
                     if (typeof nodeClicked === 'function') {
-                        nodeClicked(new Event('click'), otherNode);
+                        // Create a fake event to pass to the handler
+                        const mockEvent = { stopPropagation: () => {} };
+                        nodeClicked(mockEvent, otherNode);
                     }
                 });
 
             li.html(`
-                <div class="flex justify-between items-center mb-1">
-                    <div class="flex items-center font-semibold text-gray-700">
-                        ${!isSource && l.type !== 'syncs' ? iconHtml : ''}
-                        <span>${otherId}</span>
-                        ${isSource || l.type === 'syncs' ? iconHtml : ''}
+                <div class="flex items-start">
+                    <div class="mt-1 flex-shrink-0">${iconHtml}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center mb-1 flex-wrap">
+                            <span class="font-semibold text-gray-800 truncate mr-2">${otherId}</span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                ${typeLabel}
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-500 pl-1 border-l-2 border-gray-200 ml-1">
+                            ${l.dataFlow || "Data connection"}
+                        </div>
                     </div>
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                        ${typeLabel}
-                    </span>
-                </div>
-                <div class="text-xs text-gray-500 pl-1 border-l-2 border-gray-200 ml-1">
-                    ${l.dataFlow || "Data connection"}
                 </div>
             `);
         });
