@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 220 (FULL SOW LIBRARY & RBAC)
+// VERSION: 620 (FIXED: AUDIENCE MAPPINGS FOR 'O' AND 'RESOURCE MANAGEMENT')
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -35,23 +35,26 @@ function getUrlParam(param) {
     return urlParams.get(param);
 }
 
-// --- DATA MAPPING CONSTANTS ---
+// --- DATA MAPPING CONSTANTS (FIXED) ---
 const audienceKeyToDataValuesMap = {
     "GC": ["Contractor", "General Contractor", "GC"],
     "SC": ["SC", "Specialty Contractor"],
-    "O": ["Owners", "Owner", "Owner Developer *Coming Soon", "O"]
+    "O": ["Owners", "Owner", "Owner Developer *Coming Soon", "O"],
+    "RM": ["Resource Management"] // Added for Global
 };
 
 const audienceDataToKeyMap = {
     "Contractor": "GC", "General Contractor": "GC", "GC": "GC",
     "SC": "SC", "Specialty Contractor": "SC",
-    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O"
+    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O", "O": "O", // Added "O" mapping
+    "Resource Management": "RM" // Added RM mapping
 };
 
 const audienceKeyToLabelMap = {
     "GC": "General Contractor",
     "SC": "Specialty Contractor",
-    "O": "Owner"
+    "O": "Owner",
+    "RM": "Resource Management" // Added Label
 };
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
