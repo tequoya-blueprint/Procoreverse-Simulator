@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 410 (FULL RESTORATION: NO MINIFICATION)
+// VERSION: 600 (FIXED: CLICK PRIORITY, BADGE PASSTHROUGH, EVENT ORDER)
 
-console.log("App Main 410: Loading...");
+console.log("App Main 600: Loading...");
 
 const app = {
     simulation: null,
@@ -30,24 +30,22 @@ const app = {
     customScope: new Set() 
 };
 
-// --- 1. EVENT HANDLERS (DEFINED TOP-LEVEL) ---
+// --- 1. EVENT HANDLERS ---
 
 function nodeMouseOver(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
     if (typeof showTooltip === 'function') showTooltip(event, d);
     if (app.interactionState === 'explore' && typeof applyHighlight === 'function') applyHighlight(d);
 }
 
 function nodeMouseOut(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
-    
     if (typeof hideTooltip === 'function') hideTooltip();
     if (app.interactionState === 'explore' && typeof resetHighlight === 'function') resetHighlight();
 }
 
 function nodeClicked(event, d) {
-    event.stopPropagation();
+    event.stopPropagation(); // Stop background click
     
     // 1. MANUAL PROCESS BUILDER
     if (app.interactionState === 'manual_building') { 
@@ -170,7 +168,6 @@ function initializeSimulation() {
 
 function setupMarkers() {
     const defs = app.svg.select("defs");
-    // Standard Markers
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
     
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
@@ -219,43 +216,42 @@ function ticked() {
 
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour && typeof stopTour === 'function') stopTour();
-    
-    // --- CRITICAL GUARD CLAUSE ---
     if (app.interactionState === 'manual_building') return;
 
-    // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
-    // 2. GAP ANALYSIS PRE-CALCULATION
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
     const isBuilderMode = app.state && app.state.isBuildingStack;
 
-    // 3. Filter Nodes
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        
         let inPackage = true;
         if (isBuilderMode) {
             inPackage = true; 
         } else {
             inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         }
-        
         return inCategory && inPersona && inPackage;
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
-    // 4. D3 Join & Update
+    // D3 Update Pattern
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
-            const nodeGroup = enter.append("g").attr("class", "node").call(drag(app.simulation))
-                .on("mouseenter", nodeMouseOver).on("mouseleave", nodeMouseOut).on("click", nodeClicked).on("dblclick", nodeDoubleClicked);
+            const nodeGroup = enter.append("g").attr("class", "node")
+                // ATTACH CLICK LISTENERS
+                .on("mouseenter", nodeMouseOver)
+                .on("mouseleave", nodeMouseOut)
+                .on("click", nodeClicked)
+                .on("dblclick", nodeDoubleClicked)
+                .call(drag(app.simulation)); // DRAG LAST = CLICK FIRST
+
             nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
             nodeGroup.append("text").text(d => d.id).attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
@@ -263,36 +259,32 @@ function updateGraph(isFilterChange = true) {
             nodeGroup.each(function(d) {
                 const g = d3.select(this);
                 let badgeOffset = 14;
-                if (d.id === "Drawings" || d.id === "RFIs" || (d.features && d.features.includes("connect"))) { addBadge(g, "\uf0c1", "#2563EB", badgeOffset, -18, "Procore Connect"); badgeOffset += 12; }
-                if (d.features && d.features.includes("mobile")) { addBadge(g, "\uf3cd", "#4A4A4A", 14, 10, "Available on Mobile"); }
-                if (d.features && d.features.includes("assist")) { addEmojiBadge(g, "✦", -18, -14, "Enhanced with Assist AI"); }
+                if (d.id === "Drawings" || d.id === "RFIs" || (d.features && d.features.includes("connect"))) { addBadge(g, "\uf0c1", "#2563EB", badgeOffset, -18, "Procore Connect", d); badgeOffset += 12; }
+                if (d.features && d.features.includes("mobile")) { addBadge(g, "\uf3cd", "#4A4A4A", 14, 10, "Available on Mobile", d); }
+                if (d.features && d.features.includes("assist")) { addEmojiBadge(g, "✦", -18, -14, "Enhanced with Assist AI", d); }
             });
             nodeGroup.style("opacity", 0).transition().duration(500).style("opacity", 1);
             return nodeGroup;
         },
         update => {
-            // PRIORITY 1: STACK BUILDER VISUALS
             if (isBuilderMode) {
                 update.transition().duration(500)
                     .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
                     .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
-                
                 update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") // Brand Green
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") 
                     .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
-                    
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
 
-            // PRIORITY 2: GAP ANALYSIS VISUALS
             update.transition().duration(500)
             .style("opacity", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return 1.0; 
                     if (gapAnalysis.gap.has(d.id)) return 1.0;     
                     if (gapAnalysis.outlier.has(d.id)) return 1.0; 
-                    return 0.15; // Ghost
+                    return 0.15; 
                 }
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
@@ -303,11 +295,8 @@ function updateGraph(isFilterChange = true) {
             })
             .style("filter", d => {
                 if (isGapMode) {
-                    // MATCHED = BRAND GREEN GLOW
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
-                    // GAP = BRAND ORANGE PULSE
                     if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
-                    // OUTLIER = BRAND METAL GLOW
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 if (filters.showProcoreLed) {
@@ -317,13 +306,12 @@ function updateGraph(isFilterChange = true) {
                 return null;
             });
 
-            update.select("path")
-                .transition().duration(500)
+            update.select("path").transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; // Brand Green
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Brand Orange
-                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; // Brand Metal
+                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23"; 
+                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
                     }
                     return "#ffffff"; 
                 })
@@ -340,7 +328,7 @@ function updateGraph(isFilterChange = true) {
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    if (isGapMode) return 0; // Reduce noise
+                    if (isGapMode) return 0; 
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
@@ -351,6 +339,7 @@ function updateGraph(isFilterChange = true) {
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
         .attr("stroke", d => {
+            if (typeof legendData === 'undefined') return app.defaultArrowColor;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return app.defaultArrowColor;
             if (legend.type_id === "feeds") return "#4A4A4A";
@@ -359,6 +348,7 @@ function updateGraph(isFilterChange = true) {
             return app.defaultArrowColor;
         })
         .attr("stroke-dasharray", d => {
+            if (typeof legendData === 'undefined') return "none";
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return "none";
             if (d.type === "creates") return "4,3";
@@ -368,6 +358,7 @@ function updateGraph(isFilterChange = true) {
             return "none";
         })
         .attr("marker-end", d => {
+            if (typeof legendData === 'undefined') return null;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return null;
             if (legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
@@ -375,7 +366,7 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isBuilderMode || isGapMode) return 0.15; // Dim links in special modes
+        if (isBuilderMode || isGapMode) return 0.15;
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
@@ -390,20 +381,30 @@ function updateGraph(isFilterChange = true) {
     app.simulation.force("link").links(filteredLinks);
     app.simulation.alpha(1).restart();
     if(typeof updateTourDropdown === 'function') updateTourDropdown(filters.packageTools); 
-    
-    // REMOVED RECURSIVE CALL HERE TO PREVENT INFINITE LOOP
-    // if(typeof resetHighlight === 'function') resetHighlight(); 
 }
 
-function addBadge(group, iconCode, color, x, y, tooltipText) {
-    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`).style("cursor", "help").style("pointer-events", "all");
+function addBadge(group, iconCode, color, x, y, tooltipText, d) {
+    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`)
+        .style("cursor", "pointer")
+        .style("pointer-events", "all")
+        // BADGE PASSTHROUGH CLICK
+        .on("click", function(event) { 
+            nodeClicked(event, d); 
+        }); 
+
     badge.append("rect").attr("x", -6).attr("y", -6).attr("width", 12).attr("height", 12).attr("fill", "transparent");
     badge.append("text").attr("class", "fas").text(iconCode).attr("text-anchor", "middle").attr("dy", 3).attr("fill", color).attr("font-size", "10px").style("font-family", "'Font Awesome 6 Free'").style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))").style("pointer-events", "none");
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: ${color};">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
 }
-function addEmojiBadge(group, emoji, x, y, tooltipText) {
-    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`).style("cursor", "help").style("pointer-events", "all");
+function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
+    const badge = group.append("g").attr("transform", `translate(${x}, ${y})`)
+        .style("cursor", "pointer")
+        .style("pointer-events", "all")
+        .on("click", function(event) { 
+            nodeClicked(event, d); 
+        });
+
     badge.append("rect").attr("x", -6).attr("y", -6).attr("width", 12).attr("height", 12).attr("fill", "transparent");
     badge.append("text").text(emoji).attr("text-anchor", "middle").attr("dy", 3).attr("font-size", "12px").style("font-weight", "bold").style("pointer-events", "none");
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: #4A4A4A;">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
