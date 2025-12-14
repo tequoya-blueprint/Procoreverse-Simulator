@@ -1,15 +1,16 @@
 // --- app-tours.js ---
-// VERSION: 600 (FULL EXPANSION: NO MINIFICATION)
+// VERSION: 710 (FULL RESTORATION: NO MINIFICATION & EXPANDED TEMPLATES)
 
 /**
  * Initializes the dropdowns and event listeners for the Tour system.
+ * Handles the logic for "Process Maps", "AI Builder", and "Manual Builder".
  */
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
     const packageGroup = d3.select("#package-tours");
     const aiGroup = d3.select("#ai-tours"); 
     
-    // Load Standard Tours - Platform
+    // 1. Load Standard Tours - Platform
     if (typeof tours !== 'undefined' && tours.platform) {
         Object.entries(tours.platform).forEach(([id, tour]) => {
             platformGroup.append("option")
@@ -18,7 +19,7 @@ function initializeTourControls() {
         });
     }
 
-    // Load Standard Tours - Packages
+    // 2. Load Standard Tours - Packages
     if (typeof tours !== 'undefined' && tours.packages) {
         Object.entries(tours.packages).forEach(([id, tour]) => {
             packageGroup.append("option")
@@ -27,7 +28,7 @@ function initializeTourControls() {
         });
     }
 
-    // Load AI/Saved Tours
+    // 3. Load AI/Saved Tours
     if (typeof tours !== 'undefined' && tours.ai) {
         Object.entries(tours.ai).forEach(([id, tour]) => {
             if (aiGroup.select(`option[value="${id}"]`).empty()) {
@@ -38,26 +39,24 @@ function initializeTourControls() {
         });
     }
 
+    // 4. Load from LocalStorage
     loadSavedTours();
 
-    // Dropdown Change Listener
+    // 5. Setup Dropdown Listener
     d3.select("#tour-select").on("change", function() {
         const tourId = this.value;
+        
         if (tourId === "none") {
             stopTour();
         } else {
             let tourData = null;
             
-            // Search in flat list first
+            // Search Priority: Flat List -> AI -> Categories
             if (typeof flatTours !== 'undefined' && flatTours[tourId]) {
                 tourData = flatTours[tourId];
-            } 
-            // Search in AI/Custom tours
-            else if (typeof tours !== 'undefined' && tours.ai && tours.ai[tourId]) {
+            } else if (typeof tours !== 'undefined' && tours.ai && tours.ai[tourId]) {
                 tourData = tours.ai[tourId];
-            } 
-            // Fallback search in categories
-            else if (typeof tours !== 'undefined') {
+            } else if (typeof tours !== 'undefined') {
                  if (tours.platform && tours.platform[tourId]) tourData = tours.platform[tourId];
                  if (tours.packages && tours.packages[tourId]) tourData = tours.packages[tourId];
             }
@@ -68,7 +67,7 @@ function initializeTourControls() {
         }
     });
 
-    // Navigation Buttons
+    // 6. Setup Navigation Buttons
     d3.select("#tour-prev").on("click", () => { 
         if (app.currentStep > 0) { 
             app.currentStep--; 
@@ -83,7 +82,7 @@ function initializeTourControls() {
         } 
     });
 
-    // AI Modal Triggers
+    // 7. AI Modal Triggers
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     
     d3.select("#ai-workflow-builder-btn").on("click", () => {
@@ -100,7 +99,7 @@ function initializeTourControls() {
     
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 
-    // Manual Builder Trigger (if not already present)
+    // 8. Manual Builder Trigger
     const container = d3.select("#tour-container");
     if (container.select("#manual-workflow-builder-btn").empty()) {
         container.append("button")
@@ -125,7 +124,8 @@ function loadSavedTours() {
             
             Object.entries(parsedTours).forEach(([id, tour]) => {
                 tours.ai[id] = tour;
-                // Add to dropdown if not exists
+                
+                // Only append if not already there
                 if(aiGroup.select(`option[value="${id}"]`).empty()) {
                     aiGroup.append("option")
                         .attr("value", id)
@@ -142,6 +142,7 @@ function saveCurrentTour() {
     if (!app.currentTour) return;
     
     let tourId = app.currentTour.id;
+    // Generate ID if missing
     if (!tourId || tourId.startsWith('custom_')) {
         tourId = `custom_tour_${Date.now()}`;
         app.currentTour.id = tourId;
@@ -168,7 +169,7 @@ function saveCurrentTour() {
     
     if(typeof showToast === 'function') showToast("Process Saved!");
     
-    // Update UI state
+    // Update Button State
     d3.selectAll(".save-tour-btn")
         .property("disabled", true)
         .html('<i class="fas fa-check mr-2"></i>Saved');
@@ -179,7 +180,7 @@ function saveCurrentTour() {
 let manualBuilderSteps = [];
 
 // Helper to safely get the String ID from a Node or Link Source/Target
-// Handles D3 object references vs String IDs
+// Ensures compatibility whether D3 uses objects or strings
 function safeId(obj) {
     if (typeof obj === 'string') return obj;
     if (obj && obj.id) return obj.id;
@@ -191,16 +192,16 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // 1. Reset Node Opacity
+    // 1. Reset Node Opacity (Full visibility)
     app.node.transition().duration(500).style("opacity", 1);
     
-    // 2. Dim Links to prepare for highlighting
+    // 2. Dim Links (Prepare canvas)
     app.link.transition().duration(500)
-        .style("opacity", 0.02) // Fade out
-        .style("stroke-opacity", 0.02)
+        .style("opacity", 0.05) 
+        .style("stroke-opacity", 0.05)
         .style("stroke", "#a0a0a0"); 
 
-    // 3. Show Controls
+    // 3. Render Controls
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
         <div class="bg-gray-800 text-white p-3 rounded-lg shadow-inner mb-2">
@@ -230,10 +231,15 @@ function startManualBuilder() {
 }
 
 function handleManualNodeClick(d) {
+    // 1. Force Side Panel to Open FIRST (Context is key)
+    if (typeof showInfoPanel === 'function') {
+        showInfoPanel(d);
+    }
+
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
-        // Undo Steps if clicking backwards
+        // Undo Steps
         manualBuilderSteps = manualBuilderSteps.slice(0, existingIndex);
         if(typeof showToast === 'function') showToast(`Removed steps starting from: ${d.id}`);
     } else {
@@ -241,10 +247,11 @@ function handleManualNodeClick(d) {
         const desc = d.description || `Step involving ${d.id}.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
         
-        // Pulse animation for feedback
-        d3.select(event.target)
-            .transition().duration(100).attr("r", 30)
-            .transition().duration(100).attr("r", 25);
+        // Pulse animation via D3 filter selection to avoid 'event' reference issues
+        app.node.filter(n => n.id === d.id)
+            .select("circle") 
+            .transition().duration(100).attr("stroke-width", 10)
+            .transition().duration(200).attr("stroke-width", 3);
     }
     updateManualBuilderVisuals();
 }
@@ -267,7 +274,7 @@ function updateManualBuilderVisuals() {
         lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
     }
 
-    // 1. PATH KEYS (HISTORY) - Bi-directional matching
+    // 1. Path Keys (History) - Bi-directional matching
     const pathKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -276,7 +283,7 @@ function updateManualBuilderVisuals() {
         pathKeys.add(`${v}-${u}`);
     }
 
-    // 2. CANDIDATE KEYS (FUTURE - STRICT DATA FLOW)
+    // 2. Candidate Keys (Future - Strict Data Flow)
     const candidateLinkKeys = new Set();
     const candidateNodeIds = new Set();
 
@@ -286,16 +293,13 @@ function updateManualBuilderVisuals() {
             const t = safeId(l.target);
             
             // STRICT LOGIC:
-            
             // A. OUTGOING: Source == LastNode -> Target (Always Valid)
-            // Exception: 'pulls-data-from' means data comes IN, so we skip it.
             if (s === lastNodeId && !activeIds.has(t)) {
                 if (l.type !== 'pulls-data-from') {
                     candidateLinkKeys.add(`${s}-${t}`);
                     candidateNodeIds.add(t);
                 }
             } 
-            
             // B. INCOMING: Target == LastNode -> Source
             // Valid ONLY if 'pulls-data-from' (data flows Source->Target) OR 'syncs' (Bi-directional)
             else if (t === lastNodeId && !activeIds.has(s)) {
@@ -320,7 +324,7 @@ function updateManualBuilderVisuals() {
             return null;
         });
 
-    // --- LINK UPDATES (DIRECT ITERATION) ---
+    // --- LINK UPDATES ---
     app.link.each(function(d) {
         const s = safeId(d.source);
         const t = safeId(d.target);
@@ -338,12 +342,10 @@ function updateManualBuilderVisuals() {
             }
         }
 
-        // Check Candidates
         let isCandidate = candidateLinkKeys.has(key);
 
-        // APPLY VISUALS
         if (isPath) {
-            // HISTORY: Solid Orange (Forced)
+            // HISTORY: Solid Orange
             el.transition().duration(200)
               .style("stroke", "#F36C23")
               .style("opacity", 1)
@@ -352,7 +354,7 @@ function updateManualBuilderVisuals() {
               .attr("stroke-dasharray", "none")
               .attr("marker-end", "url(#arrow-highlighted)");
         } else if (isCandidate) {
-            // FUTURE: Dashed Blue (Forced)
+            // FUTURE: Dashed Blue
             el.transition().duration(200)
               .style("stroke", "#2563EB")
               .style("opacity", 1)
@@ -457,11 +459,7 @@ function previewTour(tourData) {
 
     d3.select("#start-tour-btn").on("click", startTour);
     d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
-    
-    // BIND SOP CLICK EVENT
-    d3.select("#export-sop-btn").on("click", function() {
-        generateSOP();
-    });
+    d3.select("#export-sop-btn").on("click", generateSOP);
     
     if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
     resizeTourAccordion();
