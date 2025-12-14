@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 500 (FIXED: STRICT DATA FLOW LOGIC & VISUAL PRIORITY)
+// VERSION: 510 (FIXED: ROBUST RESET & STOP TOUR LOGIC)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -216,7 +216,7 @@ function updateManualBuilderVisuals() {
         lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
     }
 
-    // 1. PATH KEYS (HISTORY) - Bi-directional matching
+    // 1. PATH KEYS (HISTORY)
     const pathKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -234,23 +234,19 @@ function updateManualBuilderVisuals() {
             const s = safeId(l.source);
             const t = safeId(l.target);
             
-            // STRICT CANDIDATE LOGIC
-            
-            // A. OUTGOING: Selected (Source) -> Candidate (Target)
-            // Valid Types: creates, pushes, converts, syncs, attaches, feeds
-            // INVALID: pulls-data-from (This means Selected pulls from Candidate, so data flows Candidate->Selected. Bad next step.)
+            // STRICT LOGIC:
+            // A. OUTGOING: Source == LastNode -> Target (Always Valid)
             if (s === lastNodeId && !activeIds.has(t)) {
                 if (l.type !== 'pulls-data-from') {
                     candidateLinkKeys.add(`${s}-${t}`);
                     candidateNodeIds.add(t);
                 }
             } 
-            
-            // B. INCOMING: Candidate (Source) -> Selected (Target)
-            // Valid Types: pulls-data-from (Candidate pulls from Selected, data flows Selected->Candidate) OR syncs
+            // B. INCOMING: Target == LastNode -> Source
+            // Valid if 'pulls-data-from' (because data flows Source->Target) OR 'syncs'
             else if (t === lastNodeId && !activeIds.has(s)) {
                 if (l.type === 'pulls-data-from' || l.type === 'syncs') {
-                    candidateLinkKeys.add(`${s}-${t}`); // Key matches visual loop direction
+                    candidateLinkKeys.add(`${s}-${t}`);
                     candidateNodeIds.add(s);
                 }
             }
@@ -270,7 +266,7 @@ function updateManualBuilderVisuals() {
             return null;
         });
 
-    // --- LINK UPDATES (DIRECT ITERATION) ---
+    // --- LINK UPDATES ---
     app.link.each(function(d) {
         const s = safeId(d.source);
         const t = safeId(d.target);
@@ -278,7 +274,7 @@ function updateManualBuilderVisuals() {
         const key = `${s}-${t}`;
 
         let isPath = false;
-        // Check History (Bi-directional match)
+        // Check History
         for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
             const u = manualBuilderSteps[i].nodeId;
             const v = manualBuilderSteps[i+1].nodeId;
@@ -290,9 +286,7 @@ function updateManualBuilderVisuals() {
 
         let isCandidate = candidateLinkKeys.has(key);
 
-        // APPLY VISUALS
         if (isPath) {
-            // HISTORY: Solid Orange (Forced)
             el.transition().duration(200)
               .style("stroke", "#F36C23")
               .style("opacity", 1)
@@ -301,7 +295,6 @@ function updateManualBuilderVisuals() {
               .attr("stroke-dasharray", "none")
               .attr("marker-end", "url(#arrow-highlighted)");
         } else if (isCandidate) {
-            // FUTURE: Dashed Blue (Forced)
             el.transition().duration(200)
               .style("stroke", "#2563EB")
               .style("opacity", 1)
@@ -310,7 +303,6 @@ function updateManualBuilderVisuals() {
               .attr("stroke-dasharray", "6,3")
               .attr("marker-end", "url(#arrow-candidate)");
         } else {
-            // IRRELEVANT: Hidden
             el.transition().duration(200)
               .style("stroke", "#a0a0a0")
               .style("opacity", 0.02)
@@ -344,7 +336,6 @@ function previewTour(tourData) {
     
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     
-    // Path Calculation
     const pathKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
@@ -361,7 +352,6 @@ function previewTour(tourData) {
         const el = d3.select(this);
         const key = `${s}-${t}`;
         
-        // Check match bi-directionally
         let isPath = false;
         for (let i = 0; i < tourData.steps.length - 1; i++) {
             const u = tourData.steps[i].nodeId;
@@ -607,7 +597,7 @@ function runTourStep() {
                 const s = safeId(l.source);
                 const t = safeId(l.target);
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
-                return isActiveLink ? 3 : 2;
+                return isActiveLink ? "3px" : "2px";
             })
             .attr("marker-end", l => {
                 const s = safeId(l.source);
@@ -632,7 +622,18 @@ function stopTour(fullReset = true) {
         d3.select("#tour-controls").style("display", "none");
         d3.select("#tour-info-box").style("display", "none");
         d3.select("#tour-select").property("value", "none");
-        if(typeof resetHighlight === 'function') resetHighlight();
+        
+        // FORCE RESET VISUALS
+        manualBuilderSteps = [];
+        app.node.transition().duration(500).style("opacity", 1);
+        app.link.transition().duration(500)
+            .style("opacity", 0.6)
+            .style("stroke-opacity", 0.6)
+            .style("stroke", "#a0a0a0")
+            .style("stroke-width", "2px")
+            .attr("stroke-dasharray", null)
+            .attr("marker-end", d => `url(#arrow-${d.type})`);
+
         if(typeof resetZoom === 'function') resetZoom();
     }
     resizeTourAccordion();
