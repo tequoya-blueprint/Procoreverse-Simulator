@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 610 (FIXED: BUILDER SIDE PANEL & GAP VISIBILITY)
+// VERSION: 800 (CRITICAL FIX: REMOVED INFINITE RECURSION LOOP)
 
-console.log("App Main 610: Loading...");
+console.log("App Main 800: Loading...");
 
 const app = {
     simulation: null,
@@ -50,7 +50,7 @@ function nodeClicked(event, d) {
     // 1. MANUAL PROCESS BUILDER
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d);
-        // FIX: Show Info Panel so user can see connections/context while building
+        // FORCE PANEL OPEN FOR CONTEXT
         if (typeof showInfoPanel === 'function') showInfoPanel(d);
         return; 
     }
@@ -254,12 +254,11 @@ function updateGraph(isFilterChange = true) {
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node")
-                // ATTACH CLICK LISTENERS - CRITICAL FOR INTERACTION
                 .on("mouseenter", nodeMouseOver)
                 .on("mouseleave", nodeMouseOut)
                 .on("click", nodeClicked)
                 .on("dblclick", nodeDoubleClicked)
-                .call(drag(app.simulation)); // DRAG LAST = CLICK FIRST
+                .call(drag(app.simulation)); 
 
             nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
@@ -297,13 +296,13 @@ function updateGraph(isFilterChange = true) {
                     if (gapAnalysis.matched.has(d.id)) return 1.0; 
                     if (gapAnalysis.gap.has(d.id)) return 1.0;     
                     if (gapAnalysis.outlier.has(d.id)) return 1.0; 
-                    return 0.15; // Ghost
+                    // FIX: Self-Led Nodes Opacity set to 0.7
+                    return 0.7; 
                 }
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
                     if (filters.procoreLedTools.has(d.id)) return 1.0;
-                    // FIX: Self-Led (Excluded) Opacity bumped to 0.4 for visibility
-                    return 0.4; 
+                    return 0.7; // Self-Led nodes in Procore view
                 }
                 return 1.0;
             })
@@ -399,33 +398,29 @@ function updateGraph(isFilterChange = true) {
     app.simulation.force("link").links(filteredLinks);
     app.simulation.alpha(1).restart();
     if(typeof updateTourDropdown === 'function') updateTourDropdown(filters.packageTools); 
+    
+    // NO RECURSIVE RESET HERE
 }
 
 function addBadge(group, iconCode, color, x, y, tooltipText, d) {
     const badge = group.append("g").attr("transform", `translate(${x}, ${y})`).style("cursor", "help").style("pointer-events", "all");
     badge.append("rect").attr("x", -6).attr("y", -6).attr("width", 12).attr("height", 12).attr("fill", "transparent");
     badge.append("text").attr("class", "fas").text(iconCode).attr("text-anchor", "middle").attr("dy", 3).attr("fill", color).attr("font-size", "10px").style("font-family", "'Font Awesome 6 Free'").style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))").style("pointer-events", "none");
-    
-    // ADDED CLICK LISTENER TO BADGE
-    badge.on("click", function(e) {
-        nodeClicked(e, d);
-    });
-
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: ${color};">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
+         
+    // PASSTHROUGH CLICK
+    badge.on("click", function(e) { nodeClicked(e, d); });
 }
 function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
     const badge = group.append("g").attr("transform", `translate(${x}, ${y})`).style("cursor", "help").style("pointer-events", "all");
     badge.append("rect").attr("x", -6).attr("y", -6).attr("width", 12).attr("height", 12).attr("fill", "transparent");
     badge.append("text").text(emoji).attr("text-anchor", "middle").attr("dy", 3).attr("font-size", "12px").style("font-weight", "bold").style("pointer-events", "none");
-    
-    // ADDED CLICK LISTENER TO BADGE
-    badge.on("click", function(e) {
-        nodeClicked(e, d);
-    });
-
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: #4A4A4A;">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
+
+    // PASSTHROUGH CLICK
+    badge.on("click", function(e) { nodeClicked(e, d); });
 }
 
 window.addEventListener('resize', () => { 
