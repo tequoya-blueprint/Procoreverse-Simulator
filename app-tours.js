@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 510 (FIXED: ROBUST RESET & STOP TOUR LOGIC)
+// VERSION: 550 (FULL RESTORATION: NO MINIFICATION)
 
 function initializeTourControls() {
     const platformGroup = d3.select("#platform-tours");
@@ -43,6 +43,7 @@ function initializeTourControls() {
                  if (tours.platform && tours.platform[tourId]) tourData = tours.platform[tourId];
                  if (tours.packages && tours.packages[tourId]) tourData = tours.packages[tourId];
             }
+            
             if (tourData) {
                 previewTour(tourData);
             }
@@ -63,6 +64,7 @@ function initializeTourControls() {
         } 
     });
 
+    // AI Modal Triggers
     const aiModalOverlay = d3.select("#ai-modal-overlay");
     d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
     d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
@@ -141,7 +143,7 @@ function saveCurrentTour() {
 // --- MANUAL BUILDER LOGIC ---
 let manualBuilderSteps = [];
 
-// Helper to safely get the String ID
+// Helper to safely get the String ID from a Node or Link Source/Target
 function safeId(obj) {
     if (typeof obj === 'string') return obj;
     if (obj && obj.id) return obj.id;
@@ -153,12 +155,14 @@ function startManualBuilder() {
     app.interactionState = 'manual_building';
     manualBuilderSteps = [];
     
-    // Reset view
+    // Initial Visual State: Dim everything initially
     app.node.transition().duration(500).style("opacity", 1);
+    
+    // Ensure we start clean by setting opacity on the element level
     app.link.transition().duration(500)
-        .style("opacity", 0.05)
-        .style("stroke-opacity", 0.05)
-        .style("stroke", "#a0a0a0"); 
+        .style("opacity", 0.02) // Dim element
+        .style("stroke-opacity", 0.02) // Dim stroke
+        .style("stroke", "#a0a0a0");
 
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
@@ -186,14 +190,18 @@ function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
-        // Undo Steps
+        // Remove step and anything after it (Undo logic)
         manualBuilderSteps = manualBuilderSteps.slice(0, existingIndex);
         if(typeof showToast === 'function') showToast(`Removed steps starting from: ${d.id}`);
     } else {
         // Add Step
         const desc = d.description || `Step involving ${d.id}.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
-        d3.select(event.target).transition().duration(100).attr("r", 30).transition().duration(100).attr("r", 25);
+        
+        // Pulse animation
+        d3.select(event.target)
+            .transition().duration(100).attr("r", 30)
+            .transition().duration(100).attr("r", 25);
     }
     updateManualBuilderVisuals();
 }
@@ -216,7 +224,7 @@ function updateManualBuilderVisuals() {
         lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
     }
 
-    // 1. PATH KEYS (HISTORY)
+    // 1. PATH KEYS (HISTORY) - Bi-directional matching
     const pathKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -235,18 +243,18 @@ function updateManualBuilderVisuals() {
             const t = safeId(l.target);
             
             // STRICT LOGIC:
-            // A. OUTGOING: Source == LastNode -> Target (Always Valid)
+            // A. OUTGOING: Source == LastNode -> Target (Always Valid, unless explicitly blocked)
             if (s === lastNodeId && !activeIds.has(t)) {
-                if (l.type !== 'pulls-data-from') {
+                if (l.type !== 'pulls-data-from') { // If Source pulls from Target, data flows IN to Source. Not a valid next step.
                     candidateLinkKeys.add(`${s}-${t}`);
                     candidateNodeIds.add(t);
                 }
             } 
             // B. INCOMING: Target == LastNode -> Source
-            // Valid if 'pulls-data-from' (because data flows Source->Target) OR 'syncs'
+            // Valid ONLY if 'pulls-data-from' (data flows Source->Target) OR 'syncs' (Bi-directional)
             else if (t === lastNodeId && !activeIds.has(s)) {
                 if (l.type === 'pulls-data-from' || l.type === 'syncs') {
-                    candidateLinkKeys.add(`${s}-${t}`);
+                    candidateLinkKeys.add(`${s}-${t}`); 
                     candidateNodeIds.add(s);
                 }
             }
@@ -266,7 +274,7 @@ function updateManualBuilderVisuals() {
             return null;
         });
 
-    // --- LINK UPDATES ---
+    // --- LINK UPDATES (DIRECT ITERATION) ---
     app.link.each(function(d) {
         const s = safeId(d.source);
         const t = safeId(d.target);
@@ -274,7 +282,7 @@ function updateManualBuilderVisuals() {
         const key = `${s}-${t}`;
 
         let isPath = false;
-        // Check History
+        // Check History (Bi-directional match)
         for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
             const u = manualBuilderSteps[i].nodeId;
             const v = manualBuilderSteps[i+1].nodeId;
@@ -286,7 +294,9 @@ function updateManualBuilderVisuals() {
 
         let isCandidate = candidateLinkKeys.has(key);
 
+        // APPLY VISUALS
         if (isPath) {
+            // HISTORY: Solid Orange (Forced)
             el.transition().duration(200)
               .style("stroke", "#F36C23")
               .style("opacity", 1)
@@ -295,6 +305,7 @@ function updateManualBuilderVisuals() {
               .attr("stroke-dasharray", "none")
               .attr("marker-end", "url(#arrow-highlighted)");
         } else if (isCandidate) {
+            // FUTURE: Dashed Blue (Forced)
             el.transition().duration(200)
               .style("stroke", "#2563EB")
               .style("opacity", 1)
@@ -303,6 +314,7 @@ function updateManualBuilderVisuals() {
               .attr("stroke-dasharray", "6,3")
               .attr("marker-end", "url(#arrow-candidate)");
         } else {
+            // IRRELEVANT: Hidden
             el.transition().duration(200)
               .style("stroke", "#a0a0a0")
               .style("opacity", 0.02)
@@ -324,6 +336,7 @@ function finishManualBuilder() {
     app.currentTour = newTour;
     saveCurrentTour(); 
     
+    // Force immediate preview
     setTimeout(() => previewTour(newTour), 100);
 }
 
@@ -336,6 +349,7 @@ function previewTour(tourData) {
     
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
     
+    // Path Calculation
     const pathKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
@@ -352,15 +366,7 @@ function previewTour(tourData) {
         const el = d3.select(this);
         const key = `${s}-${t}`;
         
-        let isPath = false;
-        for (let i = 0; i < tourData.steps.length - 1; i++) {
-            const u = tourData.steps[i].nodeId;
-            const v = tourData.steps[i+1].nodeId;
-            if ((s === u && t === v) || (s === v && t === u)) {
-                isPath = true;
-                break;
-            }
-        }
+        let isPath = pathKeys.has(key);
 
         if (isPath) {
             el.transition().duration(500)
@@ -597,7 +603,7 @@ function runTourStep() {
                 const s = safeId(l.source);
                 const t = safeId(l.target);
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
-                return isActiveLink ? "3px" : "2px";
+                return isActiveLink ? 3 : 2;
             })
             .attr("marker-end", l => {
                 const s = safeId(l.source);
@@ -619,21 +625,15 @@ function stopTour(fullReset = true) {
         app.currentTour = null;
         app.currentStep = -1;
         app.interactionState = 'explore';
+        
+        // AGGRESSIVE RESET: Remove all inline styles so CSS takes over
+        app.node.attr("style", null);
+        app.link.attr("style", null);
+        
         d3.select("#tour-controls").style("display", "none");
         d3.select("#tour-info-box").style("display", "none");
         d3.select("#tour-select").property("value", "none");
-        
-        // FORCE RESET VISUALS
-        manualBuilderSteps = [];
-        app.node.transition().duration(500).style("opacity", 1);
-        app.link.transition().duration(500)
-            .style("opacity", 0.6)
-            .style("stroke-opacity", 0.6)
-            .style("stroke", "#a0a0a0")
-            .style("stroke-width", "2px")
-            .attr("stroke-dasharray", null)
-            .attr("marker-end", d => `url(#arrow-${d.type})`);
-
+        if(typeof resetHighlight === 'function') resetHighlight();
         if(typeof resetZoom === 'function') resetZoom();
     }
     resizeTourAccordion();
