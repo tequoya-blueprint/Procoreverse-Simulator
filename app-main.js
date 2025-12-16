@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 800 (CRITICAL FIX: REMOVED INFINITE RECURSION LOOP)
+// VERSION: 810 (VISUAL FIX: INCREASED LINK OPACITY FOR GAP ANALYSIS)
 
-console.log("App Main 800: Loading...");
+console.log("App Main 810: Loading...");
 
 const app = {
     simulation: null,
@@ -383,7 +383,9 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isBuilderMode || isGapMode) return 0.15; // Dim links in special modes
+        if (isBuilderMode) return 0.15; // Dim links while building stack
+        if (isGapMode) return 0.5; // INCREASED VISIBILITY: Connect connected ecosystem
+        
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
