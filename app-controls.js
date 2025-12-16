@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 650 (FULL RESTORATION: EXPANDED TEMPLATES & DEMO MODE)
+// VERSION: 670 (FULL RESTORATION: EXPANDED HTML, REGION RETRY, ROBUST RESET)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -316,7 +316,7 @@ function initializeControls() {
         header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
     });
 
-    populateRegionFilter();
+    populateRegionFilter(); // Initial Call
     populatePersonaFilter();
     renderSOWQuestionnaire();
    
@@ -357,6 +357,7 @@ function initializeControls() {
     });
 
     d3.select("#reset-view").on("click", resetView);
+    d3.select("#demo-toggle-btn").on("click", toggleDemoMode); // Visible Demo Toggle
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
@@ -403,6 +404,7 @@ function initializeControls() {
 function toggleDemoMode() {
     const body = d3.select("body");
     const isDemo = body.classed("demo-mode-active");
+    const btn = d3.select("#demo-toggle-btn");
     
     if (isDemo) {
         // DISABLE
@@ -411,6 +413,12 @@ function toggleDemoMode() {
         d3.select("#ai-workflow-builder-btn").style("display", "block");
         d3.select("#manual-workflow-builder-btn").style("display", "block");
         d3.select("#team-selector").property("disabled", false).style("opacity", 1);
+        
+        // Update Toggle Button Visuals
+        btn.classed("bg-green-600", false).classed("bg-gray-200", true)
+           .classed("text-white", false).classed("text-gray-600", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
+        
         if(typeof showToast === 'function') showToast("Demo Mode Deactivated: Admin tools visible.");
     } else {
         // ENABLE
@@ -418,9 +426,16 @@ function toggleDemoMode() {
         d3.select("#scoping-ui-container").style("display", "none"); // Hide Pricing
         d3.select("#ai-workflow-builder-btn").style("display", "none"); // Hide AI Builder
         d3.select("#manual-workflow-builder-btn").style("display", "none"); // Hide Manual
+        
         // Force admin view to ensure graph works, but lock selector
         applyTeamView('admin'); 
         d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
+        
+        // Update Toggle Button Visuals
+        btn.classed("bg-gray-200", false).classed("bg-green-600", true)
+           .classed("text-gray-600", false).classed("text-white", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
+        
         if(typeof showToast === 'function') showToast("Demo Mode Active: Clean presentation view.");
     }
 }
@@ -969,6 +984,9 @@ function applyTeamView(team) {
             calculateScoping(); 
         }
     }
+    
+    // LEGEND ACCESS FIX (Explicitly Handle Visibility)
+    d3.select("#view-options-accordion").style("display", config.showLegend ? "block" : "none");
 
     document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
     
@@ -996,10 +1014,18 @@ function toggleAllCategories() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-function populateRegionFilter() {
-    if (typeof packagingData === 'undefined') return;
+function populateRegionFilter(retryCount = 0) {
+    // FIX: Retry mechanism if data isn't loaded yet
+    if (typeof packagingData === 'undefined') {
+        if (retryCount < 5) setTimeout(() => populateRegionFilter(retryCount + 1), 100);
+        else console.error("Procoreverse: Packaging Data failed to load.");
+        return;
+    }
     const regionFilter = d3.select("#region-filter");
     if (regionFilter.empty()) return;
+    
+    // Clear existing to prevent duplicates on re-run
+    regionFilter.html('<option value="all">Select Region...</option>');
 
     const regions = new Set();
     packagingData.forEach(pkg => {
@@ -1316,7 +1342,7 @@ function resetView() {
     app.state.myStack = new Set();
     d3.select("#stack-builder-btn").attr("disabled", true).classed("cursor-not-allowed", true);
     
-    // RESET GAP TOGGLE
+    // RESET GAP TOGGLE (CLEANUP)
     d3.select("#gap-pricing-toggle-container").classed("hidden", true).html("");
     
     // RESET COMPLEXITY
