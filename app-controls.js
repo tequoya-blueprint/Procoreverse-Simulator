@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 670 (FULL RESTORATION: EXPANDED HTML, REGION RETRY, ROBUST RESET)
+// VERSION: 690 (FULL RESTORATION: UN-MINIFIED TEMPLATES & ALL FIXES)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -316,9 +316,10 @@ function initializeControls() {
         header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
     });
 
-    populateRegionFilter(); // Initial Call
+    populateRegionFilter(0); // FIX: Explicit start with count 0
     populatePersonaFilter();
     renderSOWQuestionnaire();
+    injectControlsFooter(); // NEW: Build footer dynamically
    
     // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
@@ -356,20 +357,15 @@ function initializeControls() {
         }
     });
 
-    d3.select("#reset-view").on("click", resetView);
-    d3.select("#demo-toggle-btn").on("click", toggleDemoMode); // Visible Demo Toggle
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
     
-    // Version/Credits Handler
-    d3.select("#version-link").on("click", (e) => {
-        e.preventDefault();
-        document.getElementById('credits-modal-overlay').classList.add('visible');
-    });
-    d3.select("#credits-modal-close").on("click", () => {
-        document.getElementById('credits-modal-overlay').classList.remove('visible');
-    });
+    // Credits Modal Logic
+    const creditsOverlay = document.getElementById('credits-modal-overlay');
+    if(creditsOverlay) {
+        d3.select("#credits-modal-close").on("click", () => creditsOverlay.classList.remove('visible'));
+    }
 
     // DEMO MODE LISTENER (Shift + D)
     document.addEventListener('keydown', function(event) {
@@ -384,7 +380,6 @@ function initializeControls() {
         if(el) el.addEventListener('input', calculateScoping);
     });
     
-    // Init Stack Builder Button
     setTimeout(() => {
         const existingBtn = d3.select("#stack-builder-btn");
         if (existingBtn.empty()) {
@@ -400,6 +395,49 @@ function initializeControls() {
     }, 500);
 }
 
+// --- NEW: DYNAMIC FOOTER INJECTION ---
+function injectControlsFooter() {
+    const controls = d3.select("#controls");
+    
+    // Clean up any existing footer elements to prevent duplicates
+    controls.select("#reset-view").remove();
+    controls.select("#demo-toggle-btn").remove();
+    controls.select("#version-link").remove();
+    controls.select(".pt-5.mt-5.border-t").remove();
+
+    // Create container
+    const footer = controls.append("div")
+        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
+
+    // 1. Reset Button (Full Width)
+    footer.append("button")
+        .attr("id", "reset-view")
+        .attr("class", "w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
+        .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
+        .on("click", resetView);
+
+    // 2. Presentation Mode Toggle (Full Width)
+    footer.append("button")
+        .attr("id", "demo-toggle-btn")
+        .attr("class", "w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center")
+        .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
+        .on("click", toggleDemoMode);
+
+    // 3. Version Link (Centered)
+    footer.append("div")
+        .attr("class", "text-center")
+        .append("a")
+        .attr("href", "#")
+        .attr("id", "version-link")
+        .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
+        .text("v2.2 Enterprise")
+        .on("click", (e) => {
+            e.preventDefault();
+            const modal = document.getElementById('credits-modal-overlay');
+            if(modal) modal.classList.add('visible');
+        });
+}
+
 // --- DEMO MODE TOGGLE ---
 function toggleDemoMode() {
     const body = d3.select("body");
@@ -409,34 +447,34 @@ function toggleDemoMode() {
     if (isDemo) {
         // DISABLE
         body.classed("demo-mode-active", false);
-        d3.select("#scoping-ui-container").style("display", "block"); // Restore SOW
+        d3.select("#scoping-ui-container").style("display", "block"); 
         d3.select("#ai-workflow-builder-btn").style("display", "block");
         d3.select("#manual-workflow-builder-btn").style("display", "block");
         d3.select("#team-selector").property("disabled", false).style("opacity", 1);
         
-        // Update Toggle Button Visuals
-        btn.classed("bg-green-600", false).classed("bg-gray-200", true)
-           .classed("text-white", false).classed("text-gray-600", true);
+        // Visuals
+        btn.classed("bg-green-600 hover:bg-green-700 text-white", false)
+           .classed("bg-gray-200 hover:bg-gray-300 text-gray-700", true);
         btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
         
-        if(typeof showToast === 'function') showToast("Demo Mode Deactivated: Admin tools visible.");
+        if(typeof showToast === 'function') showToast("Demo Mode Deactivated.");
     } else {
         // ENABLE
         body.classed("demo-mode-active", true);
-        d3.select("#scoping-ui-container").style("display", "none"); // Hide Pricing
-        d3.select("#ai-workflow-builder-btn").style("display", "none"); // Hide AI Builder
-        d3.select("#manual-workflow-builder-btn").style("display", "none"); // Hide Manual
+        d3.select("#scoping-ui-container").style("display", "none"); 
+        d3.select("#ai-workflow-builder-btn").style("display", "none"); 
+        d3.select("#manual-workflow-builder-btn").style("display", "none"); 
         
-        // Force admin view to ensure graph works, but lock selector
+        // Force Admin view to ensure graph elements are visible
         applyTeamView('admin'); 
         d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
         
-        // Update Toggle Button Visuals
-        btn.classed("bg-gray-200", false).classed("bg-green-600", true)
-           .classed("text-gray-600", false).classed("text-white", true);
+        // Visuals
+        btn.classed("bg-gray-200 hover:bg-gray-300 text-gray-700", false)
+           .classed("bg-green-600 hover:bg-green-700 text-white", true);
         btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
         
-        if(typeof showToast === 'function') showToast("Demo Mode Active: Clean presentation view.");
+        if(typeof showToast === 'function') showToast("Demo Mode Active.");
     }
 }
 
@@ -1017,8 +1055,11 @@ function toggleAllCategories() {
 function populateRegionFilter(retryCount = 0) {
     // FIX: Retry mechanism if data isn't loaded yet
     if (typeof packagingData === 'undefined') {
-        if (retryCount < 5) setTimeout(() => populateRegionFilter(retryCount + 1), 100);
-        else console.error("Procoreverse: Packaging Data failed to load.");
+        if (retryCount < 20) { // Increased check limit
+            setTimeout(() => populateRegionFilter(retryCount + 1), 100);
+        } else {
+            console.error("Procoreverse: Packaging Data failed to load.");
+        }
         return;
     }
     const regionFilter = d3.select("#region-filter");
@@ -1416,5 +1457,88 @@ function updateActivePackageState() {
         app.currentPackage = pkg;
     } else {
         app.currentPackage = null;
+    }
+}
+
+// --- NEW: DYNAMIC FOOTER INJECTION ---
+function injectControlsFooter() {
+    const controls = d3.select("#controls");
+    
+    // Clean up any existing footer elements to prevent duplicates
+    controls.select("#reset-view").remove();
+    controls.select("#demo-toggle-btn").remove();
+    controls.select("#version-link").remove();
+    controls.select(".pt-5.mt-5.border-t").remove();
+
+    // Create container
+    const footer = controls.append("div")
+        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
+
+    // 1. Reset Button (Full Width)
+    footer.append("button")
+        .attr("id", "reset-view")
+        .attr("class", "w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
+        .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
+        .on("click", resetView);
+
+    // 2. Presentation Mode Toggle (Full Width)
+    footer.append("button")
+        .attr("id", "demo-toggle-btn")
+        .attr("class", "w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center")
+        .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
+        .on("click", toggleDemoMode);
+
+    // 3. Version Link (Centered)
+    footer.append("div")
+        .attr("class", "text-center")
+        .append("a")
+        .attr("href", "#")
+        .attr("id", "version-link")
+        .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
+        .text("v2.2 Enterprise")
+        .on("click", (e) => {
+            e.preventDefault();
+            const modal = document.getElementById('credits-modal-overlay');
+            if(modal) modal.classList.add('visible');
+        });
+}
+
+// --- DEMO MODE TOGGLE ---
+function toggleDemoMode() {
+    const body = d3.select("body");
+    const isDemo = body.classed("demo-mode-active");
+    const btn = d3.select("#demo-toggle-btn");
+    
+    if (isDemo) {
+        // DISABLE
+        body.classed("demo-mode-active", false);
+        d3.select("#scoping-ui-container").style("display", "block"); 
+        d3.select("#ai-workflow-builder-btn").style("display", "block");
+        d3.select("#manual-workflow-builder-btn").style("display", "block");
+        d3.select("#team-selector").property("disabled", false).style("opacity", 1);
+        
+        // Visuals
+        btn.classed("bg-green-600 hover:bg-green-700 text-white", false)
+           .classed("bg-gray-200 hover:bg-gray-300 text-gray-700", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
+        
+        if(typeof showToast === 'function') showToast("Demo Mode Deactivated.");
+    } else {
+        // ENABLE
+        body.classed("demo-mode-active", true);
+        d3.select("#scoping-ui-container").style("display", "none"); 
+        d3.select("#ai-workflow-builder-btn").style("display", "none"); 
+        d3.select("#manual-workflow-builder-btn").style("display", "none"); 
+        
+        // Force Admin view to ensure graph elements are visible
+        applyTeamView('admin'); 
+        d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
+        
+        // Visuals
+        btn.classed("bg-gray-200 hover:bg-gray-300 text-gray-700", false)
+           .classed("bg-green-600 hover:bg-green-700 text-white", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
+        
+        if(typeof showToast === 'function') showToast("Demo Mode Active.");
     }
 }
