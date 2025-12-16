@@ -240,10 +240,11 @@
             </div> 
         </div> 
         
-        <div class="pt-5 mt-5 border-t border-gray-100 flex-shrink-0">
-            <button id="reset-view" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition duration-150 ease-in-out shadow-md">
-                <i class="fas fa-sync-alt mr-2"></i> Reset View
+        <div class="pt-5 mt-5 border-t border-gray-100 flex-shrink-0 flex justify-between items-center">
+            <button id="reset-view" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition shadow-md">
+                <i class="fas fa-sync-alt mr-2"></i> Reset
             </button>
+            <a href="#" id="version-link" class="text-[10px] text-gray-400 hover:text-gray-600 font-mono">v2.1</a>
         </div>
     </div> 
 
@@ -294,6 +295,36 @@
             </div>
         </div>
     </div>
+
+    <div id="credits-modal-overlay" class="fixed inset-0 bg-black bg-opacity-60 z-[3000] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full relative">
+            <button id="credits-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            <div class="text-center">
+                <i class="fas fa-rocket text-4xl text-orange-600 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Procoreverse Simulator</h2>
+                <div class="text-xs font-mono text-gray-500 mb-6">Version 2.1 • Enterprise Edition</div>
+                
+                <div class="text-left bg-gray-50 p-4 rounded border border-gray-200 text-sm space-y-2 mb-6">
+                    <p><strong><i class="fas fa-microchip mr-2"></i> Core Engine:</strong> Semantic Graph Visualization (D3.js)</p>
+                    <p><strong><i class="fas fa-chart-line mr-2"></i> Revenue Module:</strong> Dynamic Gap Analysis & Smart Scoping</p>
+                    <p><strong><i class="fas fa-robot mr-2"></i> AI Integration:</strong> Gemini 1.5 Flash Process Builder</p>
+                </div>
+                
+                <p class="text-xs text-gray-400">
+                    Proprietary intellectual property. Unauthorized distribution prohibited.<br>
+                    Developed for Procore Technologies.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        #credits-modal-overlay.visible { opacity: 1; pointer-events: auto; }
+        /* Demo Mode Styling Override */
+        body.demo-mode-active #scoping-ui-container,
+        body.demo-mode-active #ai-workflow-builder-btn,
+        body.demo-mode-active #manual-workflow-builder-btn { display: none !important; }
+    </style>
 
     <script src="procoreverse_data_nodes.js"></script>
     <script src="procoreverse_data_links.js"></script>
