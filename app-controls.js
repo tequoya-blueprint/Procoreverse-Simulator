@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 620 (FIXED: AUDIENCE MAPPINGS FOR 'O' AND 'RESOURCE MANAGEMENT')
+// VERSION: 630 (NEW: SMART GAP SCOPING FOR SOW)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -411,7 +411,8 @@ function toggleStackBuilderMode() {
         // Return to normal view
         if (typeof updateGraph === 'function') updateGraph(true);
         if (app.state.myStack.size > 0 && typeof showToast === 'function') {
-            showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
+            showToast("Stack Saved! Select a Package to see Gaps.", 3000);
+            calculateScoping(); // Triggers Gap Check
         }
     }
 }
@@ -501,6 +502,11 @@ function renderSOWQuestionnaire() {
     revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
     revenueContainer.html("");
     
+    // --- GAP PRICING TOGGLE (DYNAMIC) ---
+    revenueContainer.append("div")
+        .attr("id", "gap-pricing-toggle-container")
+        .attr("class", "mb-3 hidden bg-orange-50 p-2 rounded border border-orange-200");
+
     // --- COMPLEXITY BUTTONS (SOW V2) ---
     const complexityDiv = revenueContainer.append("div").attr("class", "mb-3 flex gap-2");
     ['Standard', 'Complex', 'Transform'].forEach(label => {
@@ -558,9 +564,9 @@ function renderSOWQuestionnaire() {
     setTimeout(refreshAccordionHeight, 50);
 }
 
-// --- SCOPING CALCULATOR (WITH RBAC CHECKS) ---
+// --- SCOPING CALCULATOR (WITH SMART GAP LOGIC) ---
 function calculateScoping() {
-    // RBAC Check: If View Only, disable inputs programmatically (UI disabled separately)
+    // RBAC Check: If View Only, disable inputs programmatically
     const isViewOnly = (app.state.calculatorMode === 'view');
     
     const sliderMaturity = document.getElementById('slider-maturity');
@@ -568,7 +574,6 @@ function calculateScoping() {
     const sliderChange = document.getElementById('slider-change');
     const onsiteInput = document.getElementById('onsite-input');
     
-    // Disable/Enable Inputs based on Mode
     if (sliderMaturity) {
         [sliderMaturity, sliderData, sliderChange, onsiteInput].forEach(el => { if(el) el.disabled = isViewOnly; });
         d3.selectAll('.sow-question').property('disabled', isViewOnly);
@@ -594,41 +599,76 @@ function calculateScoping() {
     const valChange = document.getElementById('val-change'); if(valChange) valChange.innerText = change.toFixed(1) + "x";
 
     let baseHours = 0;
+    
+    // --- SMART GAP LOGIC START ---
+    const gapAnalysis = getGapAnalysis();
+    const gapToggleContainer = d3.select("#gap-pricing-toggle-container");
+    let isGapPricing = false;
+
+    if (gapAnalysis.gap.size > 0) {
+        gapToggleContainer.classed("hidden", false);
+        // Only render toggle if empty to preserve state
+        if (gapToggleContainer.html() === "") {
+             gapToggleContainer.html(`
+                <label class="flex items-center cursor-pointer justify-between">
+                    <span class="text-xs font-bold text-orange-800">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> Scope Gap Only? (${gapAnalysis.gap.size} tools)
+                    </span>
+                    <input type="checkbox" id="use-gap-pricing" class="form-checkbox h-4 w-4 text-orange-600 focus:ring-orange-500 rounded">
+                </label>
+             `);
+             d3.select("#use-gap-pricing").on("change", calculateScoping);
+        }
+        
+        isGapPricing = d3.select("#use-gap-pricing").property("checked");
+        
+    } else {
+        gapToggleContainer.classed("hidden", true).html("");
+    }
+    // --- SMART GAP LOGIC END ---
+
     const region = d3.select("#region-filter").property('value');
     const audience = d3.select("#audience-filter").property('value');
     
-    if (region !== 'all' && audience !== 'all') {
-        const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-        d3.selectAll(".package-checkbox:checked").each(function() {
-            const pkgName = this.value;
-            const pkg = packagingData.find(p => 
-                (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
-                audienceDataKeys.includes(p.audience) && 
-                p.package_name === pkgName
-            );
-            if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
-                const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
-                if (match) baseHours += parseInt(match[1], 10);
-            }
-        });
+    if (isGapPricing) {
+        // GAP MODE: Calculate implementation per tool (e.g., 6 hours per tool for fresh implementation)
+        baseHours = gapAnalysis.gap.size * 6;
+    } else {
+        // STANDARD MODE: Use Package Base Hours
+        if (region !== 'all' && audience !== 'all') {
+            const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+            d3.selectAll(".package-checkbox:checked").each(function() {
+                const pkgName = this.value;
+                const pkg = packagingData.find(p => 
+                    (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
+                    audienceDataKeys.includes(p.audience) && 
+                    p.package_name === pkgName
+                );
+                if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
+                    const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
+                    if (match) baseHours += parseInt(match[1], 10);
+                }
+            });
+        }
     }
 
     const customToolCount = app.customScope ? app.customScope.size : 0;
     const customScopeHours = customToolCount * 5; 
     let servicesHours = 0; let servicesCost = 0;
-    let activeModules = []; // NEW: Track selected modules
+    let activeModules = []; 
 
     SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => {
         const checkbox = document.getElementById(q.id);
         if (checkbox && checkbox.checked) {
             servicesHours += q.hrs;
             servicesCost += q.cost;
-            if (q.module) activeModules.push(q.module); // Capture ID
+            if (q.module) activeModules.push(q.module);
         }
     });
 
     const totalHoursRaw = baseHours + customScopeHours + servicesHours;
 
+    // --- LIST CONTAINER UPDATES ---
     let listContainer = document.getElementById('custom-scope-list-container');
     if (!listContainer) {
         const revenueContainer = document.getElementById('revenue-container');
@@ -642,6 +682,11 @@ function calculateScoping() {
     
     if (listContainer) {
         let content = "";
+        
+        if (isGapPricing) {
+             content += `<div class="mb-1 p-1 bg-orange-100 rounded text-orange-800"><span class="font-bold">Gap Scope:</span> ${Array.from(gapAnalysis.gap).join(", ")}</div>`;
+        }
+
         if (customToolCount > 0) {
             content += `<div class="mb-1"><span class="font-bold text-gray-500">Custom Tools:</span> <span class="text-indigo-600 font-semibold">${Array.from(app.customScope).join(", ")}</span></div>`;
         }
@@ -685,8 +730,9 @@ function calculateScoping() {
         packages: d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value),
         customTools: Array.from(app.customScope || []),
         services: SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label),
-        activeModules: activeModules, // Pass the IDs to the printer
-        onsite: onsiteCount, multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) }
+        activeModules: activeModules, 
+        onsite: onsiteCount, multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) },
+        isGapPricing: isGapPricing // Track this for print output
     };
     
     refreshAccordionHeight();
@@ -720,6 +766,15 @@ function generateSOWPrintView() {
     let bodyContent = templateData.base.body
         .replace(/{{Client Name}}/g, clientName)
         .replace(/{{Date}}/g, today);
+    
+    // Inject Custom Gap Messaging if applicable
+    if (sow.isGapPricing) {
+        bodyContent += `
+        <div class="sow-section" style="background: #fff7ed; padding: 10px; border-left: 4px solid #f97316; margin-bottom: 20px;">
+            <h3>Targeted Implementation Scope</h3>
+            <p>This Statement of Work is specifically scoped to implement the delta between the Client's current stack and the target Package.</p>
+        </div>`;
+    }
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -1137,6 +1192,9 @@ function resetView() {
     if (app.state && app.state.isBuildingStack) toggleStackBuilderMode();
     app.state.myStack = new Set();
     d3.select("#stack-builder-btn").attr("disabled", true).classed("cursor-not-allowed", true);
+    
+    // RESET GAP TOGGLE
+    d3.select("#gap-pricing-toggle-container").classed("hidden", true).html("");
     
     // RESET COMPLEXITY
     d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
