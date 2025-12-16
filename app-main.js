@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 820 (FIX: LINES Z-INDEX & CLICK-THROUGH)
+// VERSION: 830 (FIX: SYNC ARROWS & LEGEND ACCURACY)
 
-console.log("App Main 820: Loading...");
+console.log("App Main 830: Loading...");
 
 const app = {
     simulation: null,
@@ -175,8 +175,15 @@ function setupMarkers() {
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
-            if (type && type.type_id && type.visual_style.includes("one arrow")) {
+            // FIX: Generate markers for both "one arrow" AND "two arrows"
+            if (type && type.type_id && (type.visual_style.includes("one arrow") || type.visual_style.includes("two arrows"))) {
+                // Forward Arrow (Marker End)
                 defs.append("marker").attr("id", `arrow-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", color);
+                
+                // Backward Arrow (Marker Start) - Needed for 'syncs'
+                if (type.visual_style.includes("two arrows")) {
+                    defs.append("marker").attr("id", `arrow-start-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", -app.arrowRefX + 10).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M10,-5L0,0L10,5").attr("fill", color);
+                }
             }
         });
     }
@@ -379,7 +386,15 @@ function updateGraph(isFilterChange = true) {
             if (typeof legendData === 'undefined') return null;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return null;
-            if (legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
+            if (legend.visual_style.includes("one arrow") || legend.visual_style.includes("two arrows")) return `url(#arrow-${d.type})`;
+            return null;
+        })
+        // FIX: Add marker-start for syncs
+        .attr("marker-start", d => {
+            if (typeof legendData === 'undefined') return null;
+            const legend = legendData.find(l => l.type_id === d.type);
+            if (!legend) return null;
+            if (legend.visual_style.includes("two arrows")) return `url(#arrow-start-${d.type})`;
             return null;
         });
 
