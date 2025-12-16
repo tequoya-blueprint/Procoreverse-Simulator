@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 810 (VISUAL FIX: INCREASED LINK OPACITY FOR GAP ANALYSIS)
+// VERSION: 820 (FIX: LINES Z-INDEX & CLICK-THROUGH)
 
-console.log("App Main 810: Loading...");
+console.log("App Main 820: Loading...");
 
 const app = {
     simulation: null,
@@ -355,6 +355,7 @@ function updateGraph(isFilterChange = true) {
 
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
+        .style("pointer-events", "none") // <--- FIX 1: Allow clicks to pass through links
         .attr("stroke", d => {
             if (typeof legendData === 'undefined') return app.defaultArrowColor;
             const legend = legendData.find(l => l.type_id === d.type);
@@ -395,6 +396,9 @@ function updateGraph(isFilterChange = true) {
         }
         return 0.6;
     });
+
+    // <--- FIX 2: FORCE NODES TO TOP OF DOM STACK
+    app.nodeG.raise(); 
 
     app.simulation.nodes(filteredNodes);
     app.simulation.force("link").links(filteredLinks);
