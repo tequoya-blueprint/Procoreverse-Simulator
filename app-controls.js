@@ -1,32 +1,57 @@
 // --- app-controls.js ---
-// VERSION: 690 (FULL RESTORATION: UN-MINIFIED TEMPLATES & ALL FIXES)
+// VERSION: 710 (MAXIMUM EXPANSION: UN-MINIFIED HTML & TEMPLATES)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
     admin: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: true, calculatorMode: 'edit',
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: true, 
+        calculatorMode: 'edit',
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'view-options-accordion' 
     },
     enablement: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: false, calculatorMode: 'hidden',
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: false, 
+        calculatorMode: 'hidden',
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'view-options-accordion' 
     },
     sales: { 
-        showTours: true, showAiBuilder: false, showManualBuilder: false, 
-        showScoping: true, calculatorMode: 'view', // VIEW ONLY
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+        showTours: true, 
+        showAiBuilder: false, 
+        showManualBuilder: false, 
+        showScoping: true, 
+        calculatorMode: 'view', // VIEW ONLY
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'view-options-accordion' 
     },
     product: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: false, calculatorMode: 'hidden',
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: false, 
+        calculatorMode: 'hidden',
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'view-options-accordion' 
     },
     services: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: true, calculatorMode: 'edit', // FULL EDIT
-        showFilters: true, showLegend: true, defaultOpen: 'scoping-ui-container' 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: true, 
+        calculatorMode: 'edit', // FULL EDIT
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'scoping-ui-container' 
     }
 };
 
@@ -313,19 +338,25 @@ function initializeControls() {
     
     // Accordion Setup
     document.querySelectorAll('.accordion-header').forEach(header => {
-        header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
+        header.addEventListener('click', () => { 
+            if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); 
+        });
     });
 
-    populateRegionFilter(0); // FIX: Explicit start with count 0
-    populatePersonaFilter();
+    // 1. Inject UI Elements immediately
+    injectControlsFooter();
     renderSOWQuestionnaire();
-    injectControlsFooter(); // NEW: Build footer dynamically
+
+    // 2. Start Data Waiting Engine (Fix for missing Regions)
+    waitForDataAndPopulate();
    
-    // Filter Listeners
+    // 3. Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
     d3.select("#audience-filter").on("change", onAudienceChange);
     d3.select("#package-filter").on("change", onPackageChange); 
-    d3.select("#persona-filter").on("change", () => { if (typeof updateGraph === 'function') updateGraph(true) });
+    d3.select("#persona-filter").on("change", () => { 
+        if (typeof updateGraph === 'function') updateGraph(true); 
+    });
     
     // Procore-Led Toggle
     const ledToggle = d3.select("#toggle-procore-led");
@@ -346,7 +377,7 @@ function initializeControls() {
         const initialTeam = getUrlParam('team') || 'admin'; 
         if (TEAM_CONFIG[initialTeam]) {
             teamSelector.property('value', initialTeam);
-            setTimeout(() => applyTeamView(initialTeam), 100);
+            setTimeout(() => applyTeamView(initialTeam), 250); // Slight delay for safety
         }
         teamSelector.on("change", function() { applyTeamView(this.value); });
     }
@@ -380,34 +411,59 @@ function initializeControls() {
         if(el) el.addEventListener('input', calculateScoping);
     });
     
-    setTimeout(() => {
-        const existingBtn = d3.select("#stack-builder-btn");
-        if (existingBtn.empty()) {
-             const container = d3.select("#packaging-container"); 
-             if (!container.empty()) {
+    // Init Stack Builder Button (Wait loop)
+    const checkBtn = setInterval(() => {
+        const container = d3.select("#packaging-container");
+        if (!container.empty()) {
+            clearInterval(checkBtn);
+            if (d3.select("#stack-builder-btn").empty()) {
                 container.insert("button", ":first-child")
                     .attr("id", "stack-builder-btn")
-                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
+                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-200 cursor-not-allowed") // Start disabled
                     .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
+                    .attr("disabled", true)
                     .on("click", toggleStackBuilderMode);
-             }
+            }
         }
-    }, 500);
+    }, 200);
+}
+
+// --- NEW: DATA WAITING ENGINE ---
+function waitForDataAndPopulate() {
+    let attempts = 0;
+    const maxAttempts = 40; // 10 seconds max wait
+    
+    const interval = setInterval(() => {
+        if (typeof packagingData !== 'undefined' && Array.isArray(packagingData)) {
+            clearInterval(interval);
+            // console.log("Procoreverse: Data loaded successfully. Populating regions.");
+            populateRegionFilter();
+            populatePersonaFilter(); 
+        } else {
+            attempts++;
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                console.error("Procoreverse: Data fetch timed out.");
+                if(typeof showToast === 'function') showToast("Error: Data failed to load. Please refresh.", 5000);
+            }
+        }
+    }, 250);
 }
 
 // --- NEW: DYNAMIC FOOTER INJECTION ---
 function injectControlsFooter() {
     const controls = d3.select("#controls");
     
-    // Clean up any existing footer elements to prevent duplicates
+    // Clean up to prevent duplicates
     controls.select("#reset-view").remove();
     controls.select("#demo-toggle-btn").remove();
     controls.select("#version-link").remove();
+    controls.select(".footer-container").remove();
     controls.select(".pt-5.mt-5.border-t").remove();
 
     // Create container
     const footer = controls.append("div")
-        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
+        .attr("class", "footer-container pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
 
     // 1. Reset Button (Full Width)
     footer.append("button")
@@ -500,20 +556,18 @@ function toggleStackBuilderMode() {
     }
 
     app.state.isBuildingStack = !app.state.isBuildingStack;
-    
     let btn = d3.select("#stack-builder-btn");
     
     if (app.state.isBuildingStack) {
-        // --- ACTIVATE BUILDER MODE ---
+        // ACTIVATE
         app.interactionState = 'building_stack';
-        
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
         
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
         
-        // --- NEW: INJECT PRESET DROPDOWN ---
+        // INJECT PRESET DROPDOWN
         const presetContainer = d3.select("#packaging-container").insert("div", "#stack-builder-btn + *")
             .attr("id", "stack-preset-container")
             .attr("class", "mb-4 p-3 bg-green-50 rounded border border-green-200");
@@ -537,21 +591,17 @@ function toggleStackBuilderMode() {
         highlightOwnedNodes();
         
     } else {
-        // --- DEACTIVATE BUILDER MODE ---
+        // DEACTIVATE
         app.interactionState = 'explore';
-        
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
         
-        // Remove Preset Dropdown
         d3.select("#stack-preset-container").remove();
-        
-        // Return to normal view
         if (typeof updateGraph === 'function') updateGraph(true);
         if (app.state.myStack.size > 0 && typeof showToast === 'function') {
             showToast("Stack Saved! Select a Package to see Gaps.", 3000);
-            calculateScoping(); // Triggers Gap Check
+            calculateScoping(); 
         }
     }
 }
@@ -567,23 +617,18 @@ function applyStackPreset(key) {
 
 function toggleStackItem(d) {
     if (!app.state.myStack) app.state.myStack = new Set();
-    
-    if (app.state.myStack.has(d.id)) {
-        app.state.myStack.delete(d.id);
-    } else {
-        app.state.myStack.add(d.id);
-    }
+    if (app.state.myStack.has(d.id)) app.state.myStack.delete(d.id);
+    else app.state.myStack.add(d.id);
     highlightOwnedNodes();
 }
 
 function highlightOwnedNodes() {
     if (!app.node) return;
-    
     app.node.transition().duration(200)
         .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none")
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff")
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
@@ -983,7 +1028,7 @@ function generateSOWPrintView() {
         <div class="total-box">
             <div style="font-size: 12px; text-transform: uppercase; font-weight: bold; opacity: 0.8;">Total Implementation Investment</div>
             <div class="total-cost">$${sow.totalCost.toLocaleString()}</div>
-            <div style="font-size: 14px; margin-top: 5px; opacity: 0.8;">Est. Timeline: ${sow.weeks} Weeks</div>
+            <div style="font-size: 14px; margin-top: 5px;">Est. Timeline: ${sow.weeks} Weeks</div>
         </div>
         <div class="disclaimer">
             This document is a rough order of magnitude (ROM) estimate for simulation purposes only. <br>
@@ -1023,16 +1068,25 @@ function applyTeamView(team) {
         }
     }
     
+    // HARD VIEW RESET: Close ALL accordions first
+    document.querySelectorAll('.accordion-content').forEach(content => {
+        content.style.maxHeight = 0;
+        content.style.opacity = 0;
+        content.parentElement.classList.remove('active');
+        content.classList.remove('overflow-visible');
+    });
+
     // LEGEND ACCESS FIX (Explicitly Handle Visibility)
     d3.select("#view-options-accordion").style("display", config.showLegend ? "block" : "none");
 
-    document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
-    
     const target = document.getElementById(config.defaultOpen);
     if (target) {
         target.classList.add('active');
         const content = target.querySelector('.accordion-content');
-        if (content) content.style.maxHeight = content.scrollHeight + "px";
+        if (content) {
+            content.style.opacity = 1;
+            content.style.maxHeight = content.scrollHeight + "px";
+        }
     }
 }
 
@@ -1460,19 +1514,41 @@ function updateActivePackageState() {
     }
 }
 
+// --- NEW: DATA WAITING ENGINE ---
+function waitForDataAndPopulate() {
+    let attempts = 0;
+    const maxAttempts = 40; // 10 seconds max wait
+    
+    const interval = setInterval(() => {
+        if (typeof packagingData !== 'undefined' && Array.isArray(packagingData)) {
+            clearInterval(interval);
+            // console.log("Procoreverse: Data loaded successfully. Populating regions.");
+            populateRegionFilter();
+            populatePersonaFilter(); 
+        } else {
+            attempts++;
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                console.error("Procoreverse: Data fetch timed out.");
+            }
+        }
+    }, 250);
+}
+
 // --- NEW: DYNAMIC FOOTER INJECTION ---
 function injectControlsFooter() {
     const controls = d3.select("#controls");
     
-    // Clean up any existing footer elements to prevent duplicates
+    // Clean up to prevent duplicates
     controls.select("#reset-view").remove();
     controls.select("#demo-toggle-btn").remove();
     controls.select("#version-link").remove();
+    controls.select(".footer-container").remove();
     controls.select(".pt-5.mt-5.border-t").remove();
 
     // Create container
     const footer = controls.append("div")
-        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
+        .attr("class", "footer-container pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
 
     // 1. Reset Button (Full Width)
     footer.append("button")
