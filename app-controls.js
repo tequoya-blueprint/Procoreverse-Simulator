@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 630 (NEW: SMART GAP SCOPING FOR SOW)
+// VERSION: 640 (NEW: STACK PRESETS & EXECUTIVE GAP REPORT)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -55,6 +55,26 @@ const audienceKeyToLabelMap = {
     "SC": "Specialty Contractor",
     "O": "Owner",
     "RM": "Resource Management" // Added Label
+};
+
+// --- STACK PRESETS (NEW) ---
+const STACK_PRESETS = {
+    "legacy": { 
+        label: "Legacy Procore (PM Only)", 
+        tools: ["Drawings", "RFIs", "Submittals", "Directory", "Photos", "Daily Log", "Meeting Minutes"] 
+    },
+    "competitor_a": { 
+        label: "Competitor Replacement (Field)", 
+        tools: ["Drawings", "Photos", "Punch List", "Inspections", "Observations"] 
+    },
+    "manual": { 
+        label: "Manual / Excel Warrior", 
+        tools: ["Emails", "Documents", "Directory"] 
+    },
+    "finance": {
+        label: "ERP / Finance Focus",
+        tools: ["Budget", "Commitments", "Direct Costs", "Invoicing", "ERP Systems"]
+    }
 };
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
@@ -397,6 +417,26 @@ function toggleStackBuilderMode() {
         
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
         
+        // --- NEW: INJECT PRESET DROPDOWN ---
+        const presetContainer = d3.select("#packaging-container").insert("div", "#stack-builder-btn + *")
+            .attr("id", "stack-preset-container")
+            .attr("class", "mb-4 p-3 bg-green-50 rounded border border-green-200");
+            
+        presetContainer.append("label").attr("class", "block text-xs font-bold text-green-800 mb-1 uppercase").text("Quick Stack Presets");
+        
+        const select = presetContainer.append("select")
+            .attr("class", "w-full text-xs border-green-300 rounded p-1.5 focus:ring-green-500 focus:border-green-500 bg-white")
+            .on("change", function() {
+                const key = this.value;
+                if (key === 'none') return;
+                applyStackPreset(key);
+            });
+            
+        select.append("option").attr("value", "none").text("Select a Starting Point...");
+        Object.entries(STACK_PRESETS).forEach(([key, data]) => {
+            select.append("option").attr("value", key).text(data.label);
+        });
+
         d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
         highlightOwnedNodes();
         
@@ -408,6 +448,9 @@ function toggleStackBuilderMode() {
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
         
+        // Remove Preset Dropdown
+        d3.select("#stack-preset-container").remove();
+        
         // Return to normal view
         if (typeof updateGraph === 'function') updateGraph(true);
         if (app.state.myStack.size > 0 && typeof showToast === 'function') {
@@ -415,6 +458,15 @@ function toggleStackBuilderMode() {
             calculateScoping(); // Triggers Gap Check
         }
     }
+}
+
+function applyStackPreset(key) {
+    if (!STACK_PRESETS[key]) return;
+    const tools = STACK_PRESETS[key].tools;
+    app.state.myStack.clear();
+    tools.forEach(toolId => app.state.myStack.add(toolId));
+    highlightOwnedNodes();
+    if(typeof showToast === 'function') showToast(`Applied ${STACK_PRESETS[key].label}`);
 }
 
 function toggleStackItem(d) {
@@ -732,7 +784,11 @@ function calculateScoping() {
         services: SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label),
         activeModules: activeModules, 
         onsite: onsiteCount, multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) },
-        isGapPricing: isGapPricing // Track this for print output
+        isGapPricing: isGapPricing,
+        // GAP REPORT DATA
+        ownedTools: Array.from(gapAnalysis.owned),
+        targetTools: Array.from(gapAnalysis.target),
+        gapTools: Array.from(gapAnalysis.gap)
     };
     
     refreshAccordionHeight();
@@ -767,6 +823,29 @@ function generateSOWPrintView() {
         .replace(/{{Client Name}}/g, clientName)
         .replace(/{{Date}}/g, today);
     
+    // --- EXECUTIVE GAP REPORT (NEW) ---
+    let gapReportHtml = "";
+    if (sow.gapTools && sow.gapTools.length > 0) {
+        gapReportHtml = `
+        <div class="sow-section" style="page-break-after: avoid;">
+            <h3>Platform Maturity Assessment</h3>
+            <div style="display: flex; gap: 10px; font-size: 11px;">
+                <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #4da446; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Current State</div>
+                    <div style="padding: 10px; background: #f0fdf4;">${sow.ownedTools.length > 0 ? sow.ownedTools.join(", ") : "No tools selected."}</div>
+                </div>
+                <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #2563EB; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Target Package</div>
+                    <div style="padding: 10px; background: #eff6ff;">${sow.targetTools.length > 0 ? sow.targetTools.join(", ") : "No target package."}</div>
+                </div>
+                <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #F36C23; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Critical Gap</div>
+                    <div style="padding: 10px; background: #fff7ed; font-weight: 600; color: #c2410c;">${sow.gapTools.join(", ")}</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
     // Inject Custom Gap Messaging if applicable
     if (sow.isGapPricing) {
         bodyContent += `
@@ -802,6 +881,7 @@ function generateSOWPrintView() {
             <div class="title">${templateData.base.title}</div>
         </div>
         ${bodyContent}
+        ${gapReportHtml}
         <h3>Scope of Services</h3>
         ${modulesHtml}
         <div class="total-box">
