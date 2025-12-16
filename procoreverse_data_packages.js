@@ -6,7 +6,7 @@ const packagingData = [
   // --- NAMER ---
   {
     "region": "NAMER", "audience": "GC", "package_name": "Project Execution Essentials",
-    "tools": ["Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets"],
+    "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets"],
     "included_features": [],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -14,7 +14,7 @@ const packagingData = [
   },
   {
     "region": "NAMER", "audience": "GC", "package_name": "Project Execution Enhanced",
-    "tools": ["Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding"],
+    "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist", "Training Center", "Premier Support Bronze"],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -22,7 +22,7 @@ const packagingData = [
   },
   {
     "region": "NAMER", "audience": "GC", "package_name": "Project Execution Premier",
-    "tools": ["Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -54,7 +54,7 @@ const packagingData = [
   },
   {
     "region": "NAMER", "audience": "SC", "package_name": "Project Execution Essentials",
-    "tools": ["Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "T&M Tickets"],
+    "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "T&M Tickets"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "T&M Tickets"],
     "included_features": [],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -62,7 +62,7 @@ const packagingData = [
   },
   {
     "region": "NAMER", "audience": "SC", "package_name": "Project Execution Enhanced",
-    "tools": ["Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "T&M Tickets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding"],
+    "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "T&M Tickets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "T&M Tickets", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -70,7 +70,7 @@ const packagingData = [
   },
   {
     "region": "NAMER", "audience": "SC", "package_name": "Project Execution Premier",
-    "tools": ["Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "T&M Tickets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "T&M Tickets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -102,7 +102,7 @@ const packagingData = [
   },
   {
     "region": "NAMER", "audience": "O", "package_name": "Project Execution Essentials",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections"],
     "procore_led_tools": ["Drawings", "Observations", "Punch List", "Inspections", "Correspondence", "Schedule", "Action Plans"],
     "included_features": [],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -110,7 +110,7 @@ const packagingData = [
   },
   {
     "region": "NAMER", "audience": "O", "package_name": "Project Execution Enhanced",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -118,7 +118,7 @@ const packagingData = [
   },
   {
     "region": "NAMER", "audience": "O", "package_name": "Project Execution Premier",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -183,7 +183,7 @@ const packagingData = [
   // --- APAC ---
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Project Execution Essentials",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions"],
     "procore_led_tools": ["Drawings", "Inspections", "Punch List", "Observations", "Daily Log", "Timesheets", "Equipment"],
     "included_features": [],
     "available_add-ons": [],
@@ -191,7 +191,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Project Execution Enhanced",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Analytics", "Equipment", "Timesheets", "Incidents", "Emails"],
     "included_features": ["Assist"],
     "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
@@ -199,7 +199,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Project Execution Enhanced w CDE",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Documents"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Documents"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Analytics", "Equipment", "Timesheets", "Incidents", "Emails"],
     "included_features": ["Assist"],
     "available_add-ons": [],
@@ -207,7 +207,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Project Execution Premier",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Models", "Coordination Issues", "Training Center", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
@@ -215,7 +215,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Contractor", "package_name": "Project Execution Premier w CDE",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Documents", "Coordination Issues", "Models", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Documents", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
@@ -247,7 +247,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Essentials",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions"],
     "procore_led_tools": ["Drawings", "Observations", "Punch List", "Inspections", "Correspondence", "Schedule", "Action Plans"],
     "included_features": [],
     "available_add-ons": [],
@@ -255,7 +255,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Enhanced",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Correspondence", "Action Plans", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
@@ -263,7 +263,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Enhanced w CDE",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Documents"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Documents"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Correspondence", "Action Plans", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
@@ -271,7 +271,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Premier",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
@@ -279,7 +279,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Premier w CDE",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Documents", "Coordination Issues", "Models", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Documents", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
@@ -312,7 +312,7 @@ const packagingData = [
   // --- EUR ---
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Project Execution Essentials",
-    "tools": ["Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models"],
+    "tools": ["Directory", "Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models"],
     "procore_led_tools": ["Drawings", "Observations", "Daily Log", "Punch List", "Inspections", "Equipment", "Timesheets"],
     "included_features": [],
     "available_add-ons": [],
@@ -320,7 +320,7 @@ const packagingData = [
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Project Execution Enhanced",
-    "tools": ["Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding"],
+    "tools": ["Directory", "Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
@@ -328,7 +328,7 @@ const packagingData = [
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Project Execution Enhanced w PDM",
-    "tools": ["Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Documents"],
+    "tools": ["Directory", "Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Documents"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
@@ -336,7 +336,7 @@ const packagingData = [
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Project Execution Premier",
-    "tools": ["Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Coordination Issues", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Coordination Issues", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
@@ -344,7 +344,7 @@ const packagingData = [
   },
   {
     "region": "EUR", "audience": "Contractor", "package_name": "Project Execution Premier w PDM",
-    "tools": ["Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Documents", "Coordination Issues", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "RFIs", "Photos", "Observations", "Daily Log", "Forms", "Equipment", "Timesheets", "Instructions", "T&M Tickets", "Punch List", "Inspections", "Incidents", "Models", "Submittals", "Emails", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding", "Documents", "Coordination Issues", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
@@ -376,7 +376,7 @@ const packagingData = [
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Essentials",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions"],
     "procore_led_tools": ["Drawings", "Submittals", "Observations", "Punch List", "Inspections", "Correspondence", "Schedule"],
     "included_features": [],
     "available_add-ons": [],
@@ -384,7 +384,7 @@ const packagingData = [
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Enhanced",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
@@ -392,7 +392,7 @@ const packagingData = [
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Enhanced w CDE",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Documents"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Documents"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
@@ -400,7 +400,7 @@ const packagingData = [
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Premier",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],
