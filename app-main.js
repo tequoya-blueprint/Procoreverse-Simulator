@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 800 (CRITICAL FIX: REMOVED INFINITE RECURSION LOOP)
+// VERSION: 830 (FIX: SYNC ARROWS & LEGEND ACCURACY)
 
-console.log("App Main 800: Loading...");
+console.log("App Main 830: Loading...");
 
 const app = {
     simulation: null,
@@ -175,8 +175,15 @@ function setupMarkers() {
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
-            if (type && type.type_id && type.visual_style.includes("one arrow")) {
+            // FIX: Generate markers for both "one arrow" AND "two arrows"
+            if (type && type.type_id && (type.visual_style.includes("one arrow") || type.visual_style.includes("two arrows"))) {
+                // Forward Arrow (Marker End)
                 defs.append("marker").attr("id", `arrow-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", color);
+                
+                // Backward Arrow (Marker Start) - Needed for 'syncs'
+                if (type.visual_style.includes("two arrows")) {
+                    defs.append("marker").attr("id", `arrow-start-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", -app.arrowRefX + 10).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M10,-5L0,0L10,5").attr("fill", color);
+                }
             }
         });
     }
@@ -355,6 +362,7 @@ function updateGraph(isFilterChange = true) {
 
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
+        .style("pointer-events", "none") // <--- FIX 1: Allow clicks to pass through links
         .attr("stroke", d => {
             if (typeof legendData === 'undefined') return app.defaultArrowColor;
             const legend = legendData.find(l => l.type_id === d.type);
@@ -378,12 +386,22 @@ function updateGraph(isFilterChange = true) {
             if (typeof legendData === 'undefined') return null;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return null;
-            if (legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
+            if (legend.visual_style.includes("one arrow") || legend.visual_style.includes("two arrows")) return `url(#arrow-${d.type})`;
+            return null;
+        })
+        // FIX: Add marker-start for syncs
+        .attr("marker-start", d => {
+            if (typeof legendData === 'undefined') return null;
+            const legend = legendData.find(l => l.type_id === d.type);
+            if (!legend) return null;
+            if (legend.visual_style.includes("two arrows")) return `url(#arrow-start-${d.type})`;
             return null;
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isBuilderMode || isGapMode) return 0.15; // Dim links in special modes
+        if (isBuilderMode) return 0.15; // Dim links while building stack
+        if (isGapMode) return 0.5; // INCREASED VISIBILITY: Connect connected ecosystem
+        
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
@@ -393,6 +411,9 @@ function updateGraph(isFilterChange = true) {
         }
         return 0.6;
     });
+
+    // <--- FIX 2: FORCE NODES TO TOP OF DOM STACK
+    app.nodeG.raise(); 
 
     app.simulation.nodes(filteredNodes);
     app.simulation.force("link").links(filteredLinks);
