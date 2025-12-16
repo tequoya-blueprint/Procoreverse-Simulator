@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 640 (NEW: STACK PRESETS & EXECUTIVE GAP REPORT)
+// VERSION: 650 (FULL RESTORATION: EXPANDED TEMPLATES & DEMO MODE)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -35,33 +35,34 @@ function getUrlParam(param) {
     return urlParams.get(param);
 }
 
-// --- DATA MAPPING CONSTANTS (FIXED) ---
+// --- DATA MAPPING CONSTANTS ---
 const audienceKeyToDataValuesMap = {
     "GC": ["Contractor", "General Contractor", "GC"],
     "SC": ["SC", "Specialty Contractor"],
     "O": ["Owners", "Owner", "Owner Developer *Coming Soon", "O"],
-    "RM": ["Resource Management"] // Added for Global
+    "RM": ["Resource Management"] 
 };
 
 const audienceDataToKeyMap = {
     "Contractor": "GC", "General Contractor": "GC", "GC": "GC",
     "SC": "SC", "Specialty Contractor": "SC",
-    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O", "O": "O", // Added "O" mapping
-    "Resource Management": "RM" // Added RM mapping
+    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O", "O": "O", 
+    "Resource Management": "RM"
 };
 
 const audienceKeyToLabelMap = {
     "GC": "General Contractor",
     "SC": "Specialty Contractor",
     "O": "Owner",
-    "RM": "Resource Management" // Added Label
+    "RM": "Resource Management"
 };
 
-// --- STACK PRESETS (NEW) ---
+// --- STACK PRESETS (RAPID SCOPING) ---
 const STACK_PRESETS = {
     "legacy": { 
         label: "Legacy Procore (PM Only)", 
-        tools: ["Drawings", "RFIs", "Submittals", "Directory", "Photos", "Daily Log", "Meeting Minutes"] 
+        // Note: "Meetings" is the correct Node ID
+        tools: ["Drawings", "RFIs", "Submittals", "Directory", "Photos", "Daily Log", "Meetings"] 
     },
     "competitor_a": { 
         label: "Competitor Replacement (Field)", 
@@ -359,6 +360,22 @@ function initializeControls() {
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
+    
+    // Version/Credits Handler
+    d3.select("#version-link").on("click", (e) => {
+        e.preventDefault();
+        document.getElementById('credits-modal-overlay').classList.add('visible');
+    });
+    d3.select("#credits-modal-close").on("click", () => {
+        document.getElementById('credits-modal-overlay').classList.remove('visible');
+    });
+
+    // DEMO MODE LISTENER (Shift + D)
+    document.addEventListener('keydown', function(event) {
+        if (event.shiftKey && (event.key === 'D' || event.key === 'd')) {
+            toggleDemoMode();
+        }
+    });
 
     const inputs = ['slider-maturity', 'slider-data', 'slider-change', 'onsite-input'];
     inputs.forEach(id => {
@@ -380,6 +397,32 @@ function initializeControls() {
              }
         }
     }, 500);
+}
+
+// --- DEMO MODE TOGGLE ---
+function toggleDemoMode() {
+    const body = d3.select("body");
+    const isDemo = body.classed("demo-mode-active");
+    
+    if (isDemo) {
+        // DISABLE
+        body.classed("demo-mode-active", false);
+        d3.select("#scoping-ui-container").style("display", "block"); // Restore SOW
+        d3.select("#ai-workflow-builder-btn").style("display", "block");
+        d3.select("#manual-workflow-builder-btn").style("display", "block");
+        d3.select("#team-selector").property("disabled", false).style("opacity", 1);
+        if(typeof showToast === 'function') showToast("Demo Mode Deactivated: Admin tools visible.");
+    } else {
+        // ENABLE
+        body.classed("demo-mode-active", true);
+        d3.select("#scoping-ui-container").style("display", "none"); // Hide Pricing
+        d3.select("#ai-workflow-builder-btn").style("display", "none"); // Hide AI Builder
+        d3.select("#manual-workflow-builder-btn").style("display", "none"); // Hide Manual
+        // Force admin view to ensure graph works, but lock selector
+        applyTeamView('admin'); 
+        d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
+        if(typeof showToast === 'function') showToast("Demo Mode Active: Clean presentation view.");
+    }
 }
 
 // --- CUSTOM SCOPE MANAGER ---
