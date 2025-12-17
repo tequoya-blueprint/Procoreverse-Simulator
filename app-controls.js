@@ -1,5 +1,7 @@
-// --- app-controls.js (PART 1 of 2) ---
-// VERSION: 720 (THE GRANITE BUILD: SYNTAX FIXES & DATA WAITING RESTORED)
+// --- app-controls.js (PART 1) ---
+// VERSION: 725 (THE COMPLETE BUILD - CONFIGURATION)
+
+console.log("Controls v725: Loading Part 1...");
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -60,7 +62,7 @@ function getUrlParam(param) {
     return urlParams.get(param);
 }
 
-// --- DATA MAPPING CONSTANTS ---
+// --- DATA MAPPINGS ---
 const audienceKeyToDataValuesMap = {
     "GC": ["Contractor", "General Contractor", "GC"],
     "SC": ["SC", "Specialty Contractor"],
@@ -116,7 +118,7 @@ const SOW_QUESTIONS = [
     { id: "q-ent", label: "Enterprise Scale", type: "risk", factor: 0.2, target: "change" }
 ];
 
-// --- SOW TEMPLATE LIBRARY (FULL TEXT - SYNTAX CHECKED) ---
+// --- SOW TEMPLATE LIBRARY (FULL TEXT) ---
 const SOW_LIBRARY = {
     // 1. LEGAL WRAPPERS
     "NAM_GC_BASE": {
@@ -329,6 +331,8 @@ function getSOWContent(sowData) {
 
 // --- INITIALIZATION ---
 function initializeControls() {
+    console.log("Controls: Initializing...");
+    
     if (typeof app !== 'undefined') {
         app.customScope = new Set();
         if (!app.state) app.state = {};
@@ -377,7 +381,7 @@ function initializeControls() {
         const initialTeam = getUrlParam('team') || 'admin'; 
         if (TEAM_CONFIG[initialTeam]) {
             teamSelector.property('value', initialTeam);
-            setTimeout(() => applyTeamView(initialTeam), 250); // Slight delay for safety
+            setTimeout(() => applyTeamView(initialTeam), 250); 
         }
         teamSelector.on("change", function() { applyTeamView(this.value); });
     }
@@ -428,30 +432,51 @@ function initializeControls() {
     }, 200);
 }
 
+// --- app-controls.js (PART 2) ---
+// VERSION: 725 (THE COMPLETE BUILD - LOGIC)
+
 // --- NEW: DATA WAITING ENGINE ---
 function waitForDataAndPopulate() {
     let attempts = 0;
-    const maxAttempts = 60; // 15 seconds max wait
+    const maxAttempts = 50; // 12.5 seconds max wait
     
+    console.log("Controls: Waiting for 'packagingData'...");
+
     const interval = setInterval(() => {
         if (typeof packagingData !== 'undefined' && Array.isArray(packagingData)) {
             clearInterval(interval);
-            // console.log("Procoreverse: Data loaded successfully. Populating regions.");
+            console.log("Controls: Data loaded. Populating Regions.");
+            
+            // 1. Populate Regions (Unlocks Filters)
             populateRegionFilter();
-            populatePersonaFilter(); 
+            
+            // 2. Populate Personas (Unlocks Filtering)
+            populatePersonaFilter();
+            
+            // 3. Initialize Process Maps (Unlocks Tours) - MOVED HERE for safety
+            if(typeof initializeTourControls === 'function') {
+                console.log("Controls: Initializing Tours.");
+                initializeTourControls();
+            }
+            
         } else {
             attempts++;
             if (attempts >= maxAttempts) {
                 clearInterval(interval);
-                console.error("Procoreverse: Data fetch timed out.");
+                console.error("CRITICAL: 'packagingData' not found after 12s.");
+                
+                // FALLBACK VISUAL
+                const regionFilter = d3.select("#region-filter");
+                regionFilter.html('<option value="error">⚠ Error: Data Failed</option>')
+                            .style("border-color", "red").style("color", "red");
+                            
+                if(typeof showToast === 'function') showToast("Error: Data failed to load. Check console.", 5000);
             }
         }
     }, 250);
 }
-// --- app-controls.js (PART 2 of 2) ---
-// VERSION: 720 (THE GRANITE BUILD: LOGIC CORE)
 
-// --- NEW: DYNAMIC FOOTER INJECTION ---
+// --- DYNAMIC UI INJECTION ---
 function injectControlsFooter() {
     const controls = d3.select("#controls");
     
@@ -563,7 +588,7 @@ function toggleStackBuilderMode() {
         // ACTIVATE
         app.interactionState = 'building_stack';
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
-           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
+           .classed("bg-white text-gray-700 border-gray-200", false)
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
         
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
@@ -1619,4 +1644,4 @@ function toggleDemoMode() {
         
         if(typeof showToast === 'function') showToast("Demo Mode Active.");
     }
-            }
+}
