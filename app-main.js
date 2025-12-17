@@ -1,7 +1,7 @@
 // --- app-main.js (PART 1 OF 2) ---
-// VERSION: 870 (COMPLETE: BRAND COLORS, LAYERING, & SYNC ARROWS)
+// VERSION: 880 (FIX: EXACT BRAND COLOR MAP RESTORED)
 
-console.log("App Main 870: Loading...");
+console.log("App Main 880: Loading...");
 
 const app = {
     simulation: null,
@@ -47,21 +47,18 @@ function nodeMouseOut(event, d) {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. MANUAL PROCESS BUILDER
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d);
         if (typeof showInfoPanel === 'function') showInfoPanel(d);
         return; 
     }
 
-    // 2. CUSTOMER STACK BUILDER
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
         return; 
     }
     
-    // 3. STANDARD EXPLORATION
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { procoreLedTools: new Set() };
     if (app.state.showProcoreLedOnly) {
         const isStandardLed = filters.procoreLedTools.has(d.id);
@@ -88,31 +85,29 @@ function nodeDoubleClicked(event, d) {
 
 function setupCategories() {
     const rootStyles = getComputedStyle(document.documentElement);
-    // Explicit Brand Colors
+    // Base Colors
     const procoreColors = { 
         orange: "#F36C23", 
-        lumber: "#D1C4E9", // Precon
-        earth: "#8D6E63",  // Financials
-        metal: "#607D8B",  // Resource/Helix
-        teal: "#3a8d8c",   // Quality
-        stone: "#F5F1EE"
+        lumber: "#D1C4E9", 
+        earth: "#8D6E63", 
+        metal: "#607D8B"
     };
 
-    // The Official Procoreverse Mapping
+    // THE EXACT REQUESTED MAP
     const colorMap = { 
+        "Preconstruction": procoreColors.lumber, 
         "Project Management": procoreColors.orange, 
-        "Project Execution": procoreColors.orange,
-        "Project Map": procoreColors.orange,
-        "Financial Management": procoreColors.earth,
-        "Preconstruction": procoreColors.lumber,
-        "Resource Management": procoreColors.metal,
-        "Helix": procoreColors.metal,
-        "External Integrations": "#B0B0B0", 
-        "Quality & Safety": procoreColors.teal,
-        "Workforce Management": "#5B8D7E", 
-        "Construction Intelligence": "#4A4A4A", 
+        "Financial Management": procoreColors.earth, 
+        "Workforce Management": "#3a8d8c", 
+        "Quality & Safety": "#5B8D7E", 
         "Platform & Core": "#757575", 
-        "Emails": "#c94b4b" 
+        "Construction Intelligence": "#4A4A4A", 
+        "External Integrations": "#B0B0B0", 
+        "Helix": procoreColors.metal, 
+        "Project Execution": procoreColors.orange, 
+        "Resource Management": procoreColors.metal, 
+        "Emails": "#c94b4b", 
+        "Project Map": procoreColors.orange 
     };
 
     app.categories = {}; 
@@ -233,7 +228,7 @@ function populateLegend() {
     });
 }
 // --- app-main.js (PART 2 OF 2) ---
-// VERSION: 870 (LOGIC LOOP)
+// VERSION: 880 (LOGIC LOOP)
 
 function ticked() {
     if (app.simulation && app.simulation.alpha() > 0.05) {
