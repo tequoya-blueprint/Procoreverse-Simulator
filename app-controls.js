@@ -975,4 +975,614 @@ function toggleDemoMode() {
         btn.classed("bg-gray-200", false).classed("bg-green-600", true).classed("text-gray-600", false).classed("text-white", true).html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
         if(typeof showToast === 'function') showToast("Demo Mode Active.");
     }
+    
+// --- app-controls.js (PART 3 of 3) ---
+// VERSION: 740 (THE MISSING LOGIC ENGINE)
+
+// --- SOW & PRICING UI ---
+function renderSOWQuestionnaire() {
+    const revenueContainer = d3.select("#revenue-container");
+    if(revenueContainer.empty()) return;
+
+    revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
+    revenueContainer.html("");
+    
+    // Gap Pricing Toggle
+    revenueContainer.append("div")
+        .attr("id", "gap-pricing-toggle-container")
+        .attr("class", "mb-3 hidden bg-orange-50 p-2 rounded border border-orange-200");
+
+    // Complexity Buttons
+    const complexityDiv = revenueContainer.append("div").attr("class", "mb-3 flex gap-2");
+    ['Standard', 'Complex', 'Transform'].forEach(label => {
+        const key = label.toLowerCase();
+        complexityDiv.append("button")
+            .attr("id", `btn-${key}`)
+            .attr("class", `complexity-btn flex-1 py-1 text-[10px] font-bold uppercase rounded transition ${key === 'standard' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`)
+            .text(label)
+            .on("click", () => setComplexity(key));
+    });
+
+    // Settings Group
+    const settingsGroup = revenueContainer.append("div").attr("class", "mb-1 w-full");
+    const onsiteRow = settingsGroup.append("div").attr("class", "mb-3 border-b border-gray-100 pb-3");
+    onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
+    onsiteRow.append("input")
+        .attr("type", "number")
+        .attr("id", "onsite-input")
+        .attr("value", "0")
+        .attr("min", "0")
+        .attr("class", "w-full p-1.5 text-sm border rounded text-center bg-white focus:ring-indigo-500 focus:border-indigo-500")
+        .on("input", calculateScoping);
+    
+    settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
+    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2 w-full");
+    
+    SOW_QUESTIONS.forEach(q => {
+        const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 w-full");
+        label.append("input")
+            .attr("type", "checkbox")
+            .attr("id", q.id)
+            .attr("class", "form-checkbox h-3.5 w-3.5 text-indigo-600 sow-question rounded mt-0.5 flex-shrink-0 focus:ring-indigo-500")
+            .on("change", calculateScoping);
+        
+        const textCol = label.append("div").attr("class", "ml-2 flex flex-col min-w-0");
+        textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight truncate").text(q.label).attr("title", q.label);
+        
+        if (q.type === 'cost') {
+             textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
+        }
+    });
+    
+    // Print Button
+    const totalBox = d3.select("#sow-total").select(function() { return this.parentNode; });
+    if (!totalBox.empty()) {
+        totalBox.select("#print-sow-mini-btn").remove(); 
+        totalBox.append("button")
+            .attr("id", "print-sow-mini-btn")
+            .attr("class", "w-full mt-3 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold py-1.5 rounded text-[11px] flex items-center justify-center transition shadow-sm border border-indigo-600")
+            .html('<i class="fas fa-print mr-2"></i> Print Estimate')
+            .on("click", generateSOWPrintView);
     }
+    setTimeout(refreshAccordionHeight, 50);
+}
+
+function setComplexity(level) {
+    if (app.state.calculatorMode === 'view') {
+        if(typeof showToast === 'function') showToast("View Only: Complexity cannot be edited.");
+        return;
+    }
+    const map = {
+        'standard': { mat: 1.0, data: 1.0, change: 1.0 },
+        'complex': { mat: 1.4, data: 1.5, change: 1.3 },
+        'transform': { mat: 1.8, data: 2.0, change: 1.8 }
+    };
+    const vals = map[level];
+    if (vals) {
+        document.getElementById('slider-maturity').value = vals.mat;
+        document.getElementById('slider-data').value = vals.data;
+        document.getElementById('slider-change').value = vals.change;
+        calculateScoping();
+        d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
+        d3.select(`#btn-${level}`).classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
+    }
+}
+
+function calculateScoping() {
+    const isViewOnly = (app.state.calculatorMode === 'view');
+    const sliderMaturity = document.getElementById('slider-maturity');
+    const sliderData = document.getElementById('slider-data');
+    const sliderChange = document.getElementById('slider-change');
+    const onsiteInput = document.getElementById('onsite-input');
+    
+    if (sliderMaturity) {
+        [sliderMaturity, sliderData, sliderChange, onsiteInput].forEach(el => { if(el) el.disabled = isViewOnly; });
+        d3.selectAll('.sow-question').property('disabled', isViewOnly);
+        d3.selectAll('.complexity-btn').classed('opacity-50 cursor-not-allowed', isViewOnly);
+    }
+    if (!sliderMaturity) return;
+
+    let mat = parseFloat(sliderMaturity.value);
+    let data = parseFloat(sliderData.value);
+    let change = parseFloat(sliderChange.value);
+
+    SOW_QUESTIONS.filter(q => q.type === 'risk').forEach(q => {
+        const checkbox = document.getElementById(q.id);
+        if (checkbox && checkbox.checked) {
+            if (q.target === 'data') data += q.factor;
+            if (q.target === 'change') change += q.factor;
+        }
+    });
+
+    const valMat = document.getElementById('val-maturity'); if(valMat) valMat.innerText = mat.toFixed(1) + "x";
+    const valData = document.getElementById('val-data'); if(valData) valData.innerText = data.toFixed(1) + "x";
+    const valChange = document.getElementById('val-change'); if(valChange) valChange.innerText = change.toFixed(1) + "x";
+
+    let baseHours = 0;
+    const gapAnalysis = getGapAnalysis();
+    const gapToggleContainer = d3.select("#gap-pricing-toggle-container");
+    let isGapPricing = false;
+
+    if (gapAnalysis.gap.size > 0) {
+        gapToggleContainer.classed("hidden", false);
+        if (gapToggleContainer.html() === "") {
+             gapToggleContainer.html(`
+                <label class="flex items-center cursor-pointer justify-between">
+                    <span class="text-xs font-bold text-orange-800"><i class="fas fa-exclamation-triangle mr-1"></i> Scope Gap Only? (${gapAnalysis.gap.size} tools)</span>
+                    <input type="checkbox" id="use-gap-pricing" class="form-checkbox h-4 w-4 text-orange-600 focus:ring-orange-500 rounded">
+                </label>`);
+             d3.select("#use-gap-pricing").on("change", calculateScoping);
+        }
+        isGapPricing = d3.select("#use-gap-pricing").property("checked");
+    } else {
+        gapToggleContainer.classed("hidden", true).html("");
+    }
+
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    
+    if (isGapPricing) {
+        baseHours = gapAnalysis.gap.size * 6;
+    } else {
+        if (region !== 'all' && audience !== 'all') {
+            const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+            d3.selectAll(".package-checkbox:checked").each(function() {
+                const pkgName = this.value;
+                const pkg = packagingData.find(p => (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
+                if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
+                    const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
+                    if (match) baseHours += parseInt(match[1], 10);
+                }
+            });
+        }
+    }
+
+    const customToolCount = app.customScope ? app.customScope.size : 0;
+    const customScopeHours = customToolCount * 5; 
+    let servicesHours = 0; let servicesCost = 0;
+    let activeModules = []; 
+
+    SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => {
+        const checkbox = document.getElementById(q.id);
+        if (checkbox && checkbox.checked) {
+            servicesHours += q.hrs; servicesCost += q.cost; if (q.module) activeModules.push(q.module);
+        }
+    });
+
+    const totalHoursRaw = baseHours + customScopeHours + servicesHours;
+    
+    // Update Scope List
+    let listContainer = document.getElementById('custom-scope-list-container');
+    if (!listContainer) {
+        const revenueContainer = document.getElementById('revenue-container');
+        if(revenueContainer) {
+            listContainer = document.createElement('div');
+            listContainer.id = 'custom-scope-list-container';
+            listContainer.className = "mt-3 pt-2 border-t border-gray-200 text-xs";
+            revenueContainer.parentNode.insertBefore(listContainer, revenueContainer.nextSibling);
+        }
+    }
+    
+    if (listContainer) {
+        let content = "";
+        if (isGapPricing) content += `<div class="mb-1 p-1 bg-orange-100 rounded text-orange-800"><span class="font-bold">Gap Scope:</span> ${Array.from(gapAnalysis.gap).join(", ")}</div>`;
+        if (customToolCount > 0) content += `<div class="mb-1"><span class="font-bold text-gray-500">Custom Tools:</span> <span class="text-indigo-600 font-semibold">${Array.from(app.customScope).join(", ")}</span></div>`;
+        const activeServices = SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label);
+        if (activeServices.length > 0) content += `<div class="mb-1"><span class="font-bold text-gray-500">Services:</span> <span class="text-gray-700">${activeServices.join(", ")}</span></div>`;
+        listContainer.innerHTML = content;
+        listContainer.style.display = content ? 'block' : 'none';
+    }
+
+    const baseLabel = document.getElementById('base-tools-count');
+    if (baseLabel) baseLabel.parentElement.innerHTML = `Total Scope: <span id="base-tools-count" class="font-bold text-gray-700">${totalHoursRaw} Hrs</span>`;
+
+    const PREP_FACTOR = 1.5; 
+    const CONSULTING_VELOCITY = 3.5; 
+    const combinedMultiplier = (mat + data + change) / 3; 
+    const implementationCost = (baseHours + customScopeHours) * PREP_FACTOR * combinedMultiplier * 250;
+    const onsiteCount = parseInt(onsiteInput ? onsiteInput.value : 0) || 0;
+    const totalSOW = implementationCost + (onsiteCount * 7500) + servicesCost;
+    
+    const sowDisplay = document.getElementById('sow-total');
+    if(sowDisplay) sowDisplay.innerText = "$" + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+    app.currentSOW = {
+        totalHours: totalHoursRaw, weeks: Math.round(((totalHoursRaw * PREP_FACTOR) / CONSULTING_VELOCITY) * combinedMultiplier), 
+        totalCost: totalSOW, region: region, audience: audience,
+        packages: d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value),
+        customTools: Array.from(app.customScope || []),
+        services: SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label),
+        activeModules: activeModules, onsite: onsiteCount, isGapPricing: isGapPricing,
+        ownedTools: Array.from(gapAnalysis.owned), targetTools: Array.from(gapAnalysis.target), gapTools: Array.from(gapAnalysis.gap)
+    };
+    refreshAccordionHeight();
+}
+
+function generateSOWPrintView() {
+    if (!app.currentSOW) { alert("Please configure a scope first."); return; }
+    const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
+    const logoInput = prompt("Enter Client Logo URL:", "");
+    const logoHtml = (logoInput && logoInput.trim() !== "") ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` : `<div class="logo">PROCORE</div>`;
+    const sow = app.currentSOW;
+    const templateData = getSOWContent(sow); 
+    const today = new Date().toLocaleDateString();
+    
+    let gapReportHtml = "";
+    if (sow.gapTools && sow.gapTools.length > 0) {
+        gapReportHtml = `
+        <div class="sow-section" style="page-break-after: avoid;">
+            <h3>Platform Maturity Assessment</h3>
+            <div style="display: flex; gap: 10px; font-size: 11px;">
+                <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #4da446; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Current State</div>
+                    <div style="padding: 10px; background: #f0fdf4;">${sow.ownedTools.length > 0 ? sow.ownedTools.join(", ") : "No tools selected."}</div>
+                </div>
+                <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #2563EB; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Target Package</div>
+                    <div style="padding: 10px; background: #eff6ff;">${sow.targetTools.length > 0 ? sow.targetTools.join(", ") : "No target package."}</div>
+                </div>
+                <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #F36C23; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Critical Gap</div>
+                    <div style="padding: 10px; background: #fff7ed; font-weight: 600; color: #c2410c;">${sow.gapTools.join(", ")}</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    let bodyContent = templateData.base.body.replace(/{{Client Name}}/g, clientName).replace(/{{Date}}/g, today);
+    if (sow.isGapPricing) {
+        bodyContent += `<div class="sow-section" style="background: #fff7ed; padding: 10px; border-left: 4px solid #f97316; margin-bottom: 20px;"><h3>Targeted Implementation Scope</h3><p>This Statement of Work is specifically scoped to implement the delta between the Client's current stack and the target Package.</p></div>`;
+    }
+
+    const htmlContent = `
+    <!DOCTYPE html><html><head><title>SOW</title><style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.5; max-width: 800px; margin: 0 auto; }
+        .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .logo { font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px; }
+        .title { font-size: 14px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+        h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; }
+        p, li { font-size: 13px; }
+        .sow-section { margin-bottom: 20px; }
+        .module { background: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .module h2 { font-size: 16px; margin-top: 0; color: #111827; }
+        .total-box { background: #1f2937; color: white; padding: 20px; border-radius: 8px; text-align: right; margin-top: 40px; }
+        .total-cost { font-size: 32px; font-weight: 800; margin-top: 5px; }
+        .disclaimer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+    </style></head><body>
+    <div class="header"><div>${logoHtml}</div><div class="title">${templateData.base.title}</div></div>
+    ${bodyContent} ${gapReportHtml}
+    <h3>Scope of Services</h3>${templateData.modules.map(m => `<div class="module">${m.body}</div>`).join('')}
+    <div class="total-box"><div style="font-size: 12px; font-weight: bold;">Total Implementation Investment</div><div class="total-cost">$${sow.totalCost.toLocaleString()}</div><div style="font-size: 14px; margin-top: 5px;">Est. Timeline: ${sow.weeks} Weeks</div></div>
+    <div class="disclaimer">ROM estimate only. Not a binding contract.</div>
+    <script>window.print();</script></body></html>`;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); }
+}
+
+// --- VIEW & FILTER MANAGERS ---
+function applyTeamView(team) {
+    const config = TEAM_CONFIG[team];
+    if (!config) return;
+    d3.select("#tour-accordion").style("display", config.showTours ? "block" : "none");
+    d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
+    d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none");
+    const manualBtn = d3.select("#manual-workflow-builder-btn");
+    if (!manualBtn.empty()) manualBtn.style("display", config.showManualBuilder ? "block" : "none");
+    const scopingContainer = d3.select("#scoping-ui-container");
+    if (config.calculatorMode === 'hidden') scopingContainer.classed("hidden", true);
+    else {
+        scopingContainer.classed("hidden", !config.showScoping);
+        if (typeof app !== 'undefined' && app.state) {
+            app.state.calculatorMode = config.calculatorMode;
+            calculateScoping(); 
+        }
+    }
+    
+    // HARD VIEW RESET
+    document.querySelectorAll('.accordion-content').forEach(content => {
+        content.style.maxHeight = 0;
+        content.style.opacity = 0;
+        content.parentElement.classList.remove('active');
+        content.classList.remove('overflow-visible');
+    });
+
+    d3.select("#view-options-accordion").style("display", config.showLegend ? "block" : "none");
+
+    const target = document.getElementById(config.defaultOpen);
+    if (target) {
+        target.classList.add('active');
+        const content = target.querySelector('.accordion-content');
+        if (content) {
+            content.style.opacity = 1;
+            content.style.maxHeight = content.scrollHeight + "px";
+        }
+    }
+}
+
+function populateRegionFilter() {
+    // Note: Data waiting engine handles the call to this
+    const regionFilter = d3.select("#region-filter");
+    if (regionFilter.empty()) return;
+    regionFilter.html('<option value="all">Select Region...</option>');
+    if (typeof packagingData === 'undefined') return;
+
+    const regions = new Set();
+    packagingData.forEach(pkg => {
+        if (pkg.region === 'NAM') regions.add('NAMER'); 
+        else regions.add(pkg.region);
+    });
+
+    [...regions].sort().forEach(region => {
+        let label = region;
+        if (region === "EUR") label = "EMEA";
+        regionFilter.append("option").attr("value", region).text(label);
+    });
+}
+
+function onRegionChange() {
+    const region = d3.select(this).property("value");
+    const audienceFilter = d3.select("#audience-filter");
+    const stackBtn = d3.select("#stack-builder-btn");
+    
+    audienceFilter.property("value", "all").property("disabled", region === "all").html('<option value="all">All Audiences</option>');
+    d3.select("#package-selection-area").classed("hidden", true);
+    d3.select("#package-checkboxes").html("");
+    
+    if(typeof app !== 'undefined') {
+        app.state.myStack.clear();
+        if (app.state.isBuildingStack) toggleStackBuilderMode();
+    }
+    clearPackageDetails();
+    
+    if (region !== "all") {
+        stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", false).classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", true).attr("disabled", null);
+        const availableAudiences = new Set();
+        packagingData.filter(pkg => pkg.region === region || (region === 'NAMER' && pkg.region === 'NAM')).forEach(pkg => {
+            const audKey = audienceDataToKeyMap[pkg.audience];
+            if (audKey) availableAudiences.add(audKey);
+        });
+        [...availableAudiences].sort().forEach(audKey => {
+             audienceFilter.append("option").attr("value", audKey).text(audienceKeyToLabelMap[audKey]);
+        });
+    } else {
+        stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", true).classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer", false).attr("disabled", true);
+    }
+    if (typeof updateGraph === 'function') updateGraph(true);
+}
+
+function onAudienceChange() {
+    const region = d3.select("#region-filter").property("value");
+    const audience = d3.select(this).property("value");
+    const packageArea = d3.select("#package-selection-area");
+    const packageList = d3.select("#package-checkboxes");
+    packageList.html(""); clearPackageDetails();
+    const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+    
+    if (region !== 'all' && audience !== 'all') {
+        const packages = packagingData.filter(pkg =>
+            (pkg.region === region || (region === 'NAMER' && pkg.region === 'NAM')) && 
+            audienceDataKeys.includes(pkg.audience)
+        );
+        
+        if (packages.length > 0) {
+            packageArea.classed("hidden", false);
+            packages.sort((a, b) => a.package_name.localeCompare(b.package_name)).forEach(pkg => {
+                const label = packageList.append("label").attr("class", "flex items-center cursor-pointer py-1 hover:bg-gray-100 rounded px-1");
+                label.append("input").attr("type", "checkbox").attr("value", pkg.package_name).attr("class", "form-checkbox h-4 w-4 text-indigo-600 package-checkbox mr-2").on("change", () => {
+                    updatePackageAddOns();
+                    if(typeof updateActivePackageState === 'function') updateActivePackageState(); 
+                    if (typeof updateGraph === 'function') updateGraph(true);
+                    calculateScoping();
+                });
+                label.append("span").text(pkg.package_name);
+            });
+        } else packageArea.classed("hidden", true);
+    } else packageArea.classed("hidden", true);
+    if (typeof updateGraph === 'function') updateGraph(true);
+}
+
+function onPackageChange() {
+    if (app.state.isBuildingStack) toggleStackBuilderMode(); 
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    const pkgName = d3.select("#package-filter").property('value');
+    clearPackageDetails();
+    if (region !== 'all' && audience !== 'all' && pkgName !== 'all') {
+        const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+        const packageInfo = packagingData.find(pkg =>
+            pkg.region === region && audienceDataKeys.includes(pkg.audience) && pkg.package_name === pkgName
+        );
+        if (packageInfo) populateAddOnsAndServices(packageInfo); 
+    }
+    refreshAccordionHeight();
+    if (typeof updateGraph === 'function') updateGraph(true);
+    calculateScoping();
+}
+
+function toggleStackBuilderMode() {
+    if (d3.select("#region-filter").property("value") === "all") {
+        if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
+        return;
+    }
+    app.state.isBuildingStack = !app.state.isBuildingStack;
+    let btn = d3.select("#stack-builder-btn");
+    
+    if (app.state.isBuildingStack) {
+        app.interactionState = 'building_stack';
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true).classed("bg-white text-gray-700 border-gray-200", false).html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
+        if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
+        
+        const presetContainer = d3.select("#packaging-container").insert("div", "#stack-builder-btn + *").attr("id", "stack-preset-container").attr("class", "mb-4 p-3 bg-green-50 rounded border border-green-200");
+        presetContainer.append("label").attr("class", "block text-xs font-bold text-green-800 mb-1 uppercase").text("Quick Stack Presets");
+        const select = presetContainer.append("select").attr("class", "w-full text-xs border-green-300 rounded p-1.5 focus:ring-green-500 focus:border-green-500 bg-white")
+            .on("change", function() { const key = this.value; if (key === 'none') return; applyStackPreset(key); });
+        select.append("option").attr("value", "none").text("Select a Starting Point...");
+        Object.entries(STACK_PRESETS).forEach(([key, data]) => { select.append("option").attr("value", key).text(data.label); });
+
+        d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
+        highlightOwnedNodes();
+    } else {
+        app.interactionState = 'explore';
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false).classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true).html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
+        d3.select("#stack-preset-container").remove();
+        if (typeof updateGraph === 'function') updateGraph(true);
+        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
+            showToast("Stack Saved! Select a Package to see Gaps.", 3000);
+            calculateScoping(); 
+        }
+    }
+}
+
+function applyStackPreset(key) {
+    if (!STACK_PRESETS[key]) return;
+    const tools = STACK_PRESETS[key].tools;
+    app.state.myStack.clear();
+    tools.forEach(toolId => app.state.myStack.add(toolId));
+    highlightOwnedNodes();
+    if(typeof showToast === 'function') showToast(`Applied ${STACK_PRESETS[key].label}`);
+}
+
+function toggleStackItem(d) {
+    if (!app.state.myStack) app.state.myStack = new Set();
+    if (app.state.myStack.has(d.id)) app.state.myStack.delete(d.id);
+    else app.state.myStack.add(d.id);
+    highlightOwnedNodes();
+}
+
+function highlightOwnedNodes() {
+    if (!app.node) return;
+    app.node.transition().duration(200)
+        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none")
+        .select("path").style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff").style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
+}
+
+function toggleCustomScopeItem(nodeId) {
+    if (!app || !app.customScope) return;
+    if (app.customScope.has(nodeId)) {
+        app.customScope.delete(nodeId);
+        if(typeof showToast === 'function') showToast(`Removed ${nodeId} from Custom Scope`);
+    } else {
+        app.customScope.add(nodeId);
+        if(typeof showToast === 'function') showToast(`Added ${nodeId} to Custom Scope`);
+    }
+    if (typeof updateGraph === 'function') updateGraph(false); 
+    calculateScoping();
+}
+
+function populateCategoryFilters() {
+    const filtersContainer = d3.select("#category-filters");
+    if(filtersContainer.empty() || typeof app === 'undefined' || !app.categories) return;
+    filtersContainer.html("");
+    Object.keys(app.categories).sort().forEach(cat => {
+        const label = filtersContainer.append("label").attr("class", "flex items-center cursor-pointer py-1");
+        label.append("input").attr("type", "checkbox").attr("checked", true).attr("value", cat).attr("class", "form-checkbox h-5 w-5 text-orange-600 transition rounded mr-3 focus:ring-orange-500").on("change", () => {if (typeof updateGraph === 'function') updateGraph(true)});
+        label.append("span").attr("class", "legend-color").style("background-color", app.categories[cat].color);
+        label.append("span").attr("class", "text-gray-700").text(cat);
+    });
+}
+
+function toggleAllCategories() {
+    allCategoriesChecked = !allCategoriesChecked;
+    d3.selectAll("#category-filters input").property("checked", allCategoriesChecked);
+    if (typeof updateGraph === 'function') updateGraph(true);
+}
+
+function toggleAllConnections() {
+    const checkboxes = d3.selectAll(".legend-checkbox");
+    if (checkboxes.empty()) return;
+    const allChecked = checkboxes.nodes().every(node => node.checked);
+    checkboxes.property("checked", !allChecked);
+    if (typeof updateGraph === 'function') updateGraph(true);
+}
+
+function handleSearchInput() {
+    if (typeof nodesData === 'undefined') return;
+    const searchInput = this.value.toLowerCase().trim();
+    const searchResults = d3.select("#search-results");
+    if (searchInput.length < 2) { searchResults.html("").style("opacity", 0).style("transform", "scale(0.95)"); return; }
+    const results = nodesData.filter(d => d.id.toLowerCase().includes(searchInput));
+    searchResults.html("");
+    if (results.length === 0) searchResults.append("div").attr("class", "search-item text-sm text-gray-500").text("No results found.");
+    else {
+        results.forEach(d => {
+            searchResults.append("div").attr("class", "search-item text-sm flex items-center").html(`<span class="legend-color" style="background-color:${app.categories[d.group].color};"></span>${d.id}`).on("click", () => selectNodeFromSearch(d));
+        });
+    }
+    searchResults.style("opacity", 1).style("transform", "scale(1)");
+}
+
+function selectNodeFromSearch(d) {
+    if (typeof stopTour === 'function') stopTour();
+    if(typeof app !== 'undefined' && app.simulation) {
+        const isVisible = app.simulation.nodes().some(n => n.id === d.id);
+        if (!isVisible) { if(typeof showToast === 'function') showToast(`"${d.id}" is hidden by filters. Resetting view.`, 3000); resetView(); }
+        setTimeout(() => {
+            const nodeData = app.simulation.nodes().find(n => n.id === d.id);
+            if (nodeData) {
+                app.interactionState = 'selected'; app.selectedNode = nodeData; applyHighlight(nodeData);
+                if (typeof showInfoPanel === 'function') showInfoPanel(nodeData); centerViewOnNode(nodeData);
+            }
+        }, isVisible ? 0 : 600);
+    }
+    d3.select("#search-input").property("value", ""); d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
+}
+
+function populatePersonaFilter() {
+    if (typeof nodesData === 'undefined') return;
+    const personaFilter = d3.select("#persona-filter");
+    if(personaFilter.empty()) return;
+    personaFilter.html('<option value="all">All Personas</option>');
+    const allPersonas = new Set();
+    nodesData.forEach(node => { if (node.personas) node.personas.forEach(p => allPersonas.add(p)); });
+    [...allPersonas].sort().forEach(p => {
+        const personaMap = { "pm": "Project Manager (GC)", "super": "Superintendent (GC)", "fm": "Financial Manager (GC)", "sub": "Specialty Contractor", "design": "Design Team", "owner": "Owner", "admin": "Admin", "estimator": "Estimator" };
+        personaFilter.append("option").attr("value", p).text(personaMap[p] || p);
+    });
+}
+
+function clearPackageDetails() {
+    d3.select("#add-ons-checkboxes").html(""); d3.select("#package-services-list").html("");
+    d3.select("#add-ons-container").classed('hidden', true); d3.select("#package-services-container").classed('hidden', true);
+    if (app && app.customScope) app.customScope.clear();
+    d3.selectAll(".sow-question").property("checked", false);
+    d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
+    d3.select('#btn-standard').classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
+    calculateScoping();
+}
+
+function refreshAccordionHeight() {
+    const content = document.querySelector('#packaging-container').closest('.accordion-content');
+    if (content && content.parentElement.classList.contains('active')) content.style.maxHeight = content.scrollHeight + "px";
+}
+
+function updateActivePackageState() {
+    if (typeof app === 'undefined') return;
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+    const firstChecked = d3.select(".package-checkbox:checked");
+    if (!firstChecked.empty()) {
+        const pkgName = firstChecked.property("value");
+        app.currentPackage = packagingData.find(p => (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
+    } else app.currentPackage = null;
+}
+
+function resetView() {
+    if (typeof stopTour === 'function') stopTour();
+    d3.select("#region-filter").property('value', 'all');
+    d3.select("#audience-filter").property('value', 'all').property("disabled", true).html('<option value="all">All Audiences</option>');
+    d3.select("#persona-filter").property('value', 'all');
+    d3.select("#package-selection-area").classed("hidden", true); d3.select("#package-checkboxes").html("");
+    d3.select("#toggle-procore-led").property("checked", false); if(typeof app !== 'undefined') app.state.showProcoreLedOnly = false;
+    d3.selectAll("#category-filters input").property("checked", true); d3.selectAll(".legend-checkbox").property("checked", true); allCategoriesChecked = true;
+    d3.selectAll(".sow-question").property("checked", false);
+    if (app.state && app.state.isBuildingStack) toggleStackBuilderMode();
+    app.state.myStack = new Set();
+    d3.select("#stack-builder-btn").attr("disabled", true).classed("cursor-not-allowed", true);
+    d3.select("#gap-pricing-toggle-container").classed("hidden", true).html("");
+    clearPackageDetails();
+    if (typeof updateGraph === 'function') updateGraph(false);
+    if (typeof resetZoom === 'function') resetZoom();
+                }
