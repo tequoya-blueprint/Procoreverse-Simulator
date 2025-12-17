@@ -270,14 +270,27 @@ function updateGraph(isFilterChange = true) {
             nodeGroup.style("opacity", 0).transition().duration(500).style("opacity", 1);
             return nodeGroup;
         },
-        update => {
+       update => {
+            // PRIORITY 1: STACK BUILDER VISUALS
             if (isBuilderMode) {
-                update.transition().duration(500).style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4).style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
-                update.select("path").transition().duration(500).style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff").style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
+                update.transition().duration(500)
+                    .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
+                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
+                
+                update.select("path").transition().duration(500)
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") 
+                    .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
+                    
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
-            update.transition().duration(500).style("opacity", d => {
+
+            // PRIORITY 2: GAP ANALYSIS VISUALS
+            // FIX: Add Pulse Class explicitly
+            update.classed("pulsing-gap", d => isGapMode && gapAnalysis.gap.has(d.id));
+
+            update.transition().duration(500)
+            .style("opacity", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return 1.0; 
                     if (gapAnalysis.gap.has(d.id)) return 1.0;     
@@ -294,7 +307,8 @@ function updateGraph(isFilterChange = true) {
             .style("filter", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
-                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
+                    // GAP: Stronger Orange Glow
+                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 12px rgba(243, 108, 35, 1.0))"; 
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 if (filters.showProcoreLed) {
@@ -303,27 +317,24 @@ function updateGraph(isFilterChange = true) {
                 }
                 return null;
             });
-            update.select("path").transition().duration(500).style("stroke", d => {
+
+            update.select("path")
+                .transition().duration(500)
+                .style("stroke", d => {
                     if (isGapMode) {
                         if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
                         if (gapAnalysis.gap.has(d.id)) return "#F36C23";   
                         if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
                     }
                     return "#ffffff"; 
-                }).style("stroke-width", d => {
+                })
+                .style("stroke-width", d => {
                     if (isGapMode) {
                         if (gapAnalysis.gap.has(d.id)) return 4; 
                         if (gapAnalysis.matched.has(d.id)) return 3;
                         if (gapAnalysis.outlier.has(d.id)) return 3;
                     }
                     return 2;
-                });
-            update.select(".procore-led-ring").transition().duration(300)
-                .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
-                .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
-                .attr("stroke-opacity", d => {
-                    if (isGapMode) return 0; 
-                    return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
         },
