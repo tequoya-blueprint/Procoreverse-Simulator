@@ -1,17 +1,3 @@
-
-Con 3
-
-Tequoya Weiss
-To:  me
- · 
-Wed, Dec 17 at 11:32 AM
-// --- app-controls.js --- // VERSION: 960 (FULL INTEGRITY CHECK: DUPLICATES REMOVED + BRAND ALIGNED) // --- TEAM CONFIGURATION RULES (RBAC) --- const TEAM_CONFIG = { admin: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: true, calculatorMode: 'edit', showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' }, enablement: { showTours: true, showAiBuilder: true, showManualBuilder: true, showScoping: false, calculatorMode: 'hidden', showFilters: true, showLegend
-
-Tequoya Weiss
-To:  me
- · 
-Wed, Dec 17 at 11:32 AM
-Message Body
 // --- app-controls.js ---
 // VERSION: 960 (FULL INTEGRITY CHECK: DUPLICATES REMOVED + BRAND ALIGNED)
 
