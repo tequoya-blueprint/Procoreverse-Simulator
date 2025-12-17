@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 910 (BRAND ALIGNED: NO GREEN/TEAL/LAVENDER)
+// VERSION: 980 (LEGEND RESTORED + LINK VISIBILITY FIX + BRAND ALIGNED)
 
-console.log("App Main 910: Loading...");
+console.log("App Main 980: Loading...");
 
 const app = {
     simulation: null,
@@ -34,7 +34,6 @@ const app = {
 
 // BACKGROUND CLICK HANDLER (Fixes Sticky Clicking)
 function handleBackgroundClick(event) {
-    // Only reset if we are in a simple selection state
     if (app.interactionState === 'selected') {
         if (typeof resetHighlight === 'function') resetHighlight(true);
     }
@@ -53,7 +52,7 @@ function nodeMouseOut(event, d) {
 }
 
 function nodeClicked(event, d) {
-    event.stopPropagation(); // Keep this to prevent immediate background click trigger
+    event.stopPropagation(); 
     
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d);
@@ -92,21 +91,19 @@ function nodeDoubleClicked(event, d) {
 // --- 2. SETUP & LAYOUT ---
 function setupCategories() {
     // UPDATED BRAND PALETTE (STRICT)
-    // Removed: Lavender, Teal, Green
-    // Added: Lumber, Earth, Metal, Charcoal, Procore Blue
     const colorMap = { 
-        "Preconstruction": "#CEC4A1",        // Lumber (Replaces Lavender)
+        "Preconstruction": "#CEC4A1",        // Lumber
         "Project Management": "#FF5200",     // Procore Orange
         "Financial Management": "#8D6E5B",   // Earth
-        "Workforce Management": "#566578",   // Metal (Replaces Teal)
-        "Quality & Safety": "#4A4A4A",       // Charcoal (Replaces Dark Teal)
+        "Workforce Management": "#566578",   // Metal
+        "Quality & Safety": "#4A4A4A",       // Charcoal
         "Platform & Core": "#757575",        // Mid Grey
-        "Construction Intelligence": "#111827", // Black/Darkest Grey
+        "Construction Intelligence": "#111827", // Black
         "External Integrations": "#B0B0B0",  // Light Grey
         "Helix": "#607D8B",                  // Blue-Grey Metal
         "Project Execution": "#FF5200",      // Orange
         "Resource Management": "#566578",    // Metal
-        "Emails": "#c94b4b",                 // Red (Utility)
+        "Emails": "#c94b4b",                 // Red
         "Project Map": "#FF5200"             // Orange
     };
 
@@ -130,7 +127,6 @@ function setHexFoci() {
     const cy = app.height / 2;
     const radius = Math.min(app.width, app.height) * 0.38; 
     
-    // Adjusted layout to prevent overlap with new colors
     const layoutMap = {
         "Platform & Core": { angle: 0, dist: 0 },
         "Preconstruction": { angle: -90, dist: 1 },       
@@ -167,7 +163,6 @@ function initializeSimulation() {
     const container = document.getElementById('graph-container');
     if (!container) return; 
     
-    // Add Background Click Listener
     container.addEventListener('click', handleBackgroundClick);
 
     app.width = container.clientWidth;
@@ -196,6 +191,8 @@ function initializeSimulation() {
 function setupMarkers() {
     const defs = app.svg.select("defs");
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
+    
+    // SAFETY CHECK: Ensure legendData exists
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
@@ -207,7 +204,6 @@ function setupMarkers() {
             }
         });
     }
-    // Updated Highlight Color (Orange is brand safe for interactions)
     defs.append("marker").attr("id", "arrow-highlighted").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "var(--procore-orange)");
     defs.append("marker").attr("id", "arrow-candidate").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#2563EB");
 }
@@ -225,33 +221,32 @@ function updateGraph(isFilterChange = true) {
     
     if (app.interactionState === 'manual_building') return;
 
-    // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
-    // 2. GAP ANALYSIS (No Green - Blue/Metal Logic)
+    // GAP ANALYSIS
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
     const isBuilderMode = app.state && app.state.isBuildingStack;
 
-    // 3. Filter Nodes (Ghosting Logic - Keep structure visible)
-    // We now filter differently: We want to KEEP all nodes in the data array so they don't jump around,
-    // but we will zero-out their opacity if they are filtered out.
-    // However, D3 Force requires nodes to be in the array to calculate positions.
-    // Strategy: Filter normally for strict removal, but for "Package Views", use opacity.
-    
+    // Filter Nodes
     const filteredNodes = nodes.filter(d => {
-        // Strict Category/Persona filters still remove nodes
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
         return inCategory && inPersona;
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
-    const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
+    
+    // FIX: Ensure links are only filtered by connection type and endpoint visibility
+    const filteredLinks = allLinks.filter(d => {
+        const s = d.source.id || d.source;
+        const t = d.target.id || d.target;
+        return nodeIds.has(s) && nodeIds.has(t) && filters.connectionTypes.has(d.type);
+    }).map(d => ({...d})); 
 
-    // 4. D3 Join & Update
+    // D3 Join & Update
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node")
@@ -276,30 +271,26 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
-            // PRIORITY 1: STACK BUILDER (Owned = Blue/Metal, Not Green)
             if (isBuilderMode) {
                 update.transition().duration(500)
                     .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
-                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(0, 112, 243, 0.6))" : "none"); // Blue Shadow
+                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(0, 112, 243, 0.6))" : "none");
                 
                 update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#0070f3" : "#ffffff") // Procore Blue
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#0070f3" : "#ffffff") 
                     .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
                     
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
 
-            // PRIORITY 2: GAP ANALYSIS (Ghosting for Package Filtering)
             update.classed("pulsing-gap", d => isGapMode && gapAnalysis.gap.has(d.id));
 
             update.transition().duration(500)
             .style("opacity", d => {
-                // If a package is selected, check if this node is in it.
-                // If NOT in package (and not an outlier owned item), GHOST IT (Opacity 0.1) instead of removing.
                 if (filters.packageTools && filters.packageTools.size > 0) {
                      const isRelevant = filters.packageTools.has(d.id) || (gapAnalysis.outlier && gapAnalysis.outlier.has(d.id));
-                     if (!isRelevant) return 0.1; // Ghost non-package items
+                     if (!isRelevant) return 0.1; 
                 }
 
                 if (isGapMode) {
@@ -309,34 +300,29 @@ function updateGraph(isFilterChange = true) {
                     return 0.1; 
                 }
                 
-                // Procore Led Logic
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
                     if (filters.procoreLedTools.has(d.id)) return 1.0;
-                    return 0.2; // Dim non-Procore led
+                    return 0.2; 
                 }
                 return 1.0;
             })
             .style("filter", d => {
                 if (isGapMode) {
-                    // Matched = Blue Glow (No Green)
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 6px rgba(0, 112, 243, 0.6))"; 
-                    // GAP = Orange Glow
                     if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 12px rgba(243, 108, 35, 1.0))"; 
-                    // Outlier = Metal Glow
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 return null;
             });
 
-            // STROKE COLORING (NO GREEN)
             update.select("path")
                 .transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#0070f3"; // Blue
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Orange
-                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; // Metal
+                        if (gapAnalysis.matched.has(d.id)) return "#0070f3"; 
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   
+                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
                     }
                     return "#ffffff"; 
                 });
@@ -345,9 +331,7 @@ function updateGraph(isFilterChange = true) {
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    // Hide rings if node is ghosted
                     if (filters.packageTools && filters.packageTools.size > 0 && !filters.packageTools.has(d.id) && !gapAnalysis.outlier.has(d.id)) return 0;
-                    
                     if (isGapMode) return 0; 
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
@@ -356,7 +340,6 @@ function updateGraph(isFilterChange = true) {
         exit => exit.transition().duration(300).style("opacity", 0).remove()
     );
 
-    // LINKS UPDATE (Ghosting links attached to ghosted nodes)
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
         .style("pointer-events", "none") 
@@ -395,18 +378,19 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        // Ghost links if endpoints are ghosted
+        // FIX: Only ghost links if their nodes are significantly ghosted (opacity < 0.2)
+        // We can check this by seeing if the source/target IDs are in the "active" filter set.
+        
         if (filters.packageTools && filters.packageTools.size > 0) {
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
-            // If either endpoint is NOT in the package/outlier list, ghost the link
             const sVisible = filters.packageTools.has(s) || (gapAnalysis.outlier && gapAnalysis.outlier.has(s));
             const tVisible = filters.packageTools.has(t) || (gapAnalysis.outlier && gapAnalysis.outlier.has(t));
-            if (!sVisible || !tVisible) return 0.02;
+            if (!sVisible || !tVisible) return 0.05; // Ghost
         }
 
         if (isBuilderMode) return 0.15;
-        if (isGapMode) return 0.5; 
+        if (isGapMode) return 0.6; 
         
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
@@ -415,7 +399,7 @@ function updateGraph(isFilterChange = true) {
             const activeT = filters.procoreLedTools.has(t) || app.customScope.has(t);
             return (activeS && activeT) ? 0.6 : 0.05;
         }
-        return 0.6;
+        return 0.6; // Default visible opacity
     });
 
     app.nodeG.raise(); 
@@ -424,6 +408,31 @@ function updateGraph(isFilterChange = true) {
     app.simulation.force("link").links(filteredLinks);
     app.simulation.alpha(1).restart();
     if(typeof updateTourDropdown === 'function') updateTourDropdown(filters.packageTools); 
+}
+
+// FIX: POPULATE LEGEND (RE-ADDED TO ENSURE IT RENDERS)
+function populateLegend() {
+    const legendContainer = d3.select("#connection-legend");
+    legendContainer.html(""); 
+    if (typeof legendData === 'undefined' || !Array.isArray(legendData)) return;
+
+    const legendSVGs = {
+        "creates": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='4,3'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='8,4'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "syncs": "<svg width='24' height='10'><path d='M3,2 L9,5 L3,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path><line x1='6' y1='5' x2='18' y2='5' stroke='var(--procore-metal)' stroke-width='2'></line><path d='M21,2 L15,5 L21,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path></svg>",
+        "pushes-data-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "pulls-data-from": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='2,4'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
+        "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='1,3'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
+        "feeds": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#4A4A4A' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='#4A4A4A' stroke-width='2' fill='none'></path></svg>"
+    };
+    
+    legendData.forEach(type => {
+        const svg = legendSVGs[type.type_id] || "";
+        const item = legendContainer.append("label").attr("class", "flex items-center mb-3 cursor-pointer");
+        item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id).attr("class", "form-checkbox h-4 w-4 text-orange-600 legend-checkbox mr-3").on("change", () => updateGraph(true));
+        item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
+        item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
+    });
 }
 
 function addBadge(group, iconCode, color, x, y, tooltipText, d) {
