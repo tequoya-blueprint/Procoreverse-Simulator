@@ -204,6 +204,30 @@ const linksData = [
     "type": "syncs",
     "dataFlow": "Material data can be updated from the Estimating tool and new items added to the catalog"
   },
+   {
+    "source": "Bid Board",
+    "target": "Estimating",
+    "type": "creates",
+    "dataFlow": "Generates the initial project estimate from the preliminary estimate created within Bid Board."
+  },
+ {
+    "source": "Bid Board",
+    "target": "Documents",
+    "type": "pushes data to",
+    "dataFlow": "Populates the project documents used in the preliminary planning phase into the documents tool within a new Portfolio Project created from a Bid Board Project."
+  },
+ {
+    "source": "Bid Board",
+    "target": "Projects,
+    "type": "creates",
+    "dataFlow": "Creates new Portfolio Projects from qualified Bid Board opportunities."
+  },
+  {
+    "source": "Cost Catalog",
+    "target": "Bid Board",
+    "type": "syncs",
+    "dataFlow": "Data for Materials used in takeoffs are synced between tools to allow for estimate creation based stored data."
+  },
   {
     "source": "Bidding",
     "target": "Commitments",
