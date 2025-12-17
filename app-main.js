@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 830 (FIX: SYNC ARROWS & LEGEND ACCURACY)
+// VERSION: 900 (FIX: EXACT BRAND COLORS HARDCODED)
 
-console.log("App Main 830: Loading...");
+console.log("App Main 900: Loading Part 1...");
 
 const app = {
     simulation: null,
@@ -31,7 +31,6 @@ const app = {
 };
 
 // --- 1. CORE INTERACTION HANDLERS ---
-
 function nodeMouseOver(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
     if (typeof showTooltip === 'function') showTooltip(event, d);
@@ -47,22 +46,18 @@ function nodeMouseOut(event, d) {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
-    // 1. MANUAL PROCESS BUILDER
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d);
-        // FORCE PANEL OPEN FOR CONTEXT
         if (typeof showInfoPanel === 'function') showInfoPanel(d);
         return; 
     }
 
-    // 2. CUSTOMER STACK BUILDER
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
         return; 
     }
     
-    // 3. STANDARD EXPLORATION
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { procoreLedTools: new Set() };
     if (app.state.showProcoreLedOnly) {
         const isStandardLed = filters.procoreLedTools.has(d.id);
@@ -86,19 +81,33 @@ function nodeDoubleClicked(event, d) {
 }
 
 // --- 2. SETUP & LAYOUT ---
-
 function setupCategories() {
-    const rootStyles = getComputedStyle(document.documentElement);
-    const procoreColors = { 
-        orange: rootStyles.getPropertyValue('--procore-orange').trim() || "#F36C23", 
-        lumber: rootStyles.getPropertyValue('--procore-lumber').trim() || "#D1C4E9", 
-        earth: rootStyles.getPropertyValue('--procore-earth').trim() || "#8D6E63", 
-        metal: rootStyles.getPropertyValue('--procore-metal').trim() || "#607D8B"
+    // 1. HARDCODED PROCORE BRAND PALETTE (Safe Mode)
+    const colorMap = { 
+        "Preconstruction": "#D1C4E9",        // Lumber
+        "Project Management": "#F36C23",     // Orange
+        "Financial Management": "#8D6E63",   // Earth
+        "Workforce Management": "#3a8d8c",   // Teal
+        "Quality & Safety": "#5B8D7E",       // Darker Teal
+        "Platform & Core": "#757575",        // Mid Grey
+        "Construction Intelligence": "#4A4A4A", // Dark Grey
+        "External Integrations": "#B0B0B0",  // Light Grey
+        "Helix": "#607D8B",                  // Metal
+        "Project Execution": "#F36C23",      // Orange
+        "Resource Management": "#607D8B",    // Metal
+        "Emails": "#c94b4b",                 // Red
+        "Project Map": "#F36C23"             // Orange
     };
-    const colorMap = { "Preconstruction": procoreColors.lumber, "Project Management": procoreColors.orange, "Financial Management": procoreColors.earth, "Workforce Management": "#3a8d8c", "Quality & Safety": "#5B8D7E", "Platform & Core": "#757575", "Construction Intelligence": "#4A4A4A", "External Integrations": "#B0B0B0", "Helix": procoreColors.metal, "Project Execution": procoreColors.orange, "Resource Management": procoreColors.metal, "Emails": "#c94b4b", "Project Map": procoreColors.orange };
+
     app.categories = {}; 
     if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
-        nodesData.forEach(node => { if (!app.categories[node.group]) app.categories[node.group] = { color: colorMap[node.group] || "#999" }; });
+        nodesData.forEach(node => { 
+            if (!app.categories[node.group]) {
+                // If group in map, use it. Else default to grey.
+                const color = colorMap[node.group] || "#999";
+                app.categories[node.group] = { color: color }; 
+            }
+        });
     }
 }
 
@@ -170,17 +179,12 @@ function initializeSimulation() {
 
 function setupMarkers() {
     const defs = app.svg.select("defs");
-    // Standard Markers
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
-            // FIX: Generate markers for both "one arrow" AND "two arrows"
             if (type && type.type_id && (type.visual_style.includes("one arrow") || type.visual_style.includes("two arrows"))) {
-                // Forward Arrow (Marker End)
                 defs.append("marker").attr("id", `arrow-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", color);
-                
-                // Backward Arrow (Marker Start) - Needed for 'syncs'
                 if (type.visual_style.includes("two arrows")) {
                     defs.append("marker").attr("id", `arrow-start-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", -app.arrowRefX + 10).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M10,-5L0,0L10,5").attr("fill", color);
                 }
@@ -214,6 +218,8 @@ function populateLegend() {
         item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
     });
 }
+// --- app-main.js (PART 2 OF 2) ---
+// VERSION: 880 (LOGIC LOOP)
 
 function ticked() {
     if (app.simulation && app.simulation.alpha() > 0.05) {
@@ -297,29 +303,29 @@ function updateGraph(isFilterChange = true) {
             }
 
             // PRIORITY 2: GAP ANALYSIS VISUALS
+            // FIX: Add Pulse Class explicitly
+            update.classed("pulsing-gap", d => isGapMode && gapAnalysis.gap.has(d.id));
+
             update.transition().duration(500)
             .style("opacity", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return 1.0; 
                     if (gapAnalysis.gap.has(d.id)) return 1.0;     
                     if (gapAnalysis.outlier.has(d.id)) return 1.0; 
-                    // FIX: Self-Led Nodes Opacity set to 0.7
                     return 0.7; 
                 }
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
                     if (filters.procoreLedTools.has(d.id)) return 1.0;
-                    return 0.7; // Self-Led nodes in Procore view
+                    return 0.7; 
                 }
                 return 1.0;
             })
             .style("filter", d => {
                 if (isGapMode) {
-                    // MATCHED = BRAND GREEN GLOW
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
-                    // GAP = BRAND ORANGE PULSE
-                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
-                    // OUTLIER = BRAND METAL GLOW
+                    // GAP: Stronger Orange Glow
+                    if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 12px rgba(243, 108, 35, 1.0))"; 
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 if (filters.showProcoreLed) {
@@ -333,9 +339,9 @@ function updateGraph(isFilterChange = true) {
                 .transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; // Brand Green
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Brand Orange
-                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; // Brand Metal
+                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   
+                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
                     }
                     return "#ffffff"; 
                 })
@@ -347,7 +353,8 @@ function updateGraph(isFilterChange = true) {
                     }
                     return 2;
                 });
-
+            
+            // RING LOGIC RESTORED (Blue vs Orange)
             update.select(".procore-led-ring").transition().duration(300)
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
@@ -362,7 +369,7 @@ function updateGraph(isFilterChange = true) {
 
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
-        .style("pointer-events", "none") // <--- FIX 1: Allow clicks to pass through links
+        .style("pointer-events", "none") // CLICK-THROUGH
         .attr("stroke", d => {
             if (typeof legendData === 'undefined') return app.defaultArrowColor;
             const legend = legendData.find(l => l.type_id === d.type);
@@ -389,7 +396,7 @@ function updateGraph(isFilterChange = true) {
             if (legend.visual_style.includes("one arrow") || legend.visual_style.includes("two arrows")) return `url(#arrow-${d.type})`;
             return null;
         })
-        // FIX: Add marker-start for syncs
+        // SYNC ARROWS
         .attr("marker-start", d => {
             if (typeof legendData === 'undefined') return null;
             const legend = legendData.find(l => l.type_id === d.type);
@@ -412,15 +419,13 @@ function updateGraph(isFilterChange = true) {
         return 0.6;
     });
 
-    // <--- FIX 2: FORCE NODES TO TOP OF DOM STACK
+    // FORCE NODES TO TOP
     app.nodeG.raise(); 
 
     app.simulation.nodes(filteredNodes);
     app.simulation.force("link").links(filteredLinks);
     app.simulation.alpha(1).restart();
     if(typeof updateTourDropdown === 'function') updateTourDropdown(filters.packageTools); 
-    
-    // NO RECURSIVE RESET HERE
 }
 
 function addBadge(group, iconCode, color, x, y, tooltipText, d) {
