@@ -1,7 +1,7 @@
-// --- app-main.js ---
-// VERSION: 900 (FIX: EXACT BRAND COLORS HARDCODED)
+// --- app-main.js (PART 1 OF 2) ---
+// VERSION: 950 (FULL RESTORATION: HYBRID COLORS & SETUP)
 
-console.log("App Main 900: Loading Part 1...");
+console.log("App Main 950: Loading Part 1...");
 
 const app = {
     simulation: null,
@@ -46,24 +46,28 @@ function nodeMouseOut(event, d) {
 function nodeClicked(event, d) {
     event.stopPropagation();
     
+    // Manual Builder Handler
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d);
         if (typeof showInfoPanel === 'function') showInfoPanel(d);
         return; 
     }
 
+    // Stack Builder Handler
     if (app.state && app.state.isBuildingStack) {
         if (typeof toggleStackItem === 'function') toggleStackItem(d);
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes(); 
         return; 
     }
     
+    // Procore Led Filter Handler
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { procoreLedTools: new Set() };
     if (app.state.showProcoreLedOnly) {
         const isStandardLed = filters.procoreLedTools.has(d.id);
         if (!isStandardLed) { if (typeof toggleCustomScopeItem === 'function') toggleCustomScopeItem(d.id); return; }
     }
     
+    // Standard Selection
     if (app.selectedNode === d) { 
         if(typeof resetHighlight === 'function') resetHighlight(); 
     } else {
@@ -82,28 +86,46 @@ function nodeDoubleClicked(event, d) {
 
 // --- 2. SETUP & LAYOUT ---
 function setupCategories() {
-    // 1. HARDCODED PROCORE BRAND PALETTE (Safe Mode)
+    // 1. Try to get CSS Variables (The "Right" Way)
+    const rootStyles = getComputedStyle(document.documentElement);
+    const cssColors = {
+        orange: rootStyles.getPropertyValue('--procore-orange').trim(),
+        lumber: rootStyles.getPropertyValue('--procore-lumber').trim(),
+        earth: rootStyles.getPropertyValue('--procore-earth').trim(),
+        metal: rootStyles.getPropertyValue('--procore-metal').trim()
+    };
+
+    // 2. Define Hardcoded Fallbacks (The "Safe" Way)
+    const procoreColors = { 
+        orange: cssColors.orange || "#F36C23", 
+        lumber: cssColors.lumber || "#D1C4E9", 
+        earth: cssColors.earth || "#8D6E63", 
+        metal: cssColors.metal || "#607D8B",
+        teal: "#3a8d8c",
+        stone: "#F5F1EE"
+    };
+
+    // 3. Map Categories to Colors
     const colorMap = { 
-        "Preconstruction": "#D1C4E9",        // Lumber
-        "Project Management": "#F36C23",     // Orange
-        "Financial Management": "#8D6E63",   // Earth
-        "Workforce Management": "#3a8d8c",   // Teal
-        "Quality & Safety": "#5B8D7E",       // Darker Teal
-        "Platform & Core": "#757575",        // Mid Grey
-        "Construction Intelligence": "#4A4A4A", // Dark Grey
-        "External Integrations": "#B0B0B0",  // Light Grey
-        "Helix": "#607D8B",                  // Metal
-        "Project Execution": "#F36C23",      // Orange
-        "Resource Management": "#607D8B",    // Metal
-        "Emails": "#c94b4b",                 // Red
-        "Project Map": "#F36C23"             // Orange
+        "Preconstruction": procoreColors.lumber, 
+        "Project Management": procoreColors.orange, 
+        "Financial Management": procoreColors.earth, 
+        "Workforce Management": "#3a8d8c", 
+        "Quality & Safety": "#5B8D7E", 
+        "Platform & Core": "#757575", 
+        "Construction Intelligence": "#4A4A4A", 
+        "External Integrations": "#B0B0B0", 
+        "Helix": procoreColors.metal, 
+        "Project Execution": procoreColors.orange, 
+        "Resource Management": procoreColors.metal, 
+        "Emails": "#c94b4b", 
+        "Project Map": procoreColors.orange 
     };
 
     app.categories = {}; 
     if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
         nodesData.forEach(node => { 
             if (!app.categories[node.group]) {
-                // If group in map, use it. Else default to grey.
                 const color = colorMap[node.group] || "#999";
                 app.categories[node.group] = { color: color }; 
             }
@@ -119,6 +141,8 @@ function setHexFoci() {
     const cx = app.width / 2;
     const cy = app.height / 2;
     const radius = Math.min(app.width, app.height) * 0.38; 
+    
+    // Explicit Layout Map
     const layoutMap = {
         "Platform & Core": { angle: 0, dist: 0 },
         "Preconstruction": { angle: -90, dist: 1 },       
@@ -134,6 +158,7 @@ function setHexFoci() {
         "External Integrations": { angle: 30, dist: 1.3 }, 
         "Emails": { angle: 210, dist: 1.3 } 
     };
+    
     Object.keys(app.categories).forEach(cat => {
         const config = layoutMap[cat] || { angle: 0, dist: 0 };
         const rad = (config.angle * Math.PI) / 180;
@@ -160,31 +185,40 @@ function initializeSimulation() {
     app.g = app.svg.append("g");
     app.linkG = app.g.append("g").attr("class", "links");
     app.nodeG = app.g.append("g").attr("class", "nodes");
+    
     setupMarkers(); 
+    
     app.zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", (event) => {
         app.g.attr("transform", event.transform);
         app.node.selectAll("text").style("opacity", event.transform.k < 0.4 ? 0 : 1);
     });
     app.svg.call(app.zoom);
+    
     app.simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(d => d.id).distance(100).strength(0.2))
         .force("charge", d3.forceManyBody().strength(-900))
         .force("collision", d3.forceCollide().radius(app.nodeCollisionRadius).strength(1))
         .force("center", d3.forceCenter(app.width / 2, app.height / 2))
         .on("tick", ticked);
+        
     app.link = app.linkG.selectAll("path");
     app.node = app.nodeG.selectAll("g");
     setHexFoci();
 }
+// --- app-main.js (PART 2 OF 2) ---
+// VERSION: 950 (FULL RESTORATION: LOGIC & LEGEND)
 
 function setupMarkers() {
     const defs = app.svg.select("defs");
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
+    
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
             if (type && type.type_id && (type.visual_style.includes("one arrow") || type.visual_style.includes("two arrows"))) {
+                // Forward Arrow
                 defs.append("marker").attr("id", `arrow-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", color);
+                // Backward Arrow (for Syncs)
                 if (type.visual_style.includes("two arrows")) {
                     defs.append("marker").attr("id", `arrow-start-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", -app.arrowRefX + 10).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M10,-5L0,0L10,5").attr("fill", color);
                 }
@@ -200,6 +234,7 @@ function populateLegend() {
     legendContainer.html(""); 
     if (typeof legendData === 'undefined' || !Array.isArray(legendData)) return;
 
+    // Defined SVGs for Legend - Fully Expanded
     const legendSVGs = {
         "creates": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='4,3'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
         "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='8,4'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
@@ -218,8 +253,6 @@ function populateLegend() {
         item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
     });
 }
-// --- app-main.js (PART 2 OF 2) ---
-// VERSION: 880 (LOGIC LOOP)
 
 function ticked() {
     if (app.simulation && app.simulation.alpha() > 0.05) {
@@ -231,39 +264,28 @@ function ticked() {
 
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour && typeof stopTour === 'function') stopTour();
-    
-    // --- CRITICAL GUARD CLAUSE ---
     if (app.interactionState === 'manual_building') return;
 
-    // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
-    // 2. GAP ANALYSIS PRE-CALCULATION
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
     const isBuilderMode = app.state && app.state.isBuildingStack;
 
-    // 3. Filter Nodes
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        
         let inPackage = true;
-        if (isBuilderMode) {
-            inPackage = true; 
-        } else {
-            inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
-        }
-        
+        if (isBuilderMode) inPackage = true; 
+        else inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         return inCategory && inPersona && inPackage;
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
-    // 4. D3 Join & Update
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node")
@@ -272,7 +294,7 @@ function updateGraph(isFilterChange = true) {
                 .on("click", nodeClicked)
                 .on("dblclick", nodeDoubleClicked)
                 .call(drag(app.simulation)); 
-
+            
             nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
             nodeGroup.append("text").text(d => d.id).attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
@@ -288,26 +310,17 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
-            // PRIORITY 1: STACK BUILDER VISUALS
             if (isBuilderMode) {
-                update.transition().duration(500)
-                    .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
-                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
-                
-                update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") // Brand Green
-                    .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
-                    
+                update.transition().duration(500).style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4).style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
+                update.select("path").transition().duration(500).style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff").style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
 
-            // PRIORITY 2: GAP ANALYSIS VISUALS
-            // FIX: Add Pulse Class explicitly
+            // PULSING GAP VISUAL
             update.classed("pulsing-gap", d => isGapMode && gapAnalysis.gap.has(d.id));
 
-            update.transition().duration(500)
-            .style("opacity", d => {
+            update.transition().duration(500).style("opacity", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return 1.0; 
                     if (gapAnalysis.gap.has(d.id)) return 1.0;     
@@ -324,7 +337,6 @@ function updateGraph(isFilterChange = true) {
             .style("filter", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
-                    // GAP: Stronger Orange Glow
                     if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 12px rgba(243, 108, 35, 1.0))"; 
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
@@ -334,9 +346,8 @@ function updateGraph(isFilterChange = true) {
                 }
                 return null;
             });
-
-            update.select("path")
-                .transition().duration(500)
+            
+            update.select("path").transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
                         if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
@@ -344,8 +355,7 @@ function updateGraph(isFilterChange = true) {
                         if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
                     }
                     return "#ffffff"; 
-                })
-                .style("stroke-width", d => {
+                }).style("stroke-width", d => {
                     if (isGapMode) {
                         if (gapAnalysis.gap.has(d.id)) return 4; 
                         if (gapAnalysis.matched.has(d.id)) return 3;
@@ -354,12 +364,12 @@ function updateGraph(isFilterChange = true) {
                     return 2;
                 });
             
-            // RING LOGIC RESTORED (Blue vs Orange)
+            // RING LOGIC: CUSTOM = BLUE (#2563EB), INCLUDED = ORANGE (#F36C23)
             update.select(".procore-led-ring").transition().duration(300)
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    if (isGapMode) return 0; // Reduce noise
+                    if (isGapMode) return 0; 
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
@@ -369,7 +379,7 @@ function updateGraph(isFilterChange = true) {
 
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
-        .style("pointer-events", "none") // CLICK-THROUGH
+        .style("pointer-events", "none") 
         .attr("stroke", d => {
             if (typeof legendData === 'undefined') return app.defaultArrowColor;
             const legend = legendData.find(l => l.type_id === d.type);
@@ -396,8 +406,7 @@ function updateGraph(isFilterChange = true) {
             if (legend.visual_style.includes("one arrow") || legend.visual_style.includes("two arrows")) return `url(#arrow-${d.type})`;
             return null;
         })
-        // SYNC ARROWS
-        .attr("marker-start", d => {
+        .attr("marker-start", d => { 
             if (typeof legendData === 'undefined') return null;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return null;
@@ -406,8 +415,8 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isBuilderMode) return 0.15; // Dim links while building stack
-        if (isGapMode) return 0.5; // INCREASED VISIBILITY: Connect connected ecosystem
+        if (isBuilderMode) return 0.15; 
+        if (isGapMode) return 0.5; 
         
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
@@ -419,7 +428,6 @@ function updateGraph(isFilterChange = true) {
         return 0.6;
     });
 
-    // FORCE NODES TO TOP
     app.nodeG.raise(); 
 
     app.simulation.nodes(filteredNodes);
@@ -434,8 +442,6 @@ function addBadge(group, iconCode, color, x, y, tooltipText, d) {
     badge.append("text").attr("class", "fas").text(iconCode).attr("text-anchor", "middle").attr("dy", 3).attr("fill", color).attr("font-size", "10px").style("font-family", "'Font Awesome 6 Free'").style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))").style("pointer-events", "none");
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: ${color};">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
-         
-    // PASSTHROUGH CLICK
     badge.on("click", function(e) { nodeClicked(e, d); });
 }
 function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
@@ -444,15 +450,13 @@ function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
     badge.append("text").text(emoji).attr("text-anchor", "middle").attr("dy", 3).attr("font-size", "12px").style("font-weight", "bold").style("pointer-events", "none");
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: #4A4A4A;">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
-
-    // PASSTHROUGH CLICK
     badge.on("click", function(e) { nodeClicked(e, d); });
 }
 
 window.addEventListener('resize', () => { 
     app.width = document.getElementById('graph-container').clientWidth; 
     app.height = document.getElementById('graph-container').clientHeight;
-    setHexFoci(); // Recalculate foci centers on resize
+    setHexFoci(); 
     if(app.simulation) app.simulation.alpha(0.5).restart();
 });
 
