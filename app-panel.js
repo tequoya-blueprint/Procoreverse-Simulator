@@ -1,12 +1,10 @@
 // --- app-panel.js ---
-// VERSION: 580 (FIXED: FULL RESTORATION, CLEAR DIRECTIONAL ICONS, HIDE FUNCTION)
+// VERSION: 600 (FIX: HOVER PAIR SPOTLIGHT)
 
 function initializeInfoPanel() {
     const closeBtn = d3.select("#info-close");
     if (!closeBtn.empty()) {
         closeBtn.on("click", () => {
-            // If we are in a tour/builder mode, just hide the panel
-            // If in explore mode, reset the graph highlights
             if (typeof resetHighlight === 'function') {
                 resetHighlight(true);
             } else {
@@ -121,16 +119,14 @@ function populateConnectionList(d) {
             const li = connectionList.append("li")
                 .attr("class", "py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition cursor-pointer px-2 -mx-2 rounded")
                 .on("mouseenter", function() { 
-                    // FIX: Ensure we pass the full Node Object to applyHighlight
-                    // We search the simulation nodes for the 'other' node
+                    // FIX: Isolate the pair (Panel Node + Hovered Node)
                     const targetNodeData = app.simulation.nodes().find(n => n.id === otherId);
-                    if (targetNodeData && typeof applyHighlight === 'function') {
-                        applyHighlight(targetNodeData);
+                    if (targetNodeData && typeof highlightConnectionPair === 'function') {
+                        highlightConnectionPair(d, targetNodeData);
                     }
                 }) 
                 .on("mouseleave", () => { 
-                    // FIX: Re-highlight the ORIGINAL selected node (d) when leaving the list item
-                    // Otherwise the graph goes dark or stays on the wrong node
+                    // RESTORE: Revert to "Selected Node + All Neighbors" view
                     if (typeof applyHighlight === 'function') {
                         applyHighlight(d); 
                     }
