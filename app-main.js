@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 830 (FIX: SYNC ARROWS & LEGEND ACCURACY)
+// VERSION: 850 (FINAL VISUALS: NODES ON TOP, CLICK-THROUGH LINES, SYNC ARROWS)
 
-console.log("App Main 830: Loading...");
+console.log("App Main 850: Loading...");
 
 const app = {
     simulation: null,
@@ -50,7 +50,6 @@ function nodeClicked(event, d) {
     // 1. MANUAL PROCESS BUILDER
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d);
-        // FORCE PANEL OPEN FOR CONTEXT
         if (typeof showInfoPanel === 'function') showInfoPanel(d);
         return; 
     }
@@ -95,10 +94,16 @@ function setupCategories() {
         earth: rootStyles.getPropertyValue('--procore-earth').trim() || "#8D6E63", 
         metal: rootStyles.getPropertyValue('--procore-metal').trim() || "#607D8B"
     };
-    const colorMap = { "Preconstruction": procoreColors.lumber, "Project Management": procoreColors.orange, "Financial Management": procoreColors.earth, "Workforce Management": "#3a8d8c", "Quality & Safety": "#5B8D7E", "Platform & Core": "#757575", "Construction Intelligence": "#4A4A4A", "External Integrations": "#B0B0B0", "Helix": procoreColors.metal, "Project Execution": procoreColors.orange, "Resource Management": procoreColors.metal, "Emails": "#c94b4b", "Project Map": procoreColors.orange };
     app.categories = {}; 
     if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
-        nodesData.forEach(node => { if (!app.categories[node.group]) app.categories[node.group] = { color: colorMap[node.group] || "#999" }; });
+        nodesData.forEach(node => { if (!app.categories[node.group]) app.categories[node.group] = { color: "#999" }; });
+        // Map specific colors if needed, otherwise default to generated/css
+        Object.keys(app.categories).forEach(cat => {
+            if(cat.includes("Project Management")) app.categories[cat].color = procoreColors.orange;
+            else if(cat.includes("Financial")) app.categories[cat].color = procoreColors.earth;
+            else if(cat.includes("Preconstruction")) app.categories[cat].color = procoreColors.lumber;
+            else app.categories[cat].color = "#566578"; // Metal default
+        });
     }
 }
 
@@ -170,17 +175,12 @@ function initializeSimulation() {
 
 function setupMarkers() {
     const defs = app.svg.select("defs");
-    // Standard Markers
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
-            // FIX: Generate markers for both "one arrow" AND "two arrows"
             if (type && type.type_id && (type.visual_style.includes("one arrow") || type.visual_style.includes("two arrows"))) {
-                // Forward Arrow (Marker End)
                 defs.append("marker").attr("id", `arrow-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", color);
-                
-                // Backward Arrow (Marker Start) - Needed for 'syncs'
                 if (type.visual_style.includes("two arrows")) {
                     defs.append("marker").attr("id", `arrow-start-${type.type_id}`).attr("viewBox", "0 -5 10 10").attr("refX", -app.arrowRefX + 10).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M10,-5L0,0L10,5").attr("fill", color);
                 }
@@ -225,39 +225,29 @@ function ticked() {
 
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour && typeof stopTour === 'function') stopTour();
-    
-    // --- CRITICAL GUARD CLAUSE ---
     if (app.interactionState === 'manual_building') return;
 
-    // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
-    // 2. GAP ANALYSIS PRE-CALCULATION
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
     const isBuilderMode = app.state && app.state.isBuildingStack;
 
-    // 3. Filter Nodes
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        
         let inPackage = true;
-        if (isBuilderMode) {
-            inPackage = true; 
-        } else {
+        if (!isBuilderMode) {
             inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         }
-        
         return inCategory && inPersona && inPackage;
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
-    // 4. D3 Join & Update
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node")
@@ -266,7 +256,6 @@ function updateGraph(isFilterChange = true) {
                 .on("click", nodeClicked)
                 .on("dblclick", nodeDoubleClicked)
                 .call(drag(app.simulation)); 
-
             nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
             nodeGroup.append("text").text(d => d.id).attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
@@ -282,44 +271,30 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
-            // PRIORITY 1: STACK BUILDER VISUALS
             if (isBuilderMode) {
-                update.transition().duration(500)
-                    .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
-                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
-                
-                update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") // Brand Green
-                    .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
-                    
+                update.transition().duration(500).style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4).style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
+                update.select("path").transition().duration(500).style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff").style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
-
-            // PRIORITY 2: GAP ANALYSIS VISUALS
-            update.transition().duration(500)
-            .style("opacity", d => {
+            update.transition().duration(500).style("opacity", d => {
                 if (isGapMode) {
                     if (gapAnalysis.matched.has(d.id)) return 1.0; 
                     if (gapAnalysis.gap.has(d.id)) return 1.0;     
                     if (gapAnalysis.outlier.has(d.id)) return 1.0; 
-                    // FIX: Self-Led Nodes Opacity set to 0.7
                     return 0.7; 
                 }
                 if (filters.showProcoreLed) {
                     if (app.customScope && app.customScope.has(d.id)) return 1.0;
                     if (filters.procoreLedTools.has(d.id)) return 1.0;
-                    return 0.7; // Self-Led nodes in Procore view
+                    return 0.7; 
                 }
                 return 1.0;
             })
             .style("filter", d => {
                 if (isGapMode) {
-                    // MATCHED = BRAND GREEN GLOW
                     if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
-                    // GAP = BRAND ORANGE PULSE
                     if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 8px rgba(243, 108, 35, 0.9))"; 
-                    // OUTLIER = BRAND METAL GLOW
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
                 }
                 if (filters.showProcoreLed) {
@@ -328,18 +303,14 @@ function updateGraph(isFilterChange = true) {
                 }
                 return null;
             });
-
-            update.select("path")
-                .transition().duration(500)
-                .style("stroke", d => {
+            update.select("path").transition().duration(500).style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; // Brand Green
-                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   // Brand Orange
-                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; // Brand Metal
+                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
+                        if (gapAnalysis.gap.has(d.id)) return "#F36C23";   
+                        if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
                     }
                     return "#ffffff"; 
-                })
-                .style("stroke-width", d => {
+                }).style("stroke-width", d => {
                     if (isGapMode) {
                         if (gapAnalysis.gap.has(d.id)) return 4; 
                         if (gapAnalysis.matched.has(d.id)) return 3;
@@ -347,12 +318,11 @@ function updateGraph(isFilterChange = true) {
                     }
                     return 2;
                 });
-
             update.select(".procore-led-ring").transition().duration(300)
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    if (isGapMode) return 0; // Reduce noise
+                    if (isGapMode) return 0; 
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
@@ -362,7 +332,7 @@ function updateGraph(isFilterChange = true) {
 
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
-        .style("pointer-events", "none") // <--- FIX 1: Allow clicks to pass through links
+        .style("pointer-events", "none") // <--- FIX 1: CLICK-THROUGH
         .attr("stroke", d => {
             if (typeof legendData === 'undefined') return app.defaultArrowColor;
             const legend = legendData.find(l => l.type_id === d.type);
@@ -389,8 +359,7 @@ function updateGraph(isFilterChange = true) {
             if (legend.visual_style.includes("one arrow") || legend.visual_style.includes("two arrows")) return `url(#arrow-${d.type})`;
             return null;
         })
-        // FIX: Add marker-start for syncs
-        .attr("marker-start", d => {
+        .attr("marker-start", d => { // <--- FIX 2: SYNC ARROWS
             if (typeof legendData === 'undefined') return null;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return null;
@@ -399,8 +368,8 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isBuilderMode) return 0.15; // Dim links while building stack
-        if (isGapMode) return 0.5; // INCREASED VISIBILITY: Connect connected ecosystem
+        if (isBuilderMode) return 0.15; 
+        if (isGapMode) return 0.5; 
         
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
@@ -412,15 +381,12 @@ function updateGraph(isFilterChange = true) {
         return 0.6;
     });
 
-    // <--- FIX 2: FORCE NODES TO TOP OF DOM STACK
-    app.nodeG.raise(); 
+    app.nodeG.raise(); // <--- FIX 3: NODES TO FRONT
 
     app.simulation.nodes(filteredNodes);
     app.simulation.force("link").links(filteredLinks);
     app.simulation.alpha(1).restart();
     if(typeof updateTourDropdown === 'function') updateTourDropdown(filters.packageTools); 
-    
-    // NO RECURSIVE RESET HERE
 }
 
 function addBadge(group, iconCode, color, x, y, tooltipText, d) {
@@ -429,8 +395,6 @@ function addBadge(group, iconCode, color, x, y, tooltipText, d) {
     badge.append("text").attr("class", "fas").text(iconCode).attr("text-anchor", "middle").attr("dy", 3).attr("fill", color).attr("font-size", "10px").style("font-family", "'Font Awesome 6 Free'").style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))").style("pointer-events", "none");
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: ${color};">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
-         
-    // PASSTHROUGH CLICK
     badge.on("click", function(e) { nodeClicked(e, d); });
 }
 function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
@@ -439,15 +403,13 @@ function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
     badge.append("text").text(emoji).attr("text-anchor", "middle").attr("dy", 3).attr("font-size", "12px").style("font-weight", "bold").style("pointer-events", "none");
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: #4A4A4A;">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
-
-    // PASSTHROUGH CLICK
     badge.on("click", function(e) { nodeClicked(e, d); });
 }
 
 window.addEventListener('resize', () => { 
     app.width = document.getElementById('graph-container').clientWidth; 
     app.height = document.getElementById('graph-container').clientHeight;
-    setHexFoci(); // Recalculate foci centers on resize
+    setHexFoci(); 
     if(app.simulation) app.simulation.alpha(0.5).restart();
 });
 
