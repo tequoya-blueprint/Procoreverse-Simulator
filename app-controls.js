@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 620 (FIXED: AUDIENCE MAPPINGS FOR 'O' AND 'RESOURCE MANAGEMENT')
+// VERSION: 690 (FULL RESTORATION: UN-MINIFIED TEMPLATES & ALL FIXES)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -35,26 +35,47 @@ function getUrlParam(param) {
     return urlParams.get(param);
 }
 
-// --- DATA MAPPING CONSTANTS (FIXED) ---
+// --- DATA MAPPING CONSTANTS ---
 const audienceKeyToDataValuesMap = {
     "GC": ["Contractor", "General Contractor", "GC"],
     "SC": ["SC", "Specialty Contractor"],
     "O": ["Owners", "Owner", "Owner Developer *Coming Soon", "O"],
-    "RM": ["Resource Management"] // Added for Global
+    "RM": ["Resource Management"] 
 };
 
 const audienceDataToKeyMap = {
     "Contractor": "GC", "General Contractor": "GC", "GC": "GC",
     "SC": "SC", "Specialty Contractor": "SC",
-    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O", "O": "O", // Added "O" mapping
-    "Resource Management": "RM" // Added RM mapping
+    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O", "O": "O", 
+    "Resource Management": "RM"
 };
 
 const audienceKeyToLabelMap = {
     "GC": "General Contractor",
     "SC": "Specialty Contractor",
     "O": "Owner",
-    "RM": "Resource Management" // Added Label
+    "RM": "Resource Management"
+};
+
+// --- STACK PRESETS (RAPID SCOPING) ---
+const STACK_PRESETS = {
+    "legacy": { 
+        label: "Legacy Procore (PM Only)", 
+        // Note: "Meetings" is the correct Node ID
+        tools: ["Drawings", "RFIs", "Submittals", "Directory", "Photos", "Daily Log", "Meetings"] 
+    },
+    "competitor_a": { 
+        label: "Competitor Replacement (Field)", 
+        tools: ["Drawings", "Photos", "Punch List", "Inspections", "Observations"] 
+    },
+    "manual": { 
+        label: "Manual / Excel Warrior", 
+        tools: ["Emails", "Documents", "Directory"] 
+    },
+    "finance": {
+        label: "ERP / Finance Focus",
+        tools: ["Budget", "Commitments", "Direct Costs", "Invoicing", "ERP Systems"]
+    }
 };
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
@@ -295,9 +316,10 @@ function initializeControls() {
         header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
     });
 
-    populateRegionFilter();
+    populateRegionFilter(0); // FIX: Explicit start with count 0
     populatePersonaFilter();
     renderSOWQuestionnaire();
+    injectControlsFooter(); // NEW: Build footer dynamically
    
     // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
@@ -335,10 +357,22 @@ function initializeControls() {
         }
     });
 
-    d3.select("#reset-view").on("click", resetView);
     d3.select("#help-button").on("click", startOnboarding);
     d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
     d3.select("#left-panel-expander").on("click", toggleLeftPanel);
+    
+    // Credits Modal Logic
+    const creditsOverlay = document.getElementById('credits-modal-overlay');
+    if(creditsOverlay) {
+        d3.select("#credits-modal-close").on("click", () => creditsOverlay.classList.remove('visible'));
+    }
+
+    // DEMO MODE LISTENER (Shift + D)
+    document.addEventListener('keydown', function(event) {
+        if (event.shiftKey && (event.key === 'D' || event.key === 'd')) {
+            toggleDemoMode();
+        }
+    });
 
     const inputs = ['slider-maturity', 'slider-data', 'slider-change', 'onsite-input'];
     inputs.forEach(id => {
@@ -346,7 +380,6 @@ function initializeControls() {
         if(el) el.addEventListener('input', calculateScoping);
     });
     
-    // Init Stack Builder Button
     setTimeout(() => {
         const existingBtn = d3.select("#stack-builder-btn");
         if (existingBtn.empty()) {
@@ -360,6 +393,89 @@ function initializeControls() {
              }
         }
     }, 500);
+}
+
+// --- NEW: DYNAMIC FOOTER INJECTION ---
+function injectControlsFooter() {
+    const controls = d3.select("#controls");
+    
+    // Clean up any existing footer elements to prevent duplicates
+    controls.select("#reset-view").remove();
+    controls.select("#demo-toggle-btn").remove();
+    controls.select("#version-link").remove();
+    controls.select(".pt-5.mt-5.border-t").remove();
+
+    // Create container
+    const footer = controls.append("div")
+        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
+
+    // 1. Reset Button (Full Width)
+    footer.append("button")
+        .attr("id", "reset-view")
+        .attr("class", "w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
+        .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
+        .on("click", resetView);
+
+    // 2. Presentation Mode Toggle (Full Width)
+    footer.append("button")
+        .attr("id", "demo-toggle-btn")
+        .attr("class", "w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center")
+        .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
+        .on("click", toggleDemoMode);
+
+    // 3. Version Link (Centered)
+    footer.append("div")
+        .attr("class", "text-center")
+        .append("a")
+        .attr("href", "#")
+        .attr("id", "version-link")
+        .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
+        .text("v2.2 Enterprise")
+        .on("click", (e) => {
+            e.preventDefault();
+            const modal = document.getElementById('credits-modal-overlay');
+            if(modal) modal.classList.add('visible');
+        });
+}
+
+// --- DEMO MODE TOGGLE ---
+function toggleDemoMode() {
+    const body = d3.select("body");
+    const isDemo = body.classed("demo-mode-active");
+    const btn = d3.select("#demo-toggle-btn");
+    
+    if (isDemo) {
+        // DISABLE
+        body.classed("demo-mode-active", false);
+        d3.select("#scoping-ui-container").style("display", "block"); 
+        d3.select("#ai-workflow-builder-btn").style("display", "block");
+        d3.select("#manual-workflow-builder-btn").style("display", "block");
+        d3.select("#team-selector").property("disabled", false).style("opacity", 1);
+        
+        // Visuals
+        btn.classed("bg-green-600 hover:bg-green-700 text-white", false)
+           .classed("bg-gray-200 hover:bg-gray-300 text-gray-700", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
+        
+        if(typeof showToast === 'function') showToast("Demo Mode Deactivated.");
+    } else {
+        // ENABLE
+        body.classed("demo-mode-active", true);
+        d3.select("#scoping-ui-container").style("display", "none"); 
+        d3.select("#ai-workflow-builder-btn").style("display", "none"); 
+        d3.select("#manual-workflow-builder-btn").style("display", "none"); 
+        
+        // Force Admin view to ensure graph elements are visible
+        applyTeamView('admin'); 
+        d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
+        
+        // Visuals
+        btn.classed("bg-gray-200 hover:bg-gray-300 text-gray-700", false)
+           .classed("bg-green-600 hover:bg-green-700 text-white", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
+        
+        if(typeof showToast === 'function') showToast("Demo Mode Active.");
+    }
 }
 
 // --- CUSTOM SCOPE MANAGER ---
@@ -397,6 +513,26 @@ function toggleStackBuilderMode() {
         
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
         
+        // --- NEW: INJECT PRESET DROPDOWN ---
+        const presetContainer = d3.select("#packaging-container").insert("div", "#stack-builder-btn + *")
+            .attr("id", "stack-preset-container")
+            .attr("class", "mb-4 p-3 bg-green-50 rounded border border-green-200");
+            
+        presetContainer.append("label").attr("class", "block text-xs font-bold text-green-800 mb-1 uppercase").text("Quick Stack Presets");
+        
+        const select = presetContainer.append("select")
+            .attr("class", "w-full text-xs border-green-300 rounded p-1.5 focus:ring-green-500 focus:border-green-500 bg-white")
+            .on("change", function() {
+                const key = this.value;
+                if (key === 'none') return;
+                applyStackPreset(key);
+            });
+            
+        select.append("option").attr("value", "none").text("Select a Starting Point...");
+        Object.entries(STACK_PRESETS).forEach(([key, data]) => {
+            select.append("option").attr("value", key).text(data.label);
+        });
+
         d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
         highlightOwnedNodes();
         
@@ -408,12 +544,25 @@ function toggleStackBuilderMode() {
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
         
+        // Remove Preset Dropdown
+        d3.select("#stack-preset-container").remove();
+        
         // Return to normal view
         if (typeof updateGraph === 'function') updateGraph(true);
         if (app.state.myStack.size > 0 && typeof showToast === 'function') {
-            showToast("Stack Saved! Select a Package to see Gaps & Outliers.", 3000);
+            showToast("Stack Saved! Select a Package to see Gaps.", 3000);
+            calculateScoping(); // Triggers Gap Check
         }
     }
+}
+
+function applyStackPreset(key) {
+    if (!STACK_PRESETS[key]) return;
+    const tools = STACK_PRESETS[key].tools;
+    app.state.myStack.clear();
+    tools.forEach(toolId => app.state.myStack.add(toolId));
+    highlightOwnedNodes();
+    if(typeof showToast === 'function') showToast(`Applied ${STACK_PRESETS[key].label}`);
 }
 
 function toggleStackItem(d) {
@@ -501,6 +650,11 @@ function renderSOWQuestionnaire() {
     revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
     revenueContainer.html("");
     
+    // --- GAP PRICING TOGGLE (DYNAMIC) ---
+    revenueContainer.append("div")
+        .attr("id", "gap-pricing-toggle-container")
+        .attr("class", "mb-3 hidden bg-orange-50 p-2 rounded border border-orange-200");
+
     // --- COMPLEXITY BUTTONS (SOW V2) ---
     const complexityDiv = revenueContainer.append("div").attr("class", "mb-3 flex gap-2");
     ['Standard', 'Complex', 'Transform'].forEach(label => {
@@ -558,137 +712,118 @@ function renderSOWQuestionnaire() {
     setTimeout(refreshAccordionHeight, 50);
 }
 
-// --- SCOPING CALCULATOR (WITH RBAC CHECKS) ---
+// --- SCOPING CALCULATOR (WITH SMART GAP LOGIC) ---
 function calculateScoping() {
-    // RBAC Check: If View Only, disable inputs programmatically (UI disabled separately)
+    // 1. Setup & Permissions
     const isViewOnly = (app.state.calculatorMode === 'view');
-    
     const sliderMaturity = document.getElementById('slider-maturity');
-    const sliderData = document.getElementById('slider-data');
-    const sliderChange = document.getElementById('slider-change');
-    const onsiteInput = document.getElementById('onsite-input');
-    
-    // Disable/Enable Inputs based on Mode
     if (sliderMaturity) {
-        [sliderMaturity, sliderData, sliderChange, onsiteInput].forEach(el => { if(el) el.disabled = isViewOnly; });
+        ['slider-maturity','slider-data','slider-change','onsite-input'].forEach(id => { 
+            const el = document.getElementById(id); if(el) el.disabled = isViewOnly; 
+        });
         d3.selectAll('.sow-question').property('disabled', isViewOnly);
         d3.selectAll('.complexity-btn').classed('opacity-50 cursor-not-allowed', isViewOnly);
     }
-
     if (!sliderMaturity) return;
 
-    let mat = parseFloat(sliderMaturity.value);
-    let data = parseFloat(sliderData.value);
-    let change = parseFloat(sliderChange.value);
+    // 2. Read Risk Factors
+    let mat = parseFloat(sliderMaturity.value); 
+    let data = parseFloat(document.getElementById('slider-data').value); 
+    let change = parseFloat(document.getElementById('slider-change').value);
 
-    SOW_QUESTIONS.filter(q => q.type === 'risk').forEach(q => {
-        const checkbox = document.getElementById(q.id);
-        if (checkbox && checkbox.checked) {
-            if (q.target === 'data') data += q.factor;
-            if (q.target === 'change') change += q.factor;
-        }
+    SOW_QUESTIONS.filter(q => q.type === 'risk').forEach(q => { 
+        const chk = document.getElementById(q.id); 
+        if (chk && chk.checked) { 
+            if (q.target === 'data') data += q.factor; 
+            if (q.target === 'change') change += q.factor; 
+        } 
     });
 
-    const valMat = document.getElementById('val-maturity'); if(valMat) valMat.innerText = mat.toFixed(1) + "x";
-    const valData = document.getElementById('val-data'); if(valData) valData.innerText = data.toFixed(1) + "x";
-    const valChange = document.getElementById('val-change'); if(valChange) valChange.innerText = change.toFixed(1) + "x";
+    document.getElementById('val-maturity').innerText = mat.toFixed(1) + "x"; 
+    document.getElementById('val-data').innerText = data.toFixed(1) + "x"; 
+    document.getElementById('val-change').innerText = change.toFixed(1) + "x";
 
+    // 3. Determine Base Scope (Gap vs Full)
     let baseHours = 0;
-    const region = d3.select("#region-filter").property('value');
-    const audience = d3.select("#audience-filter").property('value');
-    
-    if (region !== 'all' && audience !== 'all') {
-        const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-        d3.selectAll(".package-checkbox:checked").each(function() {
-            const pkgName = this.value;
-            const pkg = packagingData.find(p => 
-                (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
-                audienceDataKeys.includes(p.audience) && 
-                p.package_name === pkgName
-            );
-            if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
-                const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
-                if (match) baseHours += parseInt(match[1], 10);
-            }
-        });
+    const gapAnalysis = getGapAnalysis();
+    const gapToggle = d3.select("#gap-pricing-toggle-container");
+    let isGapPricing = false;
+
+    if (gapAnalysis.gap.size > 0) {
+        gapToggle.classed("hidden", false);
+        if (gapToggle.html() === "") {
+             gapToggle.html(`<label class="flex items-center cursor-pointer justify-between"><span class="text-xs font-bold text-orange-800"><i class="fas fa-exclamation-triangle mr-1"></i> Scope Gap Only? (${gapAnalysis.gap.size} tools)</span><input type="checkbox" id="use-gap-pricing" class="form-checkbox h-4 w-4 text-orange-600 focus:ring-orange-500 rounded"></label>`);
+             d3.select("#use-gap-pricing").on("change", calculateScoping);
+        }
+        isGapPricing = d3.select("#use-gap-pricing").property("checked");
+    } else {
+        gapToggle.classed("hidden", true).html("");
     }
 
-    const customToolCount = app.customScope ? app.customScope.size : 0;
-    const customScopeHours = customToolCount * 5; 
-    let servicesHours = 0; let servicesCost = 0;
-    let activeModules = []; // NEW: Track selected modules
-
-    SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => {
-        const checkbox = document.getElementById(q.id);
-        if (checkbox && checkbox.checked) {
-            servicesHours += q.hrs;
-            servicesCost += q.cost;
-            if (q.module) activeModules.push(q.module); // Capture ID
+    if (isGapPricing) {
+        // GAP LOGIC: Only charge for missing tools (e.g. 8 hours per tool)
+        baseHours = gapAnalysis.gap.size * 8; 
+    } else {
+        // STANDARD LOGIC: Use Package Base Hours
+        const region = d3.select("#region-filter").property('value');
+        const audience = d3.select("#audience-filter").property('value');
+        if (region !== 'all' && audience !== 'all') {
+            const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+            d3.selectAll(".package-checkbox:checked").each(function() {
+                const pkgName = this.value;
+                const pkg = packagingData.find(p => (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
+                if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
+                    const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
+                    if (match) baseHours += parseInt(match[1], 10);
+                }
+            });
         }
+    }
+
+    // 4. Add Services & Custom
+    const customScopeHours = (app.customScope ? app.customScope.size : 0) * 5; 
+    let servicesHours = 0; let servicesCost = 0; let activeModules = []; 
+    SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => { 
+        const chk = document.getElementById(q.id); 
+        if (chk && chk.checked) { 
+            servicesHours += q.hrs; servicesCost += q.cost; if (q.module) activeModules.push(q.module); 
+        } 
     });
 
+    // 5. Calculate Final Totals
     const totalHoursRaw = baseHours + customScopeHours + servicesHours;
-
+    
+    // Update UI List
     let listContainer = document.getElementById('custom-scope-list-container');
-    if (!listContainer) {
-        const revenueContainer = document.getElementById('revenue-container');
-        if(revenueContainer) {
-            listContainer = document.createElement('div');
-            listContainer.id = 'custom-scope-list-container';
-            listContainer.className = "mt-3 pt-2 border-t border-gray-200 text-xs";
-            revenueContainer.parentNode.insertBefore(listContainer, revenueContainer.nextSibling);
-        }
+    if (!listContainer) { 
+        const rc = document.getElementById('revenue-container'); 
+        if(rc) { listContainer = document.createElement('div'); listContainer.id = 'custom-scope-list-container'; listContainer.className = "mt-3 pt-2 border-t border-gray-200 text-xs"; rc.parentNode.insertBefore(listContainer, rc.nextSibling); } 
     }
     
     if (listContainer) {
         let content = "";
-        if (customToolCount > 0) {
-            content += `<div class="mb-1"><span class="font-bold text-gray-500">Custom Tools:</span> <span class="text-indigo-600 font-semibold">${Array.from(app.customScope).join(", ")}</span></div>`;
-        }
-        const activeServices = SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label);
-        if (activeServices.length > 0) {
-             content += `<div class="mb-1"><span class="font-bold text-gray-500">Services:</span> <span class="text-gray-700">${activeServices.join(", ")}</span></div>`;
-        }
-        listContainer.innerHTML = content;
-        listContainer.style.display = content ? 'block' : 'none';
+        if (isGapPricing) content += `<div class="mb-1 p-1 bg-orange-100 rounded text-orange-800"><span class="font-bold">Gap Scope:</span> ${Array.from(gapAnalysis.gap).join(", ")}</div>`;
+        if (app.customScope && app.customScope.size > 0) content += `<div class="mb-1"><span class="font-bold text-gray-500">Custom:</span> <span class="text-indigo-600">${Array.from(app.customScope).join(", ")}</span></div>`;
+        listContainer.innerHTML = content; listContainer.style.display = content ? 'block' : 'none';
     }
 
-    const baseLabel = document.getElementById('base-tools-count');
-    if (baseLabel) {
-        baseLabel.parentElement.innerHTML = `Total Scope: <span id="base-tools-count" class="font-bold text-gray-700">${totalHoursRaw} Hrs</span>`;
-    }
-
-    const PREP_FACTOR = 1.5; 
-    const CONSULTING_VELOCITY = 3.5; 
-    const combinedMultiplier = (mat + data + change) / 3; 
-    const totalEffortHours = totalHoursRaw * PREP_FACTOR;
-    const baseWeeks = (totalEffortHours / CONSULTING_VELOCITY); 
-    const finalWeeks = Math.round(baseWeeks * combinedMultiplier);
-
-    const calcWeeks = document.getElementById('calc-weeks');
-    if(calcWeeks) calcWeeks.innerText = finalWeeks;
-
-    const hourlyRate = 250; 
-    const implementationCost = (baseHours + customScopeHours) * PREP_FACTOR * combinedMultiplier * hourlyRate;
-    const onsiteCount = parseInt(onsiteInput ? onsiteInput.value : 0) || 0;
-    const onsiteCost = onsiteCount * 7500;
+    document.getElementById('base-tools-count').innerText = totalHoursRaw + " Hrs";
     
-    const totalSOW = implementationCost + onsiteCost + servicesCost;
+    // 6. Multipliers & Cost
+    const multiplier = (mat + data + change) / 3;
+    const finalWeeks = Math.round(((totalHoursRaw * 1.5) / 3.5) * multiplier);
+    document.getElementById('calc-weeks').innerText = finalWeeks;
     
-    const sowDisplay = document.getElementById('sow-total');
-    if(sowDisplay) {
-        sowDisplay.innerText = "$" + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
-    }
+    const impCost = (baseHours + customScopeHours) * 1.5 * multiplier * 250;
+    const onsiteCount = parseInt(document.getElementById('onsite-input').value || 0);
+    const totalSOW = impCost + (onsiteCount * 7500) + servicesCost;
+    
+    document.getElementById('sow-total').innerText = "$" + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 
     app.currentSOW = {
-        totalHours: totalHoursRaw, weeks: finalWeeks, totalCost: totalSOW, region: region, audience: audience,
-        packages: d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value),
-        customTools: Array.from(app.customScope || []),
-        services: SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label),
-        activeModules: activeModules, // Pass the IDs to the printer
-        onsite: onsiteCount, multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) }
+        totalCost: totalSOW, weeks: finalWeeks, activeModules: activeModules, onsite: onsiteCount, isGapPricing: isGapPricing,
+        ownedTools: Array.from(gapAnalysis.owned), targetTools: Array.from(gapAnalysis.target), gapTools: Array.from(gapAnalysis.gap)
     };
-    
     refreshAccordionHeight();
 }
 
@@ -720,6 +855,38 @@ function generateSOWPrintView() {
     let bodyContent = templateData.base.body
         .replace(/{{Client Name}}/g, clientName)
         .replace(/{{Date}}/g, today);
+    
+    // --- EXECUTIVE GAP REPORT (NEW) ---
+    let gapReportHtml = "";
+    if (sow.gapTools && sow.gapTools.length > 0) {
+        gapReportHtml = `
+        <div class="sow-section" style="page-break-after: avoid;">
+            <h3>Platform Maturity Assessment</h3>
+            <div style="display: flex; gap: 10px; font-size: 11px;">
+                <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #4da446; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Current State</div>
+                    <div style="padding: 10px; background: #f0fdf4;">${sow.ownedTools.length > 0 ? sow.ownedTools.join(", ") : "No tools selected."}</div>
+                </div>
+                <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #2563EB; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Target Package</div>
+                    <div style="padding: 10px; background: #eff6ff;">${sow.targetTools.length > 0 ? sow.targetTools.join(", ") : "No target package."}</div>
+                </div>
+                <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #F36C23; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Critical Gap</div>
+                    <div style="padding: 10px; background: #fff7ed; font-weight: 600; color: #c2410c;">${sow.gapTools.join(", ")}</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // Inject Custom Gap Messaging if applicable
+    if (sow.isGapPricing) {
+        bodyContent += `
+        <div class="sow-section" style="background: #fff7ed; padding: 10px; border-left: 4px solid #f97316; margin-bottom: 20px;">
+            <h3>Targeted Implementation Scope</h3>
+            <p>This Statement of Work is specifically scoped to implement the delta between the Client's current stack and the target Package.</p>
+        </div>`;
+    }
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -747,6 +914,7 @@ function generateSOWPrintView() {
             <div class="title">${templateData.base.title}</div>
         </div>
         ${bodyContent}
+        ${gapReportHtml}
         <h3>Scope of Services</h3>
         ${modulesHtml}
         <div class="total-box">
@@ -791,6 +959,9 @@ function applyTeamView(team) {
             calculateScoping(); 
         }
     }
+    
+    // LEGEND ACCESS FIX (Explicitly Handle Visibility)
+    d3.select("#view-options-accordion").style("display", config.showLegend ? "block" : "none");
 
     document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
     
@@ -818,10 +989,21 @@ function toggleAllCategories() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-function populateRegionFilter() {
-    if (typeof packagingData === 'undefined') return;
+function populateRegionFilter(retryCount = 0) {
+    // FIX: Retry mechanism if data isn't loaded yet
+    if (typeof packagingData === 'undefined') {
+        if (retryCount < 20) { // Increased check limit
+            setTimeout(() => populateRegionFilter(retryCount + 1), 100);
+        } else {
+            console.error("Procoreverse: Packaging Data failed to load.");
+        }
+        return;
+    }
     const regionFilter = d3.select("#region-filter");
     if (regionFilter.empty()) return;
+    
+    // Clear existing to prevent duplicates on re-run
+    regionFilter.html('<option value="all">Select Region...</option>');
 
     const regions = new Set();
     packagingData.forEach(pkg => {
@@ -1138,6 +1320,9 @@ function resetView() {
     app.state.myStack = new Set();
     d3.select("#stack-builder-btn").attr("disabled", true).classed("cursor-not-allowed", true);
     
+    // RESET GAP TOGGLE (CLEANUP)
+    d3.select("#gap-pricing-toggle-container").classed("hidden", true).html("");
+    
     // RESET COMPLEXITY
     d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
     d3.select('#btn-standard').classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
@@ -1209,5 +1394,88 @@ function updateActivePackageState() {
         app.currentPackage = pkg;
     } else {
         app.currentPackage = null;
+    }
+}
+
+// --- NEW: DYNAMIC FOOTER INJECTION ---
+function injectControlsFooter() {
+    const controls = d3.select("#controls");
+    
+    // Clean up any existing footer elements to prevent duplicates
+    controls.select("#reset-view").remove();
+    controls.select("#demo-toggle-btn").remove();
+    controls.select("#version-link").remove();
+    controls.select(".pt-5.mt-5.border-t").remove();
+
+    // Create container
+    const footer = controls.append("div")
+        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
+
+    // 1. Reset Button (Full Width)
+    footer.append("button")
+        .attr("id", "reset-view")
+        .attr("class", "w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
+        .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
+        .on("click", resetView);
+
+    // 2. Presentation Mode Toggle (Full Width)
+    footer.append("button")
+        .attr("id", "demo-toggle-btn")
+        .attr("class", "w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center")
+        .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
+        .on("click", toggleDemoMode);
+
+    // 3. Version Link (Centered)
+    footer.append("div")
+        .attr("class", "text-center")
+        .append("a")
+        .attr("href", "#")
+        .attr("id", "version-link")
+        .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
+        .text("v2.2 Enterprise")
+        .on("click", (e) => {
+            e.preventDefault();
+            const modal = document.getElementById('credits-modal-overlay');
+            if(modal) modal.classList.add('visible');
+        });
+}
+
+// --- DEMO MODE TOGGLE ---
+function toggleDemoMode() {
+    const body = d3.select("body");
+    const isDemo = body.classed("demo-mode-active");
+    const btn = d3.select("#demo-toggle-btn");
+    
+    if (isDemo) {
+        // DISABLE
+        body.classed("demo-mode-active", false);
+        d3.select("#scoping-ui-container").style("display", "block"); 
+        d3.select("#ai-workflow-builder-btn").style("display", "block");
+        d3.select("#manual-workflow-builder-btn").style("display", "block");
+        d3.select("#team-selector").property("disabled", false).style("opacity", 1);
+        
+        // Visuals
+        btn.classed("bg-green-600 hover:bg-green-700 text-white", false)
+           .classed("bg-gray-200 hover:bg-gray-300 text-gray-700", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
+        
+        if(typeof showToast === 'function') showToast("Demo Mode Deactivated.");
+    } else {
+        // ENABLE
+        body.classed("demo-mode-active", true);
+        d3.select("#scoping-ui-container").style("display", "none"); 
+        d3.select("#ai-workflow-builder-btn").style("display", "none"); 
+        d3.select("#manual-workflow-builder-btn").style("display", "none"); 
+        
+        // Force Admin view to ensure graph elements are visible
+        applyTeamView('admin'); 
+        d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
+        
+        // Visuals
+        btn.classed("bg-gray-200 hover:bg-gray-300 text-gray-700", false)
+           .classed("bg-green-600 hover:bg-green-700 text-white", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
+        
+        if(typeof showToast === 'function') showToast("Demo Mode Active.");
     }
 }

@@ -1,12 +1,10 @@
 // --- app-panel.js ---
-// VERSION: 580 (FIXED: FULL RESTORATION, CLEAR DIRECTIONAL ICONS, HIDE FUNCTION)
+// VERSION: 600 (FIX: HOVER PAIR SPOTLIGHT)
 
 function initializeInfoPanel() {
     const closeBtn = d3.select("#info-close");
     if (!closeBtn.empty()) {
         closeBtn.on("click", () => {
-            // If we are in a tour/builder mode, just hide the panel
-            // If in explore mode, reset the graph highlights
             if (typeof resetHighlight === 'function') {
                 resetHighlight(true);
             } else {
@@ -103,19 +101,14 @@ function populateConnectionList(d) {
             
             // Determine Direction & Icon
             let iconHtml = "";
-            
             if (l.type === 'syncs') {
-                // Bi-directional
                 iconHtml = '<i class="fas fa-exchange-alt text-gray-400 mr-3 w-4 text-center" title="Syncs with"></i>';
             } else if (isSource) {
-                // Outgoing (This node -> Other node)
                 iconHtml = '<i class="fas fa-long-arrow-alt-right text-gray-400 mr-3 w-4 text-center" title="Outgoing to"></i>';
             } else {
-                // Incoming (Other node -> This node)
                 iconHtml = '<i class="fas fa-long-arrow-alt-left text-gray-400 mr-3 w-4 text-center" title="Incoming from"></i>';
             }
 
-            // Lookup Friendly Type Label
             let typeLabel = l.type;
             if (typeof legendData !== 'undefined') {
                 const connType = legendData.find(t => t.type_id === l.type);
@@ -126,17 +119,24 @@ function populateConnectionList(d) {
             const li = connectionList.append("li")
                 .attr("class", "py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition cursor-pointer px-2 -mx-2 rounded")
                 .on("mouseenter", function() { 
-                    if(typeof highlightConnection === 'function') highlightConnection(this, d); 
+                    // FIX: Isolate the pair (Panel Node + Hovered Node)
+                    const targetNodeData = app.simulation.nodes().find(n => n.id === otherId);
+                    if (targetNodeData && typeof highlightConnectionPair === 'function') {
+                        highlightConnectionPair(d, targetNodeData);
+                    }
                 }) 
                 .on("mouseleave", () => { 
-                    // Optional visual reset
+                    // RESTORE: Revert to "Selected Node + All Neighbors" view
+                    if (typeof applyHighlight === 'function') {
+                        applyHighlight(d); 
+                    }
                 })
                 .on("click", function() {
                     // Navigate to connected node
-                    if (typeof nodeClicked === 'function') {
-                        // Create a fake event to pass to the handler
+                    const targetNodeData = app.simulation.nodes().find(n => n.id === otherId);
+                    if (targetNodeData && typeof nodeClicked === 'function') {
                         const mockEvent = { stopPropagation: () => {} };
-                        nodeClicked(mockEvent, otherNode);
+                        nodeClicked(mockEvent, targetNodeData);
                     }
                 });
 

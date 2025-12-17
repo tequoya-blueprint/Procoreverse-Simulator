@@ -408,7 +408,7 @@ const packagingData = [
   },
   {
     "region": "EUR", "audience": "Owner", "package_name": "Project Execution Premier w CDE",
-    "tools": ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Documents", "Coordination Issues", "Models", "Analytics", "Insights"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding", "Documents", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Equipment", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
     "available_add-ons": [],

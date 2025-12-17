@@ -491,3 +491,14 @@ body {
     border: 1px solid #c7d2fe; 
     line-height: 1.6;
 }
+
+/* Gap Analysis Pulse */
+.pulsing-gap path {
+    animation: gap-pulse 2s infinite ease-in-out;
+}
+
+@keyframes gap-pulse {
+    0% { stroke-opacity: 1; stroke-width: 3px; filter: drop-shadow(0 0 5px rgba(243, 108, 35, 0.7)); }
+    50% { stroke-opacity: 1; stroke-width: 6px; filter: drop-shadow(0 0 15px rgba(243, 108, 35, 1)); }
+    100% { stroke-opacity: 1; stroke-width: 3px; filter: drop-shadow(0 0 5px rgba(243, 108, 35, 0.7)); }
+}
