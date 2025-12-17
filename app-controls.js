@@ -1,5 +1,5 @@
-// --- app-controls.js ---
-// VERSION: 710 (MAXIMUM EXPANSION: UN-MINIFIED HTML & TEMPLATES)
+// --- app-controls.js (PART 1 of 2) ---
+// VERSION: 720 (THE GRANITE BUILD: SYNTAX FIXES & DATA WAITING RESTORED)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -116,7 +116,7 @@ const SOW_QUESTIONS = [
     { id: "q-ent", label: "Enterprise Scale", type: "risk", factor: 0.2, target: "change" }
 ];
 
-// --- SOW TEMPLATE LIBRARY (FULL TEXT) ---
+// --- SOW TEMPLATE LIBRARY (FULL TEXT - SYNTAX CHECKED) ---
 const SOW_LIBRARY = {
     // 1. LEGAL WRAPPERS
     "NAM_GC_BASE": {
@@ -347,7 +347,7 @@ function initializeControls() {
     injectControlsFooter();
     renderSOWQuestionnaire();
 
-    // 2. Start Data Waiting Engine (Fix for missing Regions)
+    // 2. Start Data Waiting Engine (CRITICAL FIX FOR REGIONS)
     waitForDataAndPopulate();
    
     // 3. Filter Listeners
@@ -431,7 +431,7 @@ function initializeControls() {
 // --- NEW: DATA WAITING ENGINE ---
 function waitForDataAndPopulate() {
     let attempts = 0;
-    const maxAttempts = 40; // 10 seconds max wait
+    const maxAttempts = 60; // 15 seconds max wait
     
     const interval = setInterval(() => {
         if (typeof packagingData !== 'undefined' && Array.isArray(packagingData)) {
@@ -444,11 +444,12 @@ function waitForDataAndPopulate() {
             if (attempts >= maxAttempts) {
                 clearInterval(interval);
                 console.error("Procoreverse: Data fetch timed out.");
-                if(typeof showToast === 'function') showToast("Error: Data failed to load. Please refresh.", 5000);
             }
         }
     }, 250);
 }
+// --- app-controls.js (PART 2 of 2) ---
+// VERSION: 720 (THE GRANITE BUILD: LOGIC CORE)
 
 // --- NEW: DYNAMIC FOOTER INJECTION ---
 function injectControlsFooter() {
@@ -1530,6 +1531,7 @@ function waitForDataAndPopulate() {
             if (attempts >= maxAttempts) {
                 clearInterval(interval);
                 console.error("Procoreverse: Data fetch timed out.");
+                if(typeof showToast === 'function') showToast("Error: Data failed to load. Please refresh.", 5000);
             }
         }
     }, 250);
@@ -1617,4 +1619,4 @@ function toggleDemoMode() {
         
         if(typeof showToast === 'function') showToast("Demo Mode Active.");
     }
-}
+            }
