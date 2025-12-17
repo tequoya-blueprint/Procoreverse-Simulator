@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 960 (FULL INTEGRITY CHECK: DUPLICATES REMOVED + BRAND ALIGNED)
+// VERSION: 990 (PART 1 - CONFIG & CALCULATORS)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -387,7 +387,7 @@ function initializeControls() {
              if (!container.empty()) {
                 container.insert("button", ":first-child")
                     .attr("id", "stack-builder-btn")
-                    // NO GREEN: Use Blue for Stack Builder
+                    // NO GREEN: Use Blue
                     .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
                     .html('<i class="fas fa-layer-group mr-2 text-blue-600"></i> Define Customer Stack')
                     .on("click", toggleStackBuilderMode);
@@ -452,6 +452,9 @@ function applyTeamView(team) {
         const content = target.querySelector('.accordion-content');
         if (content) content.style.maxHeight = content.scrollHeight + "px";
     }
+    
+    // FORCE UPDATE
+    if (typeof updateGraph === 'function') updateGraph(true);
 }
 
 // --- CUSTOM SCOPE MANAGER ---
@@ -686,7 +689,6 @@ function renderSOWQuestionnaire() {
     setTimeout(refreshAccordionHeight, 50);
 }
 
-// --- SCOPING CALCULATOR (WITH SMART GAP LOGIC) ---
 function calculateScoping() {
     const isViewOnly = (app.state.calculatorMode === 'view');
     const sliderMaturity = document.getElementById('slider-maturity');
@@ -751,7 +753,6 @@ function calculateScoping() {
         }
     }
 
-    // 4. Add Services & Custom
     const customScopeHours = (app.customScope ? app.customScope.size : 0) * 5; 
     let servicesHours = 0; let servicesCost = 0; let activeModules = []; 
     SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => { 
@@ -761,7 +762,6 @@ function calculateScoping() {
         } 
     });
 
-    // 5. Calculate Final Totals
     const totalHoursRaw = baseHours + customScopeHours + servicesHours;
     
     // Update UI List
@@ -780,7 +780,6 @@ function calculateScoping() {
 
     document.getElementById('base-tools-count').innerText = totalHoursRaw + " Hrs";
     
-    // 6. Multipliers & Cost
     const multiplier = (mat + data + change) / 3;
     const finalWeeks = Math.round(((totalHoursRaw * 1.5) / 3.5) * multiplier);
     document.getElementById('calc-weeks').innerText = finalWeeks;
@@ -797,6 +796,8 @@ function calculateScoping() {
     };
     refreshAccordionHeight();
 }
+
+// --- app-controls.js (PART 2) ---
 
 // --- PRINT SOW (BRANDING + TEMPLATES) ---
 function generateSOWPrintView() {
@@ -905,46 +906,6 @@ function generateSOWPrintView() {
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-}
-
-// --- TEAM VIEW MANAGER ---
-function applyTeamView(team) {
-    const config = TEAM_CONFIG[team];
-    if (!config) return;
-
-    // Force strict display states
-    d3.select("#tour-accordion").style("display", config.showTours ? "block" : "none");
-    d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
-    d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none");
-    
-    const manualBtn = d3.select("#manual-workflow-builder-btn");
-    if (!manualBtn.empty()) {
-        manualBtn.style("display", config.showManualBuilder ? "block" : "none");
-    }
-
-    const scopingContainer = d3.select("#scoping-ui-container");
-    if (config.calculatorMode === 'hidden') {
-        scopingContainer.classed("hidden", true);
-    } else {
-        scopingContainer.classed("hidden", !config.showScoping);
-        if (typeof app !== 'undefined' && app.state) {
-            app.state.calculatorMode = config.calculatorMode;
-            calculateScoping(); 
-        }
-    }
-    
-    // LEGEND ACCESS FIX (Explicitly Handle Visibility)
-    d3.select("#view-options-accordion").style("display", config.showLegend ? "block" : "none");
-    d3.select("#filter-accordion").style("display", config.showFilters ? "block" : "none");
-
-    document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
-    
-    const target = document.getElementById(config.defaultOpen);
-    if (target) {
-        target.classList.add('active');
-        const content = target.querySelector('.accordion-content');
-        if (content) content.style.maxHeight = content.scrollHeight + "px";
-    }
 }
 
 // --- UI HELPER FUNCTIONS ---
