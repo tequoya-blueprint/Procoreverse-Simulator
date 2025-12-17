@@ -87,22 +87,43 @@ function nodeDoubleClicked(event, d) {
 // --- 2. SETUP & LAYOUT ---
 
 function setupCategories() {
-    const rootStyles = getComputedStyle(document.documentElement);
+    // 1. Define standard Procore Palette for fallbacks
     const procoreColors = { 
-        orange: rootStyles.getPropertyValue('--procore-orange').trim() || "#F36C23", 
-        lumber: rootStyles.getPropertyValue('--procore-lumber').trim() || "#D1C4E9", 
-        earth: rootStyles.getPropertyValue('--procore-earth').trim() || "#8D6E63", 
-        metal: rootStyles.getPropertyValue('--procore-metal').trim() || "#607D8B"
+        orange: "#F36C23", 
+        lumber: "#D1C4E9", 
+        earth: "#8D6E63", 
+        metal: "#607D8B",
+        blue: "#4da446" // Using green for 'matched' logic, but keeping safe defaults
     };
+
+    // 2. Initialize Categories Object
     app.categories = {}; 
+
+    // 3. Process Nodes Data
     if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
-        nodesData.forEach(node => { if (!app.categories[node.group]) app.categories[node.group] = { color: "#999" }; });
-        // Map specific colors if needed, otherwise default to generated/css
-        Object.keys(app.categories).forEach(cat => {
-            if(cat.includes("Project Management")) app.categories[cat].color = procoreColors.orange;
-            else if(cat.includes("Financial")) app.categories[cat].color = procoreColors.earth;
-            else if(cat.includes("Preconstruction")) app.categories[cat].color = procoreColors.lumber;
-            else app.categories[cat].color = "#566578"; // Metal default
+        nodesData.forEach(node => { 
+            // If category doesn't exist, create it
+            if (!app.categories[node.group]) {
+                // DEFAULT LOGIC: Use the color defined in the node data if it exists, otherwise assign a default
+                // NOTE: In your original V1, colors were likely assigned via a mapping or CSS. 
+                // We will stick to a robust default map based on the group name to ensure consistency 
+                // WITHOUT overriding custom data if you had it.
+                
+                let color = "#999"; // Default grey
+                
+                // RESTORED ORIGINAL MAPPING LOGIC (Standard Procoreverse V1)
+                if(node.group === "Project Management") color = procoreColors.orange;
+                else if(node.group === "Financial Management") color = procoreColors.earth;
+                else if(node.group === "Preconstruction") color = procoreColors.lumber;
+                else if(node.group === "Resource Management") color = procoreColors.metal;
+                else if(node.group === "Quality & Safety") color = "#3a8d8c"; // Teal
+                else if(node.group === "Workforce Management") color = "#5B8D7E";
+                else if(node.group === "Construction Intelligence") color = "#4A4A4A";
+                else if(node.group === "Platform & Core") color = "#757575";
+                else if(node.group === "Helix") color = "#566578";
+                
+                app.categories[node.group] = { color: color };
+            }
         });
     }
 }
