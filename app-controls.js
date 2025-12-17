@@ -1,32 +1,59 @@
-// --- app-controls.js ---
-// VERSION: 690 (FULL RESTORATION: UN-MINIFIED TEMPLATES & ALL FIXES)
+// --- app-controls.js (PART 1 OF 4) ---
+// VERSION: 800 (FULL EXPANSION - CONFIGURATION)
+
+console.log("Controls v800: Loading Part 1...");
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
     admin: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: true, calculatorMode: 'edit',
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: true, 
+        calculatorMode: 'edit',
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'view-options-accordion' 
     },
     enablement: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: false, calculatorMode: 'hidden',
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: false, 
+        calculatorMode: 'hidden',
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'view-options-accordion' 
     },
     sales: { 
-        showTours: true, showAiBuilder: false, showManualBuilder: false, 
-        showScoping: true, calculatorMode: 'view', // VIEW ONLY
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+        showTours: true, 
+        showAiBuilder: false, 
+        showManualBuilder: false, 
+        showScoping: true, 
+        calculatorMode: 'view', // VIEW ONLY
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'view-options-accordion' 
     },
     product: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: false, calculatorMode: 'hidden',
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: false, 
+        calculatorMode: 'hidden',
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'view-options-accordion' 
     },
     services: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: true, calculatorMode: 'edit', // FULL EDIT
-        showFilters: true, showLegend: true, defaultOpen: 'scoping-ui-container' 
+        showTours: true, 
+        showAiBuilder: true, 
+        showManualBuilder: true, 
+        showScoping: true, 
+        calculatorMode: 'edit', // FULL EDIT
+        showFilters: true, 
+        showLegend: true, 
+        defaultOpen: 'scoping-ui-container' 
     }
 };
 
@@ -80,16 +107,65 @@ const STACK_PRESETS = {
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
 const SOW_QUESTIONS = [
-    { id: "q-sop", label: "SOP Development", type: "cost", hrs: 140, cost: 35000, module: "MOD_SOP" },
-    { id: "q-consulting", label: "Virtual Consulting", type: "cost", hrs: 400, cost: 100000, module: "MOD_CONSULTING" },
-    { id: "q-admin", label: "Project Admin", type: "cost", hrs: 140, cost: 35000, module: "MOD_ADMIN" },
-    { id: "q-integration", label: "Integration Consulting", type: "cost", hrs: 25, cost: 6250, module: "MOD_INTEGRATION" },
-    { id: "q-custom", label: "Custom Solutions", type: "cost", hrs: 40, cost: 10000, module: "MOD_CUSTOM" },
+    { 
+        id: "q-sop", 
+        label: "SOP Development", 
+        type: "cost", 
+        hrs: 140, 
+        cost: 35000, 
+        module: "MOD_SOP" 
+    },
+    { 
+        id: "q-consulting", 
+        label: "Virtual Consulting", 
+        type: "cost", 
+        hrs: 400, 
+        cost: 100000, 
+        module: "MOD_CONSULTING" 
+    },
+    { 
+        id: "q-admin", 
+        label: "Project Admin", 
+        type: "cost", 
+        hrs: 140, 
+        cost: 35000, 
+        module: "MOD_ADMIN" 
+    },
+    { 
+        id: "q-integration", 
+        label: "Integration Consulting", 
+        type: "cost", 
+        hrs: 25, 
+        cost: 6250, 
+        module: "MOD_INTEGRATION" 
+    },
+    { 
+        id: "q-custom", 
+        label: "Custom Solutions", 
+        type: "cost", 
+        hrs: 40, 
+        cost: 10000, 
+        module: "MOD_CUSTOM" 
+    },
     
     // Risk Factors (Modifiers)
-    { id: "q-financials", label: "Complex Finance", type: "risk", factor: 0.3, target: "data" },
-    { id: "q-ent", label: "Enterprise Scale", type: "risk", factor: 0.2, target: "change" }
+    { 
+        id: "q-financials", 
+        label: "Complex Finance", 
+        type: "risk", 
+        factor: 0.3, 
+        target: "data" 
+    },
+    { 
+        id: "q-ent", 
+        label: "Enterprise Scale", 
+        type: "risk", 
+        factor: 0.2, 
+        target: "change" 
+    }
 ];
+// --- app-controls.js (PART 2 OF 4) ---
+// VERSION: 800 (FULL EXPANSION - SOW LIBRARY)
 
 // --- SOW TEMPLATE LIBRARY (FULL TEXT) ---
 const SOW_LIBRARY = {
@@ -301,113 +377,138 @@ function getSOWContent(sowData) {
     // Fallback: If modules list is empty, default to nothing
     return { base: SOW_LIBRARY[baseKey], modules: modules };
 }
+// --- app-controls.js (PART 3 OF 4) ---
+// VERSION: 800 (FULL EXPANSION - INITIALIZATION & CALCULATORS)
 
-// --- INITIALIZATION ---
+// --- INITIALIZATION CORE ---
 function initializeControls() {
-    if (typeof app !== 'undefined') {
-        app.customScope = new Set();
-        if (!app.state) app.state = {};
-        if (!app.state.myStack) app.state.myStack = new Set();
-        app.state.calculatorMode = 'edit'; 
-    }
+    console.log("Controls: Initializing...");
     
-    // Accordion Setup
-    document.querySelectorAll('.accordion-header').forEach(header => {
-        header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
-    });
+    try {
+        if (typeof app !== 'undefined') {
+            app.customScope = new Set();
+            if (!app.state) app.state = {};
+            if (!app.state.myStack) app.state.myStack = new Set();
+            app.state.calculatorMode = 'edit'; 
+        }
 
-    populateRegionFilter(0); // FIX: Explicit start with count 0
-    populatePersonaFilter();
-    renderSOWQuestionnaire();
-    injectControlsFooter(); // NEW: Build footer dynamically
-   
-    // Filter Listeners
-    d3.select("#region-filter").on("change", onRegionChange);
-    d3.select("#audience-filter").on("change", onAudienceChange);
-    d3.select("#package-filter").on("change", onPackageChange); 
-    d3.select("#persona-filter").on("change", () => { if (typeof updateGraph === 'function') updateGraph(true) });
-    
-    // Procore-Led Toggle
-    const ledToggle = d3.select("#toggle-procore-led");
-    if (!ledToggle.empty()) {
-        ledToggle.on("change", function() {
-            if (typeof app !== 'undefined') app.state.showProcoreLedOnly = this.checked;
-            if (typeof updateGraph === 'function') updateGraph(true);
+        // Setup UI Accordions
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', () => { 
+                if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); 
+            });
         });
+
+        // 1. Inject UI Elements immediately
+        injectControlsFooter();
+        renderSOWQuestionnaire();
+
+        // 2. Setup Listeners
+        d3.select("#region-filter").on("change", onRegionChange);
+        d3.select("#audience-filter").on("change", onAudienceChange);
+        d3.select("#package-filter").on("change", onPackageChange); 
+        d3.select("#persona-filter").on("change", () => { 
+            if (typeof updateGraph === 'function') updateGraph(true); 
+        });
+        
+        const ledToggle = d3.select("#toggle-procore-led");
+        if (!ledToggle.empty()) {
+            ledToggle.on("change", function() {
+                if (typeof app !== 'undefined') app.state.showProcoreLedOnly = this.checked;
+                if (typeof updateGraph === 'function') updateGraph(true);
+            });
+        }
+
+        d3.select("#toggle-categories").on("click", toggleAllCategories);
+        d3.select("#toggle-legend").on("click", toggleAllConnections);
+        d3.select("#search-input").on("input", handleSearchInput);
+        d3.select("#help-button").on("click", startOnboarding);
+        d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
+        d3.select("#left-panel-expander").on("click", toggleLeftPanel);
+        
+        // Credits Modal Logic
+        d3.select("#version-link").on("click", (e) => {
+            e.preventDefault();
+            document.getElementById('credits-modal-overlay')?.classList.add('visible');
+        });
+        d3.select("#credits-modal-close").on("click", () => {
+            document.getElementById('credits-modal-overlay')?.classList.remove('visible');
+        });
+
+        // Demo Mode Shortcut
+        document.addEventListener('keydown', function(event) {
+            if (event.shiftKey && (event.key === 'D' || event.key === 'd')) {
+                toggleDemoMode();
+            }
+        });
+
+        const inputs = ['slider-maturity', 'slider-data', 'slider-change', 'onsite-input'];
+        inputs.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.addEventListener('input', calculateScoping);
+        });
+        
+        // Init Stack Builder Button (Wait loop)
+        const checkBtn = setInterval(() => {
+            const container = d3.select("#packaging-container");
+            if (!container.empty()) {
+                clearInterval(checkBtn);
+                if (d3.select("#stack-builder-btn").empty()) {
+                    container.insert("button", ":first-child")
+                        .attr("id", "stack-builder-btn")
+                        .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-200 cursor-not-allowed") // Start disabled
+                        .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
+                        .attr("disabled", true)
+                        .on("click", toggleStackBuilderMode);
+                }
+            }
+        }, 200);
+
+        // 3. Start Data Waiting Engine (CRITICAL FIX FOR REGIONS)
+        waitForDataAndPopulate();
+
+    } catch (e) {
+        console.error("Controls: Critical Init Error:", e);
     }
-   
-    populateCategoryFilters();
-    d3.select("#toggle-categories").on("click", toggleAllCategories);
-    d3.select("#toggle-legend").on("click", toggleAllConnections);
-    d3.select("#search-input").on("input", handleSearchInput);
-    
-    const teamSelector = d3.select("#team-selector");
-    if (!teamSelector.empty()) {
-        const initialTeam = getUrlParam('team') || 'admin'; 
-        if (TEAM_CONFIG[initialTeam]) {
-            teamSelector.property('value', initialTeam);
-            setTimeout(() => applyTeamView(initialTeam), 100);
-        }
-        teamSelector.on("change", function() { applyTeamView(this.value); });
-    }
-
-    d3.select("body").on("click", (e) => {
-        if (e.target && !document.getElementById('search-container').contains(e.target)) {
-            d3.select("#search-results").html("").style("opacity", 0).style("transform", "scale(0.95)");
-        }
-    });
-
-    d3.select("#help-button").on("click", startOnboarding);
-    d3.select("#left-panel-toggle").on("click", toggleLeftPanel);
-    d3.select("#left-panel-expander").on("click", toggleLeftPanel);
-    
-    // Credits Modal Logic
-    const creditsOverlay = document.getElementById('credits-modal-overlay');
-    if(creditsOverlay) {
-        d3.select("#credits-modal-close").on("click", () => creditsOverlay.classList.remove('visible'));
-    }
-
-    // DEMO MODE LISTENER (Shift + D)
-    document.addEventListener('keydown', function(event) {
-        if (event.shiftKey && (event.key === 'D' || event.key === 'd')) {
-            toggleDemoMode();
-        }
-    });
-
-    const inputs = ['slider-maturity', 'slider-data', 'slider-change', 'onsite-input'];
-    inputs.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.addEventListener('input', calculateScoping);
-    });
-    
-    setTimeout(() => {
-        const existingBtn = d3.select("#stack-builder-btn");
-        if (existingBtn.empty()) {
-             const container = d3.select("#packaging-container"); 
-             if (!container.empty()) {
-                container.insert("button", ":first-child")
-                    .attr("id", "stack-builder-btn")
-                    .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
-                    .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
-                    .on("click", toggleStackBuilderMode);
-             }
-        }
-    }, 500);
 }
 
-// --- NEW: DYNAMIC FOOTER INJECTION ---
+// --- DATA WAITING ENGINE ---
+function waitForDataAndPopulate() {
+    let attempts = 0;
+    const maxAttempts = 60; // 15 seconds max wait
+    
+    const interval = setInterval(() => {
+        if (typeof packagingData !== 'undefined' && Array.isArray(packagingData)) {
+            clearInterval(interval);
+            // console.log("Procoreverse: Data loaded successfully. Populating regions.");
+            populateRegionFilter();
+            populatePersonaFilter(); 
+            if(typeof initializeTourControls === 'function') initializeTourControls();
+        } else {
+            attempts++;
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                console.error("Procoreverse: Data fetch timed out.");
+                if(typeof showToast === 'function') showToast("Error: Data failed to load. Please refresh.", 5000);
+            }
+        }
+    }, 250);
+}
+
+// --- DYNAMIC UI INJECTION ---
 function injectControlsFooter() {
     const controls = d3.select("#controls");
     
-    // Clean up any existing footer elements to prevent duplicates
+    // Clean up to prevent duplicates
     controls.select("#reset-view").remove();
     controls.select("#demo-toggle-btn").remove();
     controls.select("#version-link").remove();
+    controls.select(".footer-container").remove();
     controls.select(".pt-5.mt-5.border-t").remove();
 
     // Create container
     const footer = controls.append("div")
-        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
+        .attr("class", "footer-container pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
 
     // 1. Reset Button (Full Width)
     footer.append("button")
@@ -438,7 +539,6 @@ function injectControlsFooter() {
         });
 }
 
-// --- DEMO MODE TOGGLE ---
 function toggleDemoMode() {
     const body = d3.select("body");
     const isDemo = body.classed("demo-mode-active");
@@ -478,171 +578,7 @@ function toggleDemoMode() {
     }
 }
 
-// --- CUSTOM SCOPE MANAGER ---
-function toggleCustomScopeItem(nodeId) {
-    if (!app || !app.customScope) return;
-    if (app.customScope.has(nodeId)) {
-        app.customScope.delete(nodeId);
-        if(typeof showToast === 'function') showToast(`Removed ${nodeId} from Custom Scope`);
-    } else {
-        app.customScope.add(nodeId);
-        if(typeof showToast === 'function') showToast(`Added ${nodeId} to Custom Scope`);
-    }
-    if (typeof updateGraph === 'function') updateGraph(false); 
-    calculateScoping();
-}
-
-// --- GAP ANALYSIS V2 MANAGER ---
-function toggleStackBuilderMode() {
-    if (d3.select("#region-filter").property("value") === "all") {
-        if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
-        return;
-    }
-
-    app.state.isBuildingStack = !app.state.isBuildingStack;
-    
-    let btn = d3.select("#stack-builder-btn");
-    
-    if (app.state.isBuildingStack) {
-        // --- ACTIVATE BUILDER MODE ---
-        app.interactionState = 'building_stack';
-        
-        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
-           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
-           .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
-        
-        if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
-        
-        // --- NEW: INJECT PRESET DROPDOWN ---
-        const presetContainer = d3.select("#packaging-container").insert("div", "#stack-builder-btn + *")
-            .attr("id", "stack-preset-container")
-            .attr("class", "mb-4 p-3 bg-green-50 rounded border border-green-200");
-            
-        presetContainer.append("label").attr("class", "block text-xs font-bold text-green-800 mb-1 uppercase").text("Quick Stack Presets");
-        
-        const select = presetContainer.append("select")
-            .attr("class", "w-full text-xs border-green-300 rounded p-1.5 focus:ring-green-500 focus:border-green-500 bg-white")
-            .on("change", function() {
-                const key = this.value;
-                if (key === 'none') return;
-                applyStackPreset(key);
-            });
-            
-        select.append("option").attr("value", "none").text("Select a Starting Point...");
-        Object.entries(STACK_PRESETS).forEach(([key, data]) => {
-            select.append("option").attr("value", key).text(data.label);
-        });
-
-        d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
-        highlightOwnedNodes();
-        
-    } else {
-        // --- DEACTIVATE BUILDER MODE ---
-        app.interactionState = 'explore';
-        
-        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
-           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
-           .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
-        
-        // Remove Preset Dropdown
-        d3.select("#stack-preset-container").remove();
-        
-        // Return to normal view
-        if (typeof updateGraph === 'function') updateGraph(true);
-        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
-            showToast("Stack Saved! Select a Package to see Gaps.", 3000);
-            calculateScoping(); // Triggers Gap Check
-        }
-    }
-}
-
-function applyStackPreset(key) {
-    if (!STACK_PRESETS[key]) return;
-    const tools = STACK_PRESETS[key].tools;
-    app.state.myStack.clear();
-    tools.forEach(toolId => app.state.myStack.add(toolId));
-    highlightOwnedNodes();
-    if(typeof showToast === 'function') showToast(`Applied ${STACK_PRESETS[key].label}`);
-}
-
-function toggleStackItem(d) {
-    if (!app.state.myStack) app.state.myStack = new Set();
-    
-    if (app.state.myStack.has(d.id)) {
-        app.state.myStack.delete(d.id);
-    } else {
-        app.state.myStack.add(d.id);
-    }
-    highlightOwnedNodes();
-}
-
-function highlightOwnedNodes() {
-    if (!app.node) return;
-    
-    app.node.transition().duration(200)
-        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
-        .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
-        .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
-}
-
-// UPDATED LOGIC: Calculates Gap, Matched, and OUTLIERS
-function getGapAnalysis() {
-    const filters = getActiveFilters(); 
-    const targetPackageTools = filters.packageTools || new Set();
-    
-    const owned = app.state.myStack || new Set();
-    
-    const gap = new Set();      // In Package, NOT Owned (Upsell)
-    const matched = new Set();  // In Package, AND Owned (Safe)
-    const outlier = new Set();  // NOT in Package, BUT Owned (Legacy/Extra)
-    
-    if (targetPackageTools.size > 0) {
-        targetPackageTools.forEach(toolId => {
-            if (owned.has(toolId)) {
-                matched.add(toolId);
-            } else {
-                gap.add(toolId);
-            }
-        });
-        
-        // Calculate Outliers
-        owned.forEach(toolId => {
-            if (!targetPackageTools.has(toolId)) {
-                outlier.add(toolId);
-            }
-        });
-    }
-    
-    return { owned, gap, matched, outlier, target: targetPackageTools };
-}
-
-// --- SOW V2: COMPLEXITY & T-SHIRT SIZING ---
-function setComplexity(level) {
-    // Only allow if not in Read-Only mode
-    if (app.state.calculatorMode === 'view') {
-        if(typeof showToast === 'function') showToast("View Only: Complexity cannot be edited.");
-        return;
-    }
-
-    const map = {
-        'standard': { mat: 1.0, data: 1.0, change: 1.0 },
-        'complex': { mat: 1.4, data: 1.5, change: 1.3 },
-        'transform': { mat: 1.8, data: 2.0, change: 1.8 }
-    };
-    const vals = map[level];
-    if (vals) {
-        document.getElementById('slider-maturity').value = vals.mat;
-        document.getElementById('slider-data').value = vals.data;
-        document.getElementById('slider-change').value = vals.change;
-        calculateScoping();
-        // Update Button States
-        d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
-        d3.select(`#btn-${level}`).classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
-    }
-}
-
+// --- SOW UI RENDERING ---
 function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
     if(revenueContainer.empty()) return;
@@ -650,12 +586,12 @@ function renderSOWQuestionnaire() {
     revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
     revenueContainer.html("");
     
-    // --- GAP PRICING TOGGLE (DYNAMIC) ---
+    // Gap Pricing Toggle
     revenueContainer.append("div")
         .attr("id", "gap-pricing-toggle-container")
         .attr("class", "mb-3 hidden bg-orange-50 p-2 rounded border border-orange-200");
 
-    // --- COMPLEXITY BUTTONS (SOW V2) ---
+    // Complexity Buttons
     const complexityDiv = revenueContainer.append("div").attr("class", "mb-3 flex gap-2");
     ['Standard', 'Complex', 'Transform'].forEach(label => {
         const key = label.toLowerCase();
@@ -666,6 +602,7 @@ function renderSOWQuestionnaire() {
             .on("click", () => setComplexity(key));
     });
 
+    // Settings Group
     const settingsGroup = revenueContainer.append("div").attr("class", "mb-1 w-full");
     const onsiteRow = settingsGroup.append("div").attr("class", "mb-3 border-b border-gray-100 pb-3");
     onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
@@ -678,11 +615,9 @@ function renderSOWQuestionnaire() {
         .on("input", calculateScoping);
     
     settingsGroup.append("div").attr("class", "text-[10px] font-bold text-gray-500 uppercase mb-2").text("Service Qualifiers");
-    const gridDiv = settingsGroup.append("div").attr("class", "grid grid-cols-2 gap-x-2 gap-y-2 w-full");
     
     SOW_QUESTIONS.forEach(q => {
-        const label = gridDiv.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 w-full");
-        
+        const label = settingsGroup.append("label").attr("class", "flex items-start cursor-pointer hover:bg-gray-100 rounded p-1 w-full mb-1");
         label.append("input")
             .attr("type", "checkbox")
             .attr("id", q.id)
@@ -697,22 +632,40 @@ function renderSOWQuestionnaire() {
         }
     });
     
-    // --- PRINT BUTTON MOVED TO TOTAL BOX ---
+    // Print Button
     const totalBox = d3.select("#sow-total").select(function() { return this.parentNode; });
     if (!totalBox.empty()) {
         totalBox.select("#print-sow-mini-btn").remove(); 
-        
         totalBox.append("button")
             .attr("id", "print-sow-mini-btn")
             .attr("class", "w-full mt-3 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold py-1.5 rounded text-[11px] flex items-center justify-center transition shadow-sm border border-indigo-600")
             .html('<i class="fas fa-print mr-2"></i> Print Estimate')
             .on("click", generateSOWPrintView);
     }
-
     setTimeout(refreshAccordionHeight, 50);
 }
 
-// --- SCOPING CALCULATOR (WITH SMART GAP LOGIC) ---
+function setComplexity(level) {
+    if (app.state.calculatorMode === 'view') {
+        if(typeof showToast === 'function') showToast("View Only: Complexity cannot be edited.");
+        return;
+    }
+    const map = {
+        'standard': { mat: 1.0, data: 1.0, change: 1.0 },
+        'complex': { mat: 1.4, data: 1.5, change: 1.3 },
+        'transform': { mat: 1.8, data: 2.0, change: 1.8 }
+    };
+    const vals = map[level];
+    if (vals) {
+        document.getElementById('slider-maturity').value = vals.mat;
+        document.getElementById('slider-data').value = vals.data;
+        document.getElementById('slider-change').value = vals.change;
+        calculateScoping();
+        d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
+        d3.select(`#btn-${level}`).classed('bg-gray-200 text-gray-700', false).classed('bg-indigo-600 text-white', true);
+    }
+}
+
 function calculateScoping() {
     // 1. Setup & Permissions
     const isViewOnly = (app.state.calculatorMode === 'view');
@@ -827,7 +780,6 @@ function calculateScoping() {
     refreshAccordionHeight();
 }
 
-// --- PRINT SOW (BRANDING + TEMPLATES) ---
 function generateSOWPrintView() {
     if (!app.currentSOW) { alert("Please configure a scope first."); return; }
     
@@ -839,24 +791,8 @@ function generateSOWPrintView() {
         : `<div class="logo">PROCORE</div>`;
 
     const sow = app.currentSOW;
-    const templateData = getSOWContent(sow); 
-    const today = new Date().toLocaleDateString();
-    
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) { alert("Please allow popups to print the SOW."); return; }
+    const templateData = getSOWContent({ region: d3.select("#region-filter").property("value"), audience: d3.select("#audience-filter").property("value"), activeModules: sow.activeModules, onsite: sow.onsite }); 
 
-    let modulesHtml = "";
-    templateData.modules.forEach(mod => {
-        modulesHtml += `<div class="module">
-            ${mod.body}
-        </div>`;
-    });
-
-    let bodyContent = templateData.base.body
-        .replace(/{{Client Name}}/g, clientName)
-        .replace(/{{Date}}/g, today);
-    
-    // --- EXECUTIVE GAP REPORT (NEW) ---
     let gapReportHtml = "";
     if (sow.gapTools && sow.gapTools.length > 0) {
         gapReportHtml = `
@@ -879,6 +815,9 @@ function generateSOWPrintView() {
         </div>`;
     }
 
+    let bodyContent = templateData.base.body
+        .replace(/{{Client Name}}/g, clientName);
+    
     // Inject Custom Gap Messaging if applicable
     if (sow.isGapPricing) {
         bodyContent += `
@@ -916,6 +855,14 @@ function generateSOWPrintView() {
         ${bodyContent}
         ${gapReportHtml}
         <h3>Scope of Services</h3>
+        `;
+        
+    let modulesHtml = "";
+    templateData.modules.forEach(mod => {
+        modulesHtml += `<div class="module">${mod.body}</div>`;
+    });
+
+    const footerHtml = `
         ${modulesHtml}
         <div class="total-box">
             <div style="font-size: 12px; text-transform: uppercase; font-weight: bold; opacity: 0.8;">Total Implementation Investment</div>
@@ -931,11 +878,16 @@ function generateSOWPrintView() {
     </html>
     `;
 
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    const fullHtml = htmlContent + footerHtml;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(fullHtml);
+        printWindow.document.close();
+    }
 }
+// --- app-controls.js (PART 4 OF 4) ---
+// VERSION: 800 (FULL EXPANSION - VIEW LOGIC)
 
-// --- TEAM VIEW MANAGER ---
 function applyTeamView(team) {
     const config = TEAM_CONFIG[team];
     if (!config) return;
@@ -960,16 +912,25 @@ function applyTeamView(team) {
         }
     }
     
-    // LEGEND ACCESS FIX (Explicitly Handle Visibility)
+    // HARD VIEW RESET: Close ALL accordions first to ensure consistent state
+    document.querySelectorAll('.accordion-content').forEach(content => {
+        content.style.maxHeight = 0;
+        content.style.opacity = 0;
+        content.parentElement.classList.remove('active');
+        content.classList.remove('overflow-visible');
+    });
+
+    // Ensure Legend is visible/hidden correctly
     d3.select("#view-options-accordion").style("display", config.showLegend ? "block" : "none");
 
-    document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
-    
     const target = document.getElementById(config.defaultOpen);
     if (target) {
         target.classList.add('active');
         const content = target.querySelector('.accordion-content');
-        if (content) content.style.maxHeight = content.scrollHeight + "px";
+        if(content) {
+            content.style.opacity = 1;
+            content.style.maxHeight = content.scrollHeight + "px";
+        }
     }
 }
 
@@ -990,20 +951,13 @@ function toggleAllCategories() {
 }
 
 function populateRegionFilter(retryCount = 0) {
-    // FIX: Retry mechanism if data isn't loaded yet
-    if (typeof packagingData === 'undefined') {
-        if (retryCount < 20) { // Increased check limit
-            setTimeout(() => populateRegionFilter(retryCount + 1), 100);
-        } else {
-            console.error("Procoreverse: Packaging Data failed to load.");
-        }
-        return;
-    }
+    // Note: Data waiting engine now handles the retry logic, this is the renderer
     const regionFilter = d3.select("#region-filter");
     if (regionFilter.empty()) return;
     
-    // Clear existing to prevent duplicates on re-run
     regionFilter.html('<option value="all">Select Region...</option>');
+
+    if (typeof packagingData === 'undefined') return;
 
     const regions = new Set();
     packagingData.forEach(pkg => {
@@ -1013,7 +967,7 @@ function populateRegionFilter(retryCount = 0) {
 
     [...regions].sort().forEach(region => {
         let label = region;
-        if (region === "EUR") label = "EMEA";
+        if (region === "EUR") label = "Europe"; // Fixed label
         regionFilter.append("option").attr("value", region).text(label);
     });
 }
@@ -1401,15 +1355,16 @@ function updateActivePackageState() {
 function injectControlsFooter() {
     const controls = d3.select("#controls");
     
-    // Clean up any existing footer elements to prevent duplicates
+    // Clean up to prevent duplicates
     controls.select("#reset-view").remove();
     controls.select("#demo-toggle-btn").remove();
     controls.select("#version-link").remove();
+    controls.select(".footer-container").remove();
     controls.select(".pt-5.mt-5.border-t").remove();
 
     // Create container
     const footer = controls.append("div")
-        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
+        .attr("class", "footer-container pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
 
     // 1. Reset Button (Full Width)
     footer.append("button")
@@ -1478,4 +1433,143 @@ function toggleDemoMode() {
         
         if(typeof showToast === 'function') showToast("Demo Mode Active.");
     }
+}
+
+// --- CUSTOM SCOPE MANAGER ---
+function toggleCustomScopeItem(nodeId) {
+    if (!app || !app.customScope) return;
+    if (app.customScope.has(nodeId)) {
+        app.customScope.delete(nodeId);
+        if(typeof showToast === 'function') showToast(`Removed ${nodeId} from Custom Scope`);
+    } else {
+        app.customScope.add(nodeId);
+        if(typeof showToast === 'function') showToast(`Added ${nodeId} to Custom Scope`);
+    }
+    if (typeof updateGraph === 'function') updateGraph(false); 
+    calculateScoping();
+}
+
+// --- GAP ANALYSIS V2 MANAGER ---
+function toggleStackBuilderMode() {
+    if (d3.select("#region-filter").property("value") === "all") {
+        if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
+        return;
+    }
+
+    app.state.isBuildingStack = !app.state.isBuildingStack;
+    let btn = d3.select("#stack-builder-btn");
+    
+    if (app.state.isBuildingStack) {
+        // --- ACTIVATE BUILDER MODE ---
+        app.interactionState = 'building_stack';
+        
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
+           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
+           .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
+        
+        if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
+        
+        // --- NEW: INJECT PRESET DROPDOWN ---
+        const presetContainer = d3.select("#packaging-container").insert("div", "#stack-builder-btn + *")
+            .attr("id", "stack-preset-container")
+            .attr("class", "mb-4 p-3 bg-green-50 rounded border border-green-200");
+            
+        presetContainer.append("label").attr("class", "block text-xs font-bold text-green-800 mb-1 uppercase").text("Quick Stack Presets");
+        
+        const select = presetContainer.append("select")
+            .attr("class", "w-full text-xs border-green-300 rounded p-1.5 focus:ring-green-500 focus:border-green-500 bg-white")
+            .on("change", function() {
+                const key = this.value;
+                if (key === 'none') return;
+                applyStackPreset(key);
+            });
+            
+        select.append("option").attr("value", "none").text("Select a Starting Point...");
+        Object.entries(STACK_PRESETS).forEach(([key, data]) => {
+            select.append("option").attr("value", key).text(data.label);
+        });
+
+        d3.selectAll(".node").transition().duration(300).style("opacity", 0.4);
+        highlightOwnedNodes();
+        
+    } else {
+        // --- DEACTIVATE BUILDER MODE ---
+        app.interactionState = 'explore';
+        
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
+           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
+           .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
+        
+        // Remove Preset Dropdown
+        d3.select("#stack-preset-container").remove();
+        
+        // Return to normal view
+        if (typeof updateGraph === 'function') updateGraph(true);
+        if (app.state.myStack.size > 0 && typeof showToast === 'function') {
+            showToast("Stack Saved! Select a Package to see Gaps.", 3000);
+            calculateScoping(); // Triggers Gap Check
+        }
+    }
+}
+
+function applyStackPreset(key) {
+    if (!STACK_PRESETS[key]) return;
+    const tools = STACK_PRESETS[key].tools;
+    app.state.myStack.clear();
+    tools.forEach(toolId => app.state.myStack.add(toolId));
+    highlightOwnedNodes();
+    if(typeof showToast === 'function') showToast(`Applied ${STACK_PRESETS[key].label}`);
+}
+
+function toggleStackItem(d) {
+    if (!app.state.myStack) app.state.myStack = new Set();
+    
+    if (app.state.myStack.has(d.id)) {
+        app.state.myStack.delete(d.id);
+    } else {
+        app.state.myStack.add(d.id);
+    }
+    highlightOwnedNodes();
+}
+
+function highlightOwnedNodes() {
+    if (!app.node) return;
+    
+    app.node.transition().duration(200)
+        .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
+        .select("path")
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
+        .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
+}
+
+// UPDATED LOGIC: Calculates Gap, Matched, and OUTLIERS
+function getGapAnalysis() {
+    const filters = getActiveFilters(); 
+    const targetPackageTools = filters.packageTools || new Set();
+    
+    const owned = app.state.myStack || new Set();
+    
+    const gap = new Set();      // In Package, NOT Owned (Upsell)
+    const matched = new Set();  // In Package, AND Owned (Safe)
+    const outlier = new Set();  // NOT in Package, BUT Owned (Legacy/Extra)
+    
+    if (targetPackageTools.size > 0) {
+        targetPackageTools.forEach(toolId => {
+            if (owned.has(toolId)) {
+                matched.add(toolId);
+            } else {
+                gap.add(toolId);
+            }
+        });
+        
+        // Calculate Outliers
+        owned.forEach(toolId => {
+            if (!targetPackageTools.has(toolId)) {
+                outlier.add(toolId);
+            }
+        });
+    }
+    
+    return { owned, gap, matched, outlier, target: targetPackageTools };
 }
