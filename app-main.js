@@ -1,7 +1,7 @@
-// --- app-main.js ---
-// VERSION: 850 (FINAL VISUALS: NODES ON TOP, CLICK-THROUGH LINES, SYNC ARROWS)
+// --- app-main.js (PART 1 OF 2) ---
+// VERSION: 870 (COMPLETE: BRAND COLORS, LAYERING, & SYNC ARROWS)
 
-console.log("App Main 850: Loading...");
+console.log("App Main 870: Loading...");
 
 const app = {
     simulation: null,
@@ -87,42 +87,39 @@ function nodeDoubleClicked(event, d) {
 // --- 2. SETUP & LAYOUT ---
 
 function setupCategories() {
-    // 1. Define standard Procore Palette for fallbacks
+    const rootStyles = getComputedStyle(document.documentElement);
+    // Explicit Brand Colors
     const procoreColors = { 
         orange: "#F36C23", 
-        lumber: "#D1C4E9", 
-        earth: "#8D6E63", 
-        metal: "#607D8B",
-        blue: "#4da446" // Using green for 'matched' logic, but keeping safe defaults
+        lumber: "#D1C4E9", // Precon
+        earth: "#8D6E63",  // Financials
+        metal: "#607D8B",  // Resource/Helix
+        teal: "#3a8d8c",   // Quality
+        stone: "#F5F1EE"
     };
 
-    // 2. Initialize Categories Object
-    app.categories = {}; 
+    // The Official Procoreverse Mapping
+    const colorMap = { 
+        "Project Management": procoreColors.orange, 
+        "Project Execution": procoreColors.orange,
+        "Project Map": procoreColors.orange,
+        "Financial Management": procoreColors.earth,
+        "Preconstruction": procoreColors.lumber,
+        "Resource Management": procoreColors.metal,
+        "Helix": procoreColors.metal,
+        "External Integrations": "#B0B0B0", 
+        "Quality & Safety": procoreColors.teal,
+        "Workforce Management": "#5B8D7E", 
+        "Construction Intelligence": "#4A4A4A", 
+        "Platform & Core": "#757575", 
+        "Emails": "#c94b4b" 
+    };
 
-    // 3. Process Nodes Data
+    app.categories = {}; 
     if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
         nodesData.forEach(node => { 
-            // If category doesn't exist, create it
             if (!app.categories[node.group]) {
-                // DEFAULT LOGIC: Use the color defined in the node data if it exists, otherwise assign a default
-                // NOTE: In your original V1, colors were likely assigned via a mapping or CSS. 
-                // We will stick to a robust default map based on the group name to ensure consistency 
-                // WITHOUT overriding custom data if you had it.
-                
-                let color = "#999"; // Default grey
-                
-                // RESTORED ORIGINAL MAPPING LOGIC (Standard Procoreverse V1)
-                if(node.group === "Project Management") color = procoreColors.orange;
-                else if(node.group === "Financial Management") color = procoreColors.earth;
-                else if(node.group === "Preconstruction") color = procoreColors.lumber;
-                else if(node.group === "Resource Management") color = procoreColors.metal;
-                else if(node.group === "Quality & Safety") color = "#3a8d8c"; // Teal
-                else if(node.group === "Workforce Management") color = "#5B8D7E";
-                else if(node.group === "Construction Intelligence") color = "#4A4A4A";
-                else if(node.group === "Platform & Core") color = "#757575";
-                else if(node.group === "Helix") color = "#566578";
-                
-                app.categories[node.group] = { color: color };
+                app.categories[node.group] = { color: colorMap[node.group] || "#999" }; 
             }
         });
     }
@@ -235,6 +232,8 @@ function populateLegend() {
         item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
     });
 }
+// --- app-main.js (PART 2 OF 2) ---
+// VERSION: 870 (LOGIC LOOP)
 
 function ticked() {
     if (app.simulation && app.simulation.alpha() > 0.05) {
@@ -246,29 +245,39 @@ function ticked() {
 
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour && typeof stopTour === 'function') stopTour();
+    
+    // --- CRITICAL GUARD CLAUSE ---
     if (app.interactionState === 'manual_building') return;
 
+    // 1. Retrieve Filters & Data
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
+    // 2. GAP ANALYSIS PRE-CALCULATION
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
     const isBuilderMode = app.state && app.state.isBuildingStack;
 
+    // 3. Filter Nodes
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
+        
         let inPackage = true;
-        if (!isBuilderMode) {
+        if (isBuilderMode) {
+            inPackage = true; 
+        } else {
             inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
         }
+        
         return inCategory && inPersona && inPackage;
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
+    // 4. D3 Join & Update
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node")
@@ -277,6 +286,7 @@ function updateGraph(isFilterChange = true) {
                 .on("click", nodeClicked)
                 .on("dblclick", nodeDoubleClicked)
                 .call(drag(app.simulation)); 
+
             nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
             nodeGroup.append("text").text(d => d.id).attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
@@ -291,7 +301,7 @@ function updateGraph(isFilterChange = true) {
             nodeGroup.style("opacity", 0).transition().duration(500).style("opacity", 1);
             return nodeGroup;
         },
-       update => {
+        update => {
             // PRIORITY 1: STACK BUILDER VISUALS
             if (isBuilderMode) {
                 update.transition().duration(500)
@@ -299,7 +309,7 @@ function updateGraph(isFilterChange = true) {
                     .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
                 
                 update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") 
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff") // Brand Green
                     .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
                     
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
@@ -357,6 +367,15 @@ function updateGraph(isFilterChange = true) {
                     }
                     return 2;
                 });
+            
+            // RING LOGIC RESTORED (Blue vs Orange)
+            update.select(".procore-led-ring").transition().duration(300)
+                .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
+                .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
+                .attr("stroke-opacity", d => {
+                    if (isGapMode) return 0; // Reduce noise
+                    return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
+                });
             return update;
         },
         exit => exit.transition().duration(300).style("opacity", 0).remove()
@@ -364,7 +383,7 @@ function updateGraph(isFilterChange = true) {
 
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
-        .style("pointer-events", "none") // <--- FIX 1: CLICK-THROUGH
+        .style("pointer-events", "none") // CLICK-THROUGH
         .attr("stroke", d => {
             if (typeof legendData === 'undefined') return app.defaultArrowColor;
             const legend = legendData.find(l => l.type_id === d.type);
@@ -391,7 +410,8 @@ function updateGraph(isFilterChange = true) {
             if (legend.visual_style.includes("one arrow") || legend.visual_style.includes("two arrows")) return `url(#arrow-${d.type})`;
             return null;
         })
-        .attr("marker-start", d => { // <--- FIX 2: SYNC ARROWS
+        // SYNC ARROWS
+        .attr("marker-start", d => {
             if (typeof legendData === 'undefined') return null;
             const legend = legendData.find(l => l.type_id === d.type);
             if (!legend) return null;
@@ -400,8 +420,8 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        if (isBuilderMode) return 0.15; 
-        if (isGapMode) return 0.5; 
+        if (isBuilderMode) return 0.15; // Dim links while building stack
+        if (isGapMode) return 0.5; // INCREASED VISIBILITY: Connect connected ecosystem
         
         if (filters.showProcoreLed) {
             const s = d.source.id || d.source;
@@ -413,7 +433,8 @@ function updateGraph(isFilterChange = true) {
         return 0.6;
     });
 
-    app.nodeG.raise(); // <--- FIX 3: NODES TO FRONT
+    // FORCE NODES TO TOP
+    app.nodeG.raise(); 
 
     app.simulation.nodes(filteredNodes);
     app.simulation.force("link").links(filteredLinks);
@@ -427,6 +448,8 @@ function addBadge(group, iconCode, color, x, y, tooltipText, d) {
     badge.append("text").attr("class", "fas").text(iconCode).attr("text-anchor", "middle").attr("dy", 3).attr("fill", color).attr("font-size", "10px").style("font-family", "'Font Awesome 6 Free'").style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.3))").style("pointer-events", "none");
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: ${color};">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
+         
+    // PASSTHROUGH CLICK
     badge.on("click", function(e) { nodeClicked(e, d); });
 }
 function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
@@ -435,13 +458,15 @@ function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
     badge.append("text").text(emoji).attr("text-anchor", "middle").attr("dy", 3).attr("font-size", "12px").style("font-weight", "bold").style("pointer-events", "none");
     badge.on("mouseover", function(e) { e.stopPropagation(); d3.select("#tooltip").html(`<div class="font-bold text-xs" style="color: #4A4A4A;">${tooltipText}</div>`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px").classed("visible", true); })
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
+
+    // PASSTHROUGH CLICK
     badge.on("click", function(e) { nodeClicked(e, d); });
 }
 
 window.addEventListener('resize', () => { 
     app.width = document.getElementById('graph-container').clientWidth; 
     app.height = document.getElementById('graph-container').clientHeight;
-    setHexFoci(); 
+    setHexFoci(); // Recalculate foci centers on resize
     if(app.simulation) app.simulation.alpha(0.5).restart();
 });
 
