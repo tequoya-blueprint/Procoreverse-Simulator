@@ -227,7 +227,7 @@ const linksData = [
     "target": "Bid Board",
     "type": "syncs",
     "dataFlow": "Data for Materials used in takeoffs are synced between tools to allow for estimate creation based stored data."
-  }
+  },
   {
     "source": "Bidding",
     "target": "Commitments",
