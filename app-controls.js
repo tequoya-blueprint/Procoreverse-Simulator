@@ -714,84 +714,64 @@ function renderSOWQuestionnaire() {
 
 // --- SCOPING CALCULATOR (WITH SMART GAP LOGIC) ---
 function calculateScoping() {
-    // RBAC Check: If View Only, disable inputs programmatically
+    // 1. Setup & Permissions
     const isViewOnly = (app.state.calculatorMode === 'view');
-    
     const sliderMaturity = document.getElementById('slider-maturity');
-    const sliderData = document.getElementById('slider-data');
-    const sliderChange = document.getElementById('slider-change');
-    const onsiteInput = document.getElementById('onsite-input');
-    
     if (sliderMaturity) {
-        [sliderMaturity, sliderData, sliderChange, onsiteInput].forEach(el => { if(el) el.disabled = isViewOnly; });
+        ['slider-maturity','slider-data','slider-change','onsite-input'].forEach(id => { 
+            const el = document.getElementById(id); if(el) el.disabled = isViewOnly; 
+        });
         d3.selectAll('.sow-question').property('disabled', isViewOnly);
         d3.selectAll('.complexity-btn').classed('opacity-50 cursor-not-allowed', isViewOnly);
     }
-
     if (!sliderMaturity) return;
 
-    let mat = parseFloat(sliderMaturity.value);
-    let data = parseFloat(sliderData.value);
-    let change = parseFloat(sliderChange.value);
+    // 2. Read Risk Factors
+    let mat = parseFloat(sliderMaturity.value); 
+    let data = parseFloat(document.getElementById('slider-data').value); 
+    let change = parseFloat(document.getElementById('slider-change').value);
 
-    SOW_QUESTIONS.filter(q => q.type === 'risk').forEach(q => {
-        const checkbox = document.getElementById(q.id);
-        if (checkbox && checkbox.checked) {
-            if (q.target === 'data') data += q.factor;
-            if (q.target === 'change') change += q.factor;
-        }
+    SOW_QUESTIONS.filter(q => q.type === 'risk').forEach(q => { 
+        const chk = document.getElementById(q.id); 
+        if (chk && chk.checked) { 
+            if (q.target === 'data') data += q.factor; 
+            if (q.target === 'change') change += q.factor; 
+        } 
     });
 
-    const valMat = document.getElementById('val-maturity'); if(valMat) valMat.innerText = mat.toFixed(1) + "x";
-    const valData = document.getElementById('val-data'); if(valData) valData.innerText = data.toFixed(1) + "x";
-    const valChange = document.getElementById('val-change'); if(valChange) valChange.innerText = change.toFixed(1) + "x";
+    document.getElementById('val-maturity').innerText = mat.toFixed(1) + "x"; 
+    document.getElementById('val-data').innerText = data.toFixed(1) + "x"; 
+    document.getElementById('val-change').innerText = change.toFixed(1) + "x";
 
+    // 3. Determine Base Scope (Gap vs Full)
     let baseHours = 0;
-    
-    // --- SMART GAP LOGIC START ---
     const gapAnalysis = getGapAnalysis();
-    const gapToggleContainer = d3.select("#gap-pricing-toggle-container");
+    const gapToggle = d3.select("#gap-pricing-toggle-container");
     let isGapPricing = false;
 
     if (gapAnalysis.gap.size > 0) {
-        gapToggleContainer.classed("hidden", false);
-        // Only render toggle if empty to preserve state
-        if (gapToggleContainer.html() === "") {
-             gapToggleContainer.html(`
-                <label class="flex items-center cursor-pointer justify-between">
-                    <span class="text-xs font-bold text-orange-800">
-                        <i class="fas fa-exclamation-triangle mr-1"></i> Scope Gap Only? (${gapAnalysis.gap.size} tools)
-                    </span>
-                    <input type="checkbox" id="use-gap-pricing" class="form-checkbox h-4 w-4 text-orange-600 focus:ring-orange-500 rounded">
-                </label>
-             `);
+        gapToggle.classed("hidden", false);
+        if (gapToggle.html() === "") {
+             gapToggle.html(`<label class="flex items-center cursor-pointer justify-between"><span class="text-xs font-bold text-orange-800"><i class="fas fa-exclamation-triangle mr-1"></i> Scope Gap Only? (${gapAnalysis.gap.size} tools)</span><input type="checkbox" id="use-gap-pricing" class="form-checkbox h-4 w-4 text-orange-600 focus:ring-orange-500 rounded"></label>`);
              d3.select("#use-gap-pricing").on("change", calculateScoping);
         }
-        
         isGapPricing = d3.select("#use-gap-pricing").property("checked");
-        
     } else {
-        gapToggleContainer.classed("hidden", true).html("");
+        gapToggle.classed("hidden", true).html("");
     }
-    // --- SMART GAP LOGIC END ---
 
-    const region = d3.select("#region-filter").property('value');
-    const audience = d3.select("#audience-filter").property('value');
-    
     if (isGapPricing) {
-        // GAP MODE: Calculate implementation per tool (e.g., 6 hours per tool for fresh implementation)
-        baseHours = gapAnalysis.gap.size * 6;
+        // GAP LOGIC: Only charge for missing tools (e.g. 8 hours per tool)
+        baseHours = gapAnalysis.gap.size * 8; 
     } else {
-        // STANDARD MODE: Use Package Base Hours
+        // STANDARD LOGIC: Use Package Base Hours
+        const region = d3.select("#region-filter").property('value');
+        const audience = d3.select("#audience-filter").property('value');
         if (region !== 'all' && audience !== 'all') {
             const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
             d3.selectAll(".package-checkbox:checked").each(function() {
                 const pkgName = this.value;
-                const pkg = packagingData.find(p => 
-                    (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && 
-                    audienceDataKeys.includes(p.audience) && 
-                    p.package_name === pkgName
-                );
+                const pkg = packagingData.find(p => (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
                 if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
                     const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
                     if (match) baseHours += parseInt(match[1], 10);
@@ -800,93 +780,50 @@ function calculateScoping() {
         }
     }
 
-    const customToolCount = app.customScope ? app.customScope.size : 0;
-    const customScopeHours = customToolCount * 5; 
-    let servicesHours = 0; let servicesCost = 0;
-    let activeModules = []; 
-
-    SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => {
-        const checkbox = document.getElementById(q.id);
-        if (checkbox && checkbox.checked) {
-            servicesHours += q.hrs;
-            servicesCost += q.cost;
-            if (q.module) activeModules.push(q.module);
-        }
+    // 4. Add Services & Custom
+    const customScopeHours = (app.customScope ? app.customScope.size : 0) * 5; 
+    let servicesHours = 0; let servicesCost = 0; let activeModules = []; 
+    SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => { 
+        const chk = document.getElementById(q.id); 
+        if (chk && chk.checked) { 
+            servicesHours += q.hrs; servicesCost += q.cost; if (q.module) activeModules.push(q.module); 
+        } 
     });
 
+    // 5. Calculate Final Totals
     const totalHoursRaw = baseHours + customScopeHours + servicesHours;
-
-    // --- LIST CONTAINER UPDATES ---
+    
+    // Update UI List
     let listContainer = document.getElementById('custom-scope-list-container');
-    if (!listContainer) {
-        const revenueContainer = document.getElementById('revenue-container');
-        if(revenueContainer) {
-            listContainer = document.createElement('div');
-            listContainer.id = 'custom-scope-list-container';
-            listContainer.className = "mt-3 pt-2 border-t border-gray-200 text-xs";
-            revenueContainer.parentNode.insertBefore(listContainer, revenueContainer.nextSibling);
-        }
+    if (!listContainer) { 
+        const rc = document.getElementById('revenue-container'); 
+        if(rc) { listContainer = document.createElement('div'); listContainer.id = 'custom-scope-list-container'; listContainer.className = "mt-3 pt-2 border-t border-gray-200 text-xs"; rc.parentNode.insertBefore(listContainer, rc.nextSibling); } 
     }
     
     if (listContainer) {
         let content = "";
-        
-        if (isGapPricing) {
-             content += `<div class="mb-1 p-1 bg-orange-100 rounded text-orange-800"><span class="font-bold">Gap Scope:</span> ${Array.from(gapAnalysis.gap).join(", ")}</div>`;
-        }
-
-        if (customToolCount > 0) {
-            content += `<div class="mb-1"><span class="font-bold text-gray-500">Custom Tools:</span> <span class="text-indigo-600 font-semibold">${Array.from(app.customScope).join(", ")}</span></div>`;
-        }
-        const activeServices = SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label);
-        if (activeServices.length > 0) {
-             content += `<div class="mb-1"><span class="font-bold text-gray-500">Services:</span> <span class="text-gray-700">${activeServices.join(", ")}</span></div>`;
-        }
-        listContainer.innerHTML = content;
-        listContainer.style.display = content ? 'block' : 'none';
+        if (isGapPricing) content += `<div class="mb-1 p-1 bg-orange-100 rounded text-orange-800"><span class="font-bold">Gap Scope:</span> ${Array.from(gapAnalysis.gap).join(", ")}</div>`;
+        if (app.customScope && app.customScope.size > 0) content += `<div class="mb-1"><span class="font-bold text-gray-500">Custom:</span> <span class="text-indigo-600">${Array.from(app.customScope).join(", ")}</span></div>`;
+        listContainer.innerHTML = content; listContainer.style.display = content ? 'block' : 'none';
     }
 
-    const baseLabel = document.getElementById('base-tools-count');
-    if (baseLabel) {
-        baseLabel.parentElement.innerHTML = `Total Scope: <span id="base-tools-count" class="font-bold text-gray-700">${totalHoursRaw} Hrs</span>`;
-    }
-
-    const PREP_FACTOR = 1.5; 
-    const CONSULTING_VELOCITY = 3.5; 
-    const combinedMultiplier = (mat + data + change) / 3; 
-    const totalEffortHours = totalHoursRaw * PREP_FACTOR;
-    const baseWeeks = (totalEffortHours / CONSULTING_VELOCITY); 
-    const finalWeeks = Math.round(baseWeeks * combinedMultiplier);
-
-    const calcWeeks = document.getElementById('calc-weeks');
-    if(calcWeeks) calcWeeks.innerText = finalWeeks;
-
-    const hourlyRate = 250; 
-    const implementationCost = (baseHours + customScopeHours) * PREP_FACTOR * combinedMultiplier * hourlyRate;
-    const onsiteCount = parseInt(onsiteInput ? onsiteInput.value : 0) || 0;
-    const onsiteCost = onsiteCount * 7500;
+    document.getElementById('base-tools-count').innerText = totalHoursRaw + " Hrs";
     
-    const totalSOW = implementationCost + onsiteCost + servicesCost;
+    // 6. Multipliers & Cost
+    const multiplier = (mat + data + change) / 3;
+    const finalWeeks = Math.round(((totalHoursRaw * 1.5) / 3.5) * multiplier);
+    document.getElementById('calc-weeks').innerText = finalWeeks;
     
-    const sowDisplay = document.getElementById('sow-total');
-    if(sowDisplay) {
-        sowDisplay.innerText = "$" + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
-    }
+    const impCost = (baseHours + customScopeHours) * 1.5 * multiplier * 250;
+    const onsiteCount = parseInt(document.getElementById('onsite-input').value || 0);
+    const totalSOW = impCost + (onsiteCount * 7500) + servicesCost;
+    
+    document.getElementById('sow-total').innerText = "$" + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 
     app.currentSOW = {
-        totalHours: totalHoursRaw, weeks: finalWeeks, totalCost: totalSOW, region: region, audience: audience,
-        packages: d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value),
-        customTools: Array.from(app.customScope || []),
-        services: SOW_QUESTIONS.filter(q => q.type === 'cost' && document.getElementById(q.id)?.checked).map(q => q.label),
-        activeModules: activeModules, 
-        onsite: onsiteCount, multipliers: { mat: mat.toFixed(1), data: data.toFixed(1), change: change.toFixed(1) },
-        isGapPricing: isGapPricing,
-        // GAP REPORT DATA
-        ownedTools: Array.from(gapAnalysis.owned),
-        targetTools: Array.from(gapAnalysis.target),
-        gapTools: Array.from(gapAnalysis.gap)
+        totalCost: totalSOW, weeks: finalWeeks, activeModules: activeModules, onsite: onsiteCount, isGapPricing: isGapPricing,
+        ownedTools: Array.from(gapAnalysis.owned), targetTools: Array.from(gapAnalysis.target), gapTools: Array.from(gapAnalysis.gap)
     };
-    
     refreshAccordionHeight();
 }
 
