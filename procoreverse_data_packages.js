@@ -255,7 +255,7 @@ const packagingData = [
   },
   {
     "region": "APAC", "audience": "Owner", "package_name": "Project Execution Enhanced",
-    "tools": "Directory", ["Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"],
+    "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Emails", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Instructions", "Submittals", "RFIs", "Daily Log", "Forms", "Project Map", "Transmittals", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Correspondence", "Action Plans", "Bidding"],
     "included_features": ["Assist"],
     "available_add-ons": [],
