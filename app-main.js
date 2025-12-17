@@ -1,7 +1,7 @@
-// --- app-main.js (PART 1 OF 2) ---
-// VERSION: 880 (FIX: EXACT BRAND COLOR MAP RESTORED)
+// --- app-main.js ---
+// VERSION: 900 (FIX: EXACT BRAND COLORS HARDCODED)
 
-console.log("App Main 880: Loading...");
+console.log("App Main 900: Loading Part 1...");
 
 const app = {
     simulation: null,
@@ -31,7 +31,6 @@ const app = {
 };
 
 // --- 1. CORE INTERACTION HANDLERS ---
-
 function nodeMouseOver(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
     if (typeof showTooltip === 'function') showTooltip(event, d);
@@ -82,39 +81,31 @@ function nodeDoubleClicked(event, d) {
 }
 
 // --- 2. SETUP & LAYOUT ---
-
 function setupCategories() {
-    const rootStyles = getComputedStyle(document.documentElement);
-    // Base Colors
-    const procoreColors = { 
-        orange: "#F36C23", 
-        lumber: "#D1C4E9", 
-        earth: "#8D6E63", 
-        metal: "#607D8B"
-    };
-
-    // THE EXACT REQUESTED MAP
+    // 1. HARDCODED PROCORE BRAND PALETTE (Safe Mode)
     const colorMap = { 
-        "Preconstruction": procoreColors.lumber, 
-        "Project Management": procoreColors.orange, 
-        "Financial Management": procoreColors.earth, 
-        "Workforce Management": "#3a8d8c", 
-        "Quality & Safety": "#5B8D7E", 
-        "Platform & Core": "#757575", 
-        "Construction Intelligence": "#4A4A4A", 
-        "External Integrations": "#B0B0B0", 
-        "Helix": procoreColors.metal, 
-        "Project Execution": procoreColors.orange, 
-        "Resource Management": procoreColors.metal, 
-        "Emails": "#c94b4b", 
-        "Project Map": procoreColors.orange 
+        "Preconstruction": "#D1C4E9",        // Lumber
+        "Project Management": "#F36C23",     // Orange
+        "Financial Management": "#8D6E63",   // Earth
+        "Workforce Management": "#3a8d8c",   // Teal
+        "Quality & Safety": "#5B8D7E",       // Darker Teal
+        "Platform & Core": "#757575",        // Mid Grey
+        "Construction Intelligence": "#4A4A4A", // Dark Grey
+        "External Integrations": "#B0B0B0",  // Light Grey
+        "Helix": "#607D8B",                  // Metal
+        "Project Execution": "#F36C23",      // Orange
+        "Resource Management": "#607D8B",    // Metal
+        "Emails": "#c94b4b",                 // Red
+        "Project Map": "#F36C23"             // Orange
     };
 
     app.categories = {}; 
     if (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) {
         nodesData.forEach(node => { 
             if (!app.categories[node.group]) {
-                app.categories[node.group] = { color: colorMap[node.group] || "#999" }; 
+                // If group in map, use it. Else default to grey.
+                const color = colorMap[node.group] || "#999";
+                app.categories[node.group] = { color: color }; 
             }
         });
     }
