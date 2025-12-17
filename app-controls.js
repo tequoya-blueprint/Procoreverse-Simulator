@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 690 (FULL RESTORATION: UN-MINIFIED TEMPLATES & ALL FIXES)
+// VERSION: 990 (PART 1 - CONFIG & CALCULATORS)
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
@@ -316,10 +316,10 @@ function initializeControls() {
         header.addEventListener('click', () => { if(typeof toggleAccordion === 'function') toggleAccordion(header.parentElement); });
     });
 
-    populateRegionFilter(0); // FIX: Explicit start with count 0
+    populateRegionFilter(0); 
     populatePersonaFilter();
     renderSOWQuestionnaire();
-    injectControlsFooter(); // NEW: Build footer dynamically
+    injectControlsFooter();
    
     // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
@@ -387,95 +387,74 @@ function initializeControls() {
              if (!container.empty()) {
                 container.insert("button", ":first-child")
                     .attr("id", "stack-builder-btn")
+                    // NO GREEN: Use Blue
                     .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
-                    .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
+                    .html('<i class="fas fa-layer-group mr-2 text-blue-600"></i> Define Customer Stack')
                     .on("click", toggleStackBuilderMode);
              }
         }
     }, 500);
 }
 
-// --- NEW: DYNAMIC FOOTER INJECTION ---
-function injectControlsFooter() {
-    const controls = d3.select("#controls");
+// --- TEAM VIEW MANAGER (HARDENED) ---
+function applyTeamView(team) {
+    const config = TEAM_CONFIG[team];
+    if (!config) return;
+
+    // Force strict display states
+    const tourAccordion = d3.select("#tour-accordion");
+    if(!tourAccordion.empty()) tourAccordion.style("display", config.showTours ? "block" : "none");
+
+    const aiBtn = d3.select("#ai-workflow-builder-btn");
+    if(!aiBtn.empty()) aiBtn.style("display", config.showAiBuilder ? "block" : "none");
     
-    // Clean up any existing footer elements to prevent duplicates
-    controls.select("#reset-view").remove();
-    controls.select("#demo-toggle-btn").remove();
-    controls.select("#version-link").remove();
-    controls.select(".pt-5.mt-5.border-t").remove();
+    const aiGroup = d3.select("#ai-tours");
+    if(!aiGroup.empty()) aiGroup.style("display", config.showAiBuilder ? "block" : "none");
 
-    // Create container
-    const footer = controls.append("div")
-        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
-
-    // 1. Reset Button (Full Width)
-    footer.append("button")
-        .attr("id", "reset-view")
-        .attr("class", "w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
-        .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
-        .on("click", resetView);
-
-    // 2. Presentation Mode Toggle (Full Width)
-    footer.append("button")
-        .attr("id", "demo-toggle-btn")
-        .attr("class", "w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center")
-        .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
-        .on("click", toggleDemoMode);
-
-    // 3. Version Link (Centered)
-    footer.append("div")
-        .attr("class", "text-center")
-        .append("a")
-        .attr("href", "#")
-        .attr("id", "version-link")
-        .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
-        .text("v2.2 Enterprise")
-        .on("click", (e) => {
-            e.preventDefault();
-            const modal = document.getElementById('credits-modal-overlay');
-            if(modal) modal.classList.add('visible');
-        });
-}
-
-// --- DEMO MODE TOGGLE ---
-function toggleDemoMode() {
-    const body = d3.select("body");
-    const isDemo = body.classed("demo-mode-active");
-    const btn = d3.select("#demo-toggle-btn");
-    
-    if (isDemo) {
-        // DISABLE
-        body.classed("demo-mode-active", false);
-        d3.select("#scoping-ui-container").style("display", "block"); 
-        d3.select("#ai-workflow-builder-btn").style("display", "block");
-        d3.select("#manual-workflow-builder-btn").style("display", "block");
-        d3.select("#team-selector").property("disabled", false).style("opacity", 1);
-        
-        // Visuals
-        btn.classed("bg-green-600 hover:bg-green-700 text-white", false)
-           .classed("bg-gray-200 hover:bg-gray-300 text-gray-700", true);
-        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
-        
-        if(typeof showToast === 'function') showToast("Demo Mode Deactivated.");
-    } else {
-        // ENABLE
-        body.classed("demo-mode-active", true);
-        d3.select("#scoping-ui-container").style("display", "none"); 
-        d3.select("#ai-workflow-builder-btn").style("display", "none"); 
-        d3.select("#manual-workflow-builder-btn").style("display", "none"); 
-        
-        // Force Admin view to ensure graph elements are visible
-        applyTeamView('admin'); 
-        d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
-        
-        // Visuals
-        btn.classed("bg-gray-200 hover:bg-gray-300 text-gray-700", false)
-           .classed("bg-green-600 hover:bg-green-700 text-white", true);
-        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
-        
-        if(typeof showToast === 'function') showToast("Demo Mode Active.");
+    const manualBtn = d3.select("#manual-workflow-builder-btn");
+    if (!manualBtn.empty()) {
+        manualBtn.style("display", config.showManualBuilder ? "block" : "none");
     }
+
+    const scopingContainer = d3.select("#scoping-ui-container");
+    if (!scopingContainer.empty()) {
+        if (config.calculatorMode === 'hidden') {
+            scopingContainer.classed("hidden", true).style("display", "none");
+        } else {
+            scopingContainer.classed("hidden", !config.showScoping).style("display", config.showScoping ? "block" : "none");
+            if (typeof app !== 'undefined' && app.state) {
+                app.state.calculatorMode = config.calculatorMode;
+                const isView = config.calculatorMode === 'view';
+                d3.selectAll('.sow-question').property('disabled', isView);
+                ['slider-maturity','slider-data','slider-change','onsite-input'].forEach(id => {
+                    const el = document.getElementById(id); if(el) el.disabled = isView;
+                });
+                calculateScoping(); 
+            }
+        }
+    }
+    
+    const legendAccordion = d3.select("#view-options-accordion");
+    if(!legendAccordion.empty()) legendAccordion.style("display", config.showLegend ? "block" : "none");
+
+    const filterAccordion = d3.select("#filter-accordion");
+    if(!filterAccordion.empty()) filterAccordion.style("display", config.showFilters ? "block" : "none");
+
+    document.querySelectorAll('.accordion-item').forEach(item => {
+        item.classList.remove('active');
+        const content = item.querySelector('.accordion-content');
+        if(content) content.style.maxHeight = 0;
+    });
+    
+    const target = document.getElementById(config.defaultOpen);
+    if (target) {
+        target.classList.add('active');
+        const content = target.querySelector('.accordion-content');
+        if (content) content.style.maxHeight = content.scrollHeight + "px";
+    }
+    
+    // FORCE UPDATE
+    if (typeof updateGraph === 'function') updateGraph(true);
 }
 
 // --- CUSTOM SCOPE MANAGER ---
@@ -492,7 +471,7 @@ function toggleCustomScopeItem(nodeId) {
     calculateScoping();
 }
 
-// --- GAP ANALYSIS V2 MANAGER ---
+// --- STACK BUILDER ---
 function toggleStackBuilderMode() {
     if (d3.select("#region-filter").property("value") === "all") {
         if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
@@ -507,21 +486,21 @@ function toggleStackBuilderMode() {
         // --- ACTIVATE BUILDER MODE ---
         app.interactionState = 'building_stack';
         
-        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
+        // NO GREEN: Use Blue
+        btn.classed("bg-blue-600 hover:bg-blue-700 text-white border-blue-700", true)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
         
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
         
-        // --- NEW: INJECT PRESET DROPDOWN ---
         const presetContainer = d3.select("#packaging-container").insert("div", "#stack-builder-btn + *")
             .attr("id", "stack-preset-container")
-            .attr("class", "mb-4 p-3 bg-green-50 rounded border border-green-200");
+            .attr("class", "mb-4 p-3 bg-blue-50 rounded border border-blue-200");
             
-        presetContainer.append("label").attr("class", "block text-xs font-bold text-green-800 mb-1 uppercase").text("Quick Stack Presets");
+        presetContainer.append("label").attr("class", "block text-xs font-bold text-blue-800 mb-1 uppercase").text("Quick Stack Presets");
         
         const select = presetContainer.append("select")
-            .attr("class", "w-full text-xs border-green-300 rounded p-1.5 focus:ring-green-500 focus:border-green-500 bg-white")
+            .attr("class", "w-full text-xs border-blue-300 rounded p-1.5 focus:ring-blue-500 focus:border-blue-500 bg-white")
             .on("change", function() {
                 const key = this.value;
                 if (key === 'none') return;
@@ -540,18 +519,16 @@ function toggleStackBuilderMode() {
         // --- DEACTIVATE BUILDER MODE ---
         app.interactionState = 'explore';
         
-        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
+        btn.classed("bg-blue-600 hover:bg-blue-700 text-white border-blue-700", false)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
-           .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
+           .html('<i class="fas fa-layer-group mr-2 text-blue-600"></i> Define Customer Stack');
         
-        // Remove Preset Dropdown
         d3.select("#stack-preset-container").remove();
         
-        // Return to normal view
         if (typeof updateGraph === 'function') updateGraph(true);
         if (app.state.myStack.size > 0 && typeof showToast === 'function') {
             showToast("Stack Saved! Select a Package to see Gaps.", 3000);
-            calculateScoping(); // Triggers Gap Check
+            calculateScoping(); 
         }
     }
 }
@@ -581,9 +558,10 @@ function highlightOwnedNodes() {
     
     app.node.transition().duration(200)
         .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
+        // NO GREEN: Use Procore Blue
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(0, 112, 243, 0.6))" : "none") 
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#0070f3" : "#fff") 
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
@@ -620,7 +598,6 @@ function getGapAnalysis() {
 
 // --- SOW V2: COMPLEXITY & T-SHIRT SIZING ---
 function setComplexity(level) {
-    // Only allow if not in Read-Only mode
     if (app.state.calculatorMode === 'view') {
         if(typeof showToast === 'function') showToast("View Only: Complexity cannot be edited.");
         return;
@@ -712,9 +689,7 @@ function renderSOWQuestionnaire() {
     setTimeout(refreshAccordionHeight, 50);
 }
 
-// --- SCOPING CALCULATOR (WITH SMART GAP LOGIC) ---
 function calculateScoping() {
-    // 1. Setup & Permissions
     const isViewOnly = (app.state.calculatorMode === 'view');
     const sliderMaturity = document.getElementById('slider-maturity');
     if (sliderMaturity) {
@@ -726,7 +701,6 @@ function calculateScoping() {
     }
     if (!sliderMaturity) return;
 
-    // 2. Read Risk Factors
     let mat = parseFloat(sliderMaturity.value); 
     let data = parseFloat(document.getElementById('slider-data').value); 
     let change = parseFloat(document.getElementById('slider-change').value);
@@ -743,7 +717,6 @@ function calculateScoping() {
     document.getElementById('val-data').innerText = data.toFixed(1) + "x"; 
     document.getElementById('val-change').innerText = change.toFixed(1) + "x";
 
-    // 3. Determine Base Scope (Gap vs Full)
     let baseHours = 0;
     const gapAnalysis = getGapAnalysis();
     const gapToggle = d3.select("#gap-pricing-toggle-container");
@@ -780,7 +753,6 @@ function calculateScoping() {
         }
     }
 
-    // 4. Add Services & Custom
     const customScopeHours = (app.customScope ? app.customScope.size : 0) * 5; 
     let servicesHours = 0; let servicesCost = 0; let activeModules = []; 
     SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => { 
@@ -790,7 +762,6 @@ function calculateScoping() {
         } 
     });
 
-    // 5. Calculate Final Totals
     const totalHoursRaw = baseHours + customScopeHours + servicesHours;
     
     // Update UI List
@@ -809,7 +780,6 @@ function calculateScoping() {
 
     document.getElementById('base-tools-count').innerText = totalHoursRaw + " Hrs";
     
-    // 6. Multipliers & Cost
     const multiplier = (mat + data + change) / 3;
     const finalWeeks = Math.round(((totalHoursRaw * 1.5) / 3.5) * multiplier);
     document.getElementById('calc-weeks').innerText = finalWeeks;
@@ -826,6 +796,8 @@ function calculateScoping() {
     };
     refreshAccordionHeight();
 }
+
+// --- app-controls.js (PART 2) ---
 
 // --- PRINT SOW (BRANDING + TEMPLATES) ---
 function generateSOWPrintView() {
@@ -859,21 +831,22 @@ function generateSOWPrintView() {
     // --- EXECUTIVE GAP REPORT (NEW) ---
     let gapReportHtml = "";
     if (sow.gapTools && sow.gapTools.length > 0) {
+        // NO GREEN: Used Blue (#2563EB) for Matched
         gapReportHtml = `
         <div class="sow-section" style="page-break-after: avoid;">
             <h3>Platform Maturity Assessment</h3>
             <div style="display: flex; gap: 10px; font-size: 11px;">
                 <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
-                    <div style="background: #4da446; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Current State</div>
-                    <div style="padding: 10px; background: #f0fdf4;">${sow.ownedTools.length > 0 ? sow.ownedTools.join(", ") : "No tools selected."}</div>
+                    <div style="background: #2563EB; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Current State</div>
+                    <div style="padding: 10px; background: #eff6ff;">${sow.ownedTools.length > 0 ? sow.ownedTools.join(", ") : "No tools selected."}</div>
                 </div>
                 <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
-                    <div style="background: #2563EB; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Target Package</div>
-                    <div style="padding: 10px; background: #eff6ff;">${sow.targetTools.length > 0 ? sow.targetTools.join(", ") : "No target package."}</div>
+                    <div style="background: #F36C23; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Target Package</div>
+                    <div style="padding: 10px; background: #fff7ed;">${sow.targetTools.length > 0 ? sow.targetTools.join(", ") : "No target package."}</div>
                 </div>
                 <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
-                    <div style="background: #F36C23; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Critical Gap</div>
-                    <div style="padding: 10px; background: #fff7ed; font-weight: 600; color: #c2410c;">${sow.gapTools.join(", ")}</div>
+                    <div style="background: #757575; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Critical Gap</div>
+                    <div style="padding: 10px; background: #f9fafb; font-weight: 600; color: #1f2937;">${sow.gapTools.join(", ")}</div>
                 </div>
             </div>
         </div>`;
@@ -935,44 +908,6 @@ function generateSOWPrintView() {
     printWindow.document.close();
 }
 
-// --- TEAM VIEW MANAGER ---
-function applyTeamView(team) {
-    const config = TEAM_CONFIG[team];
-    if (!config) return;
-
-    d3.select("#tour-accordion").style("display", config.showTours ? "block" : "none");
-    d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
-    d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none");
-    
-    const manualBtn = d3.select("#manual-workflow-builder-btn");
-    if (!manualBtn.empty()) {
-        manualBtn.style("display", config.showManualBuilder ? "block" : "none");
-    }
-
-    const scopingContainer = d3.select("#scoping-ui-container");
-    if (config.calculatorMode === 'hidden') {
-        scopingContainer.classed("hidden", true);
-    } else {
-        scopingContainer.classed("hidden", !config.showScoping);
-        if (typeof app !== 'undefined' && app.state) {
-            app.state.calculatorMode = config.calculatorMode;
-            calculateScoping(); 
-        }
-    }
-    
-    // LEGEND ACCESS FIX (Explicitly Handle Visibility)
-    d3.select("#view-options-accordion").style("display", config.showLegend ? "block" : "none");
-
-    document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
-    
-    const target = document.getElementById(config.defaultOpen);
-    if (target) {
-        target.classList.add('active');
-        const content = target.querySelector('.accordion-content');
-        if (content) content.style.maxHeight = content.scrollHeight + "px";
-    }
-}
-
 // --- UI HELPER FUNCTIONS ---
 function toggleAllConnections() {
     const checkboxes = d3.selectAll(".legend-checkbox");
@@ -1013,7 +948,8 @@ function populateRegionFilter(retryCount = 0) {
 
     [...regions].sort().forEach(region => {
         let label = region;
-        if (region === "EUR") label = "EMEA";
+        // EUROPE FIX: Map EUR to Europe
+        if (region === "EUR") label = "Europe";
         regionFilter.append("option").attr("value", region).text(label);
     });
 }
@@ -1185,7 +1121,8 @@ function updatePackageAddOns() {
         servicesContainer.classed('hidden', false);
         [...allServices].sort().forEach(service => {
             servicesList.append("div").attr("class", "flex items-center text-gray-700")
-                .html(`<i class="fas fa-check-circle text-green-500 mr-2"></i> ${service}`);
+                // NO GREEN: Use Blue Check
+                .html(`<i class="fas fa-check-circle text-blue-500 mr-2"></i> ${service}`);
         });
     } else {
         servicesContainer.classed('hidden', true);
@@ -1432,7 +1369,7 @@ function injectControlsFooter() {
         .attr("href", "#")
         .attr("id", "version-link")
         .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
-        .text("v2.2 Enterprise")
+        .text("v2.3 Enterprise")
         .on("click", (e) => {
             e.preventDefault();
             const modal = document.getElementById('credits-modal-overlay');
