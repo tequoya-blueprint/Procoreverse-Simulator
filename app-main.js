@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 950 (LOCALIZATION V2.3 + BRANDING FIX)
+// VERSION: 980 (GLOBAL EXCLUSION ENFORCEMENT)
 
-console.log("App Main 950: Localization Loaded...");
+console.log("App Main 980: Exclusion Enforcement Loaded...");
 
 const app = {
     simulation: null,
@@ -82,13 +82,10 @@ function nodeDoubleClicked(event, d) {
 
 // --- 2. LOCALIZATION HELPER ---
 function getLocalizedLabel(nodeId) {
-    // Check if REGIONAL_CONFIG exists (loaded from app-controls.js)
     if (typeof REGIONAL_CONFIG !== 'undefined') {
-        // Get active region directly from the DOM dropdown to ensure sync
         const regionDropdown = document.getElementById("region-filter");
         if (regionDropdown) {
             const regionCode = regionDropdown.value;
-            // Map "EUR" from value to "EMEA" key if needed, or stick to standard keys
             let configKey = "NAMER";
             if (regionCode === "EUR") configKey = "EMEA";
             if (regionCode === "APAC") configKey = "APAC";
@@ -99,22 +96,23 @@ function getLocalizedLabel(nodeId) {
             }
         }
     }
-    return nodeId; // Fallback to ID
+    return nodeId;
 }
 
 // --- 3. SETUP & LAYOUT ---
 function setupCategories() {
-    // STRICT BRAND PALETTE - No fallbacks
+    // STRICT PROCORE BRAND PALETTE
+    // Orange: #F36C23, Earth: #8D6E5B, Metal: #566578, Lumber: #CEC4A1
     const colorMap = { 
-        "Preconstruction": "#E0E0E0",       // Light Grey (Lumber Replacement for distinctness)
+        "Preconstruction": "#CEC4A1",       // Procore Lumber
         "Project Management": "#F36C23",    // Procore Orange
         "Financial Management": "#8D6E63",  // Procore Earth
-        "Workforce Management": "#3a8d8c",  // Procore Teal
-        "Quality & Safety": "#3a8d8c",      // Procore Teal (Shared)
-        "Platform & Core": "#757575",       // Mid Grey
+        "Workforce Management": "#566578",  // Procore Metal (Fixed)
+        "Quality & Safety": "#566578",      // Procore Metal (Fixed)
+        "Platform & Core": "#757575",       // Mid Grey (Neutral)
         "Construction Intelligence": "#4A4A4A", // Dark Grey
         "External Integrations": "#B0B0B0", // Light Grey
-        "Helix": "#607D8B",                 // Procore Metal (Blue-Grey)
+        "Helix": "#607D8B",                 // Blue-Grey
         "Project Execution": "#F36C23",     // Procore Orange
         "Resource Management": "#566578",   // Procore Metal
         "Emails": "#c94b4b",                // Red
@@ -253,7 +251,7 @@ function updateGraph(isFilterChange = true) {
     if (app.interactionState === 'manual_building') return;
 
     // 1. Data Retrieval
-    const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
+    const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set(), excludedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
@@ -265,21 +263,30 @@ function updateGraph(isFilterChange = true) {
 
     // 3. Define "Active Nodes" (The ones meant to be fully visible)
     let activeNodeIds = new Set();
+    
+    // --- V2.3: FILTER OUT EXCLUDED TOOLS FROM "ALL" LIST ---
+    // If a tool is excluded regionally, it is removed from the potential active set.
+    const validNodes = nodes.filter(n => !filters.excludedTools || !filters.excludedTools.has(n.id));
+    
     if (isBuilderMode) {
-        activeNodeIds = new Set(nodes.map(n => n.id)); // All active during build
+        activeNodeIds = new Set(validNodes.map(n => n.id)); 
     } else if (isGapMode) {
+        // Gap Analysis handles its own exclusion logic, but we double-check here
         activeNodeIds = new Set([...gapAnalysis.matched, ...gapAnalysis.gap, ...gapAnalysis.outlier]);
     } else if (isPackageActive) {
         activeNodeIds = filters.packageTools;
     } else {
-        activeNodeIds = new Set(nodes.map(n => n.id)); // All active
+        // Default View: Show all valid nodes for the region
+        activeNodeIds = new Set(validNodes.map(n => n.id));
     }
 
     // 4. STABLE FILTERING: Keep nodes in DOM to prevent layout jumps, but control via opacity.
+    // --- UPDATED: Strict Exclusion Check here removes node from simulation entirely ---
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        return inCategory && inPersona; 
+        const isExcluded = filters.excludedTools && filters.excludedTools.has(d.id);
+        return inCategory && inPersona && !isExcluded; 
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
@@ -299,7 +306,7 @@ function updateGraph(isFilterChange = true) {
             
             // LOCALIZATION: Use Helper to render text
             nodeGroup.append("text")
-                .text(d => getLocalizedLabel(d.id)) // <--- CHANGED HERE
+                .text(d => getLocalizedLabel(d.id))
                 .attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
 
             nodeGroup.each(function(d) {
