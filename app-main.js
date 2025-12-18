@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 980 (LEGEND RESTORED + LINK VISIBILITY FIX + BRAND ALIGNED)
+// VERSION: 920 (FIX: STRICT LINK GOVERNANCE & PHANTOM LINE REMOVAL)
 
-console.log("App Main 980: Loading...");
+console.log("App Main 920: Loading...");
 
 const app = {
     simulation: null,
@@ -25,20 +25,12 @@ const app = {
     selectedNode: null,
     currentTour: null,
     currentStep: -1,
-    apiKey: "AIzaSyCZx6YBE0qwuRd0Jl8HJQ580MUFbANtygA", // Note: Ensure API Key security in prod
+    apiKey: "AIzaSyCZx6YBE0qwuRd0Jl8HJQ580MUFbANtygA",
     state: { showProcoreLedOnly: false, myStack: new Set(), isBuildingStack: false },
     customScope: new Set() 
 };
 
 // --- 1. CORE INTERACTION HANDLERS ---
-
-// BACKGROUND CLICK HANDLER (Fixes Sticky Clicking)
-function handleBackgroundClick(event) {
-    if (app.interactionState === 'selected') {
-        if (typeof resetHighlight === 'function') resetHighlight(true);
-    }
-}
-
 function nodeMouseOver(event, d) {
     if (['tour', 'tour_preview', 'selected', 'manual_building'].includes(app.interactionState)) return;
     if (typeof showTooltip === 'function') showTooltip(event, d);
@@ -52,7 +44,7 @@ function nodeMouseOut(event, d) {
 }
 
 function nodeClicked(event, d) {
-    event.stopPropagation(); 
+    event.stopPropagation();
     
     if (app.interactionState === 'manual_building') { 
         if (typeof handleManualNodeClick === 'function') handleManualNodeClick(d);
@@ -90,21 +82,20 @@ function nodeDoubleClicked(event, d) {
 
 // --- 2. SETUP & LAYOUT ---
 function setupCategories() {
-    // UPDATED BRAND PALETTE (STRICT)
     const colorMap = { 
-        "Preconstruction": "#CEC4A1",        // Lumber
-        "Project Management": "#FF5200",     // Procore Orange
-        "Financial Management": "#8D6E5B",   // Earth
-        "Workforce Management": "#566578",   // Metal
-        "Quality & Safety": "#4A4A4A",       // Charcoal
+        "Preconstruction": "#D1C4E9",        // Lumber
+        "Project Management": "#F36C23",     // Orange
+        "Financial Management": "#8D6E63",   // Earth
+        "Workforce Management": "#3a8d8c",   // Teal
+        "Quality & Safety": "#5B8D7E",       // Darker Teal
         "Platform & Core": "#757575",        // Mid Grey
-        "Construction Intelligence": "#111827", // Black
+        "Construction Intelligence": "#4A4A4A", // Dark Grey
         "External Integrations": "#B0B0B0",  // Light Grey
-        "Helix": "#607D8B",                  // Blue-Grey Metal
-        "Project Execution": "#FF5200",      // Orange
-        "Resource Management": "#566578",    // Metal
+        "Helix": "#607D8B",                  // Metal
+        "Project Execution": "#F36C23",      // Orange
+        "Resource Management": "#607D8B",    // Metal
         "Emails": "#c94b4b",                 // Red
-        "Project Map": "#FF5200"             // Orange
+        "Project Map": "#F36C23"             // Orange
     };
 
     app.categories = {}; 
@@ -126,7 +117,6 @@ function setHexFoci() {
     const cx = app.width / 2;
     const cy = app.height / 2;
     const radius = Math.min(app.width, app.height) * 0.38; 
-    
     const layoutMap = {
         "Platform & Core": { angle: 0, dist: 0 },
         "Preconstruction": { angle: -90, dist: 1 },       
@@ -162,9 +152,6 @@ function forceCluster(alpha) {
 function initializeSimulation() {
     const container = document.getElementById('graph-container');
     if (!container) return; 
-    
-    container.addEventListener('click', handleBackgroundClick);
-
     app.width = container.clientWidth;
     app.height = container.clientHeight;
     app.svg = d3.select("#procore-graph");
@@ -191,8 +178,6 @@ function initializeSimulation() {
 function setupMarkers() {
     const defs = app.svg.select("defs");
     const arrowColors = { "creates": "var(--procore-orange)", "converts-to": "var(--procore-orange)", "pushes-data-to": "var(--procore-orange)", "pulls-data-from": app.defaultArrowColor, "attaches-links": app.defaultArrowColor, "feeds": "#4A4A4A", "syncs": "var(--procore-metal)" };
-    
-    // SAFETY CHECK: Ensure legendData exists
     if (typeof legendData !== 'undefined' && Array.isArray(legendData)) {
         legendData.forEach(type => {
             const color = arrowColors[type.type_id] || app.defaultArrowColor;
@@ -208,6 +193,30 @@ function setupMarkers() {
     defs.append("marker").attr("id", "arrow-candidate").attr("viewBox", "0 -5 10 10").attr("refX", app.arrowRefX).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#2563EB");
 }
 
+function populateLegend() {
+    const legendContainer = d3.select("#connection-legend");
+    legendContainer.html(""); 
+    if (typeof legendData === 'undefined' || !Array.isArray(legendData)) return;
+
+    const legendSVGs = {
+        "creates": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='4,3'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='8,4'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "syncs": "<svg width='24' height='10'><path d='M3,2 L9,5 L3,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path><line x1='6' y1='5' x2='18' y2='5' stroke='var(--procore-metal)' stroke-width='2'></line><path d='M21,2 L15,5 L21,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path></svg>",
+        "pushes-data-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
+        "pulls-data-from": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='2,4'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
+        "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='1,3'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
+        "feeds": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#4A4A4A' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='#4A4A4A' stroke-width='2' fill='none'></path></svg>"
+    };
+    
+    legendData.forEach(type => {
+        const svg = legendSVGs[type.type_id] || "";
+        const item = legendContainer.append("label").attr("class", "flex items-center mb-3 cursor-pointer");
+        item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id).attr("class", "form-checkbox h-4 w-4 text-orange-600 legend-checkbox mr-3").on("change", () => updateGraph(true));
+        item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
+        item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
+    });
+}
+
 function ticked() {
     if (app.simulation && app.simulation.alpha() > 0.05) {
         app.simulation.nodes().forEach(forceCluster(app.simulation.alpha()));
@@ -218,48 +227,57 @@ function ticked() {
 
 function updateGraph(isFilterChange = true) {
     if (isFilterChange && app.currentTour && typeof stopTour === 'function') stopTour();
-    
     if (app.interactionState === 'manual_building') return;
 
+    // 1. Data Retrieval
     const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
-    // GAP ANALYSIS
+    // 2. Logic Check: Gap Mode & Active Package
     const gapAnalysis = (typeof getGapAnalysis === 'function') ? getGapAnalysis() : { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set() };
     const isGapMode = gapAnalysis.owned.size > 0 && (filters.packageTools && filters.packageTools.size > 0);
     const isBuilderMode = app.state && app.state.isBuildingStack;
+    const isPackageActive = filters.packageTools && filters.packageTools.size > 0;
 
-    // Filter Nodes
+    // 3. Define "Active Nodes" (The ones meant to be fully visible)
+    // If a package is selected (but no stack), the package tools are Active.
+    // If Gap Mode, Active = Matched + Gap + Outlier.
+    // If Default, Active = All.
+    let activeNodeIds = new Set();
+    if (isBuilderMode) {
+        activeNodeIds = new Set(nodes.map(n => n.id)); // All active during build
+    } else if (isGapMode) {
+        activeNodeIds = new Set([...gapAnalysis.matched, ...gapAnalysis.gap, ...gapAnalysis.outlier]);
+    } else if (isPackageActive) {
+        activeNodeIds = filters.packageTools;
+    } else {
+        activeNodeIds = new Set(nodes.map(n => n.id)); // All active
+    }
+
+    // 4. STABLE FILTERING: Keep nodes in DOM to prevent layout jumps, but control via opacity.
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        return inCategory && inPersona;
+        return inCategory && inPersona; 
+        // NOTE: We do NOT filter by 'inPackage' here anymore. We handle it in styling below.
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
-    
-    // FIX: Ensure links are only filtered by connection type and endpoint visibility
-    const filteredLinks = allLinks.filter(d => {
-        const s = d.source.id || d.source;
-        const t = d.target.id || d.target;
-        return nodeIds.has(s) && nodeIds.has(t) && filters.connectionTypes.has(d.type);
-    }).map(d => ({...d})); 
+    // Filter links: ensure endpoints exist
+    const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
-    // D3 Join & Update
+    // 5. D3 Update - Nodes
     app.node = app.node.data(filteredNodes, d => d.id).join(
         enter => {
             const nodeGroup = enter.append("g").attr("class", "node")
-                .on("mouseenter", nodeMouseOver)
-                .on("mouseleave", nodeMouseOut)
-                .on("click", nodeClicked)
-                .on("dblclick", nodeDoubleClicked)
+                .on("mouseenter", nodeMouseOver).on("mouseleave", nodeMouseOut)
+                .on("click", nodeClicked).on("dblclick", nodeDoubleClicked)
                 .call(drag(app.simulation)); 
 
             nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
             nodeGroup.append("text").text(d => d.id).attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
-            
             nodeGroup.each(function(d) {
                 const g = d3.select(this);
                 let badgeOffset = 14;
@@ -271,15 +289,14 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
+            // Builder Mode Override
             if (isBuilderMode) {
                 update.transition().duration(500)
                     .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
-                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(0, 112, 243, 0.6))" : "none");
-                
+                    .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none");
                 update.select("path").transition().duration(500)
-                    .style("stroke", d => app.state.myStack.has(d.id) ? "#0070f3" : "#ffffff") 
+                    .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#ffffff")
                     .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 2);
-                    
                 update.select(".procore-led-ring").attr("stroke-opacity", 0);
                 return update;
             }
@@ -288,51 +305,42 @@ function updateGraph(isFilterChange = true) {
 
             update.transition().duration(500)
             .style("opacity", d => {
-                if (filters.packageTools && filters.packageTools.size > 0) {
-                     const isRelevant = filters.packageTools.has(d.id) || (gapAnalysis.outlier && gapAnalysis.outlier.has(d.id));
-                     if (!isRelevant) return 0.1; 
-                }
-
-                if (isGapMode) {
-                    if (gapAnalysis.matched.has(d.id)) return 1.0; 
-                    if (gapAnalysis.gap.has(d.id)) return 1.0;     
-                    if (gapAnalysis.outlier.has(d.id)) return 1.0; 
-                    return 0.1; 
-                }
-                
-                if (filters.showProcoreLed) {
-                    if (app.customScope && app.customScope.has(d.id)) return 1.0;
-                    if (filters.procoreLedTools.has(d.id)) return 1.0;
-                    return 0.2; 
-                }
-                return 1.0;
+                if (activeNodeIds.has(d.id)) return 1.0;
+                // Ghost Logic: If not active, but in graph, dim it.
+                return 0.15; 
             })
             .style("filter", d => {
                 if (isGapMode) {
-                    if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 6px rgba(0, 112, 243, 0.6))"; 
+                    if (gapAnalysis.matched.has(d.id)) return "drop-shadow(0 0 4px rgba(77, 164, 70, 0.6))"; 
                     if (gapAnalysis.gap.has(d.id)) return "drop-shadow(0 0 12px rgba(243, 108, 35, 1.0))"; 
                     if (gapAnalysis.outlier.has(d.id)) return "drop-shadow(0 0 4px rgba(86, 101, 120, 0.6))"; 
+                }
+                if (filters.showProcoreLed) {
+                    if (filters.procoreLedTools.has(d.id)) return "drop-shadow(0 0 5px rgba(243, 108, 35, 0.5))"; 
+                    if (app.customScope && app.customScope.has(d.id)) return "drop-shadow(0 0 5px rgba(0, 150, 255, 0.5))"; 
                 }
                 return null;
             });
 
-            update.select("path")
-                .transition().duration(500)
+            update.select("path").transition().duration(500)
                 .style("stroke", d => {
                     if (isGapMode) {
-                        if (gapAnalysis.matched.has(d.id)) return "#0070f3"; 
+                        if (gapAnalysis.matched.has(d.id)) return "#4da446"; 
                         if (gapAnalysis.gap.has(d.id)) return "#F36C23";   
                         if (gapAnalysis.outlier.has(d.id)) return "#566578"; 
                     }
                     return "#ffffff"; 
+                })
+                .style("stroke-width", d => {
+                    if (isGapMode && gapAnalysis.gap.has(d.id)) return 4;
+                    return 2;
                 });
             
             update.select(".procore-led-ring").transition().duration(300)
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    if (filters.packageTools && filters.packageTools.size > 0 && !filters.packageTools.has(d.id) && !gapAnalysis.outlier.has(d.id)) return 0;
-                    if (isGapMode) return 0; 
+                    if (isGapMode || !activeNodeIds.has(d.id)) return 0; // Hide ring if ghost or gap mode
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
@@ -340,6 +348,7 @@ function updateGraph(isFilterChange = true) {
         exit => exit.transition().duration(300).style("opacity", 0).remove()
     );
 
+    // 6. D3 Update - Links with PHANTOM LINE FIX
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
         .style("pointer-events", "none") 
@@ -378,61 +387,39 @@ function updateGraph(isFilterChange = true) {
         });
 
     app.link.transition().duration(500).style("opacity", d => {
-        // FIX: Only ghost links if their nodes are significantly ghosted (opacity < 0.2)
-        // We can check this by seeing if the source/target IDs are in the "active" filter set.
+        if (isBuilderMode) return 0.15;
         
-        if (filters.packageTools && filters.packageTools.size > 0) {
-            const s = d.source.id || d.source;
-            const t = d.target.id || d.target;
-            const sVisible = filters.packageTools.has(s) || (gapAnalysis.outlier && gapAnalysis.outlier.has(s));
-            const tVisible = filters.packageTools.has(t) || (gapAnalysis.outlier && gapAnalysis.outlier.has(t));
-            if (!sVisible || !tVisible) return 0.05; // Ghost
+        const s = d.source.id || d.source;
+        const t = d.target.id || d.target;
+        
+        // --- STRICT VISIBILITY GOVERNANCE ---
+        const sActive = activeNodeIds.has(s);
+        const tActive = activeNodeIds.has(t);
+
+        // 1. Both Visible (Active)
+        if (sActive && tActive) {
+            // Slight dim if in "Procore Led" mode and not part of it
+            if (filters.showProcoreLed && !isGapMode) {
+                const sLed = filters.procoreLedTools.has(s) || app.customScope.has(s);
+                const tLed = filters.procoreLedTools.has(t) || app.customScope.has(t);
+                return (sLed && tLed) ? 0.6 : 0.05;
+            }
+            return 0.6;
         }
 
-        if (isBuilderMode) return 0.15;
-        if (isGapMode) return 0.6; 
+        // 2. Both Hidden (Ghost -> Ghost)
+        if (!sActive && !tActive) return 0; // COMPLETELY HIDDEN
         
-        if (filters.showProcoreLed) {
-            const s = d.source.id || d.source;
-            const t = d.target.id || d.target;
-            const activeS = filters.procoreLedTools.has(s) || app.customScope.has(s);
-            const activeT = filters.procoreLedTools.has(t) || app.customScope.has(t);
-            return (activeS && activeT) ? 0.6 : 0.05;
-        }
-        return 0.6; // Default visible opacity
+        // 3. One Visible / One Hidden (Ghost Connection)
+        // User requested removal of phantom lines. We hide these too.
+        return 0; 
     });
 
     app.nodeG.raise(); 
-
     app.simulation.nodes(filteredNodes);
     app.simulation.force("link").links(filteredLinks);
     app.simulation.alpha(1).restart();
     if(typeof updateTourDropdown === 'function') updateTourDropdown(filters.packageTools); 
-}
-
-// FIX: POPULATE LEGEND (RE-ADDED TO ENSURE IT RENDERS)
-function populateLegend() {
-    const legendContainer = d3.select("#connection-legend");
-    legendContainer.html(""); 
-    if (typeof legendData === 'undefined' || !Array.isArray(legendData)) return;
-
-    const legendSVGs = {
-        "creates": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='4,3'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
-        "converts-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2' stroke-dasharray='8,4'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
-        "syncs": "<svg width='24' height='10'><path d='M3,2 L9,5 L3,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path><line x1='6' y1='5' x2='18' y2='5' stroke='var(--procore-metal)' stroke-width='2'></line><path d='M21,2 L15,5 L21,8' stroke='var(--procore-metal)' stroke-width='2' fill='none'></path></svg>",
-        "pushes-data-to": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='var(--procore-orange)' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='var(--procore-orange)' stroke-width='2' fill='none'></path></svg>",
-        "pulls-data-from": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='2,4'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
-        "attaches-links": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#a0a0a0' stroke-width='2' stroke-dasharray='1,3'></line><path d='M17,2 L23,5 L17,8' stroke='#a0a0a0' stroke-width='2' fill='none'></path></svg>",
-        "feeds": "<svg width='24' height='10'><line x1='0' y1='5' x2='20' y2='5' stroke='#4A4A4A' stroke-width='2'></line><path d='M17,2 L23,5 L17,8' stroke='#4A4A4A' stroke-width='2' fill='none'></path></svg>"
-    };
-    
-    legendData.forEach(type => {
-        const svg = legendSVGs[type.type_id] || "";
-        const item = legendContainer.append("label").attr("class", "flex items-center mb-3 cursor-pointer");
-        item.append("input").attr("type", "checkbox").attr("checked", true).attr("value", type.type_id).attr("class", "form-checkbox h-4 w-4 text-orange-600 legend-checkbox mr-3").on("change", () => updateGraph(true));
-        item.append("div").attr("class", "flex-shrink-0 w-8").html(svg);
-        item.append("div").attr("class", "ml-2").html(`<span class="font-semibold">${type.label}</span><span class="block text-xs text-gray-500">${type.description}</span>`);
-    });
 }
 
 function addBadge(group, iconCode, color, x, y, tooltipText, d) {
@@ -443,7 +430,6 @@ function addBadge(group, iconCode, color, x, y, tooltipText, d) {
          .on("mouseout", function(e) { e.stopPropagation(); d3.select("#tooltip").classed("visible", false); });
     badge.on("click", function(e) { nodeClicked(e, d); });
 }
-
 function addEmojiBadge(group, emoji, x, y, tooltipText, d) {
     const badge = group.append("g").attr("transform", `translate(${x}, ${y})`).style("cursor", "help").style("pointer-events", "all");
     badge.append("rect").attr("x", -6).attr("y", -6).attr("width", 12).attr("height", 12).attr("fill", "transparent");
