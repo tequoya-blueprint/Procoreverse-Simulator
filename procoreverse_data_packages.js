@@ -11,7 +11,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
@@ -19,7 +19,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist", "Training Center", "Premier Support Bronze"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
@@ -27,7 +27,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
@@ -35,7 +35,7 @@ const packagingData = [
     "tools": ["Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", "Project Status Snapshots"],
     "procore_led_tools": ["Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (32 hrs.)"]
   },
   {
@@ -43,7 +43,7 @@ const packagingData = [
     "tools": ["Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", "Project Status Snapshots", "Estimating", "Bid Board", "Drawings", "Insights", "Analytics"],
     "procore_led_tools": ["Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", "Estimating", "Analytics"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
@@ -59,7 +59,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "T&M Tickets"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "T&M Tickets"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
@@ -67,7 +67,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "T&M Tickets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "T&M Tickets", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist", "Training Center", "Premier Support Bronze"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
@@ -75,7 +75,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "T&M Tickets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
@@ -83,7 +83,7 @@ const packagingData = [
     "tools": ["Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", "Project Status Snapshots"],
     "procore_led_tools": ["Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (32 hrs.)"]
   },
   {
@@ -91,7 +91,7 @@ const packagingData = [
     "tools": ["Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", "Project Status Snapshots", "Estimating", "Bid Board", "Drawings", "Insights", "Analytics"],
     "procore_led_tools": ["Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", "Estimating", "Analytics"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
@@ -107,7 +107,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (25 hrs.)"]
   },
   {
@@ -115,7 +115,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding"],
     "included_features": ["Assist", "Training Center", "Premier Support Bronze"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (44 hrs.)"]
   },
   {
@@ -123,7 +123,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Submittals", "RFIs", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Punch List", "Inspections", "Incidents", "Bidding", "Coordination Issues", "Models", "Analytics", "Insights"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Timesheets", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Models", "Coordination Issues", "Analytics"],
     "included_features": ["Assist", "Training Center"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (64 hrs.)"]
   },
   {
@@ -131,7 +131,7 @@ const packagingData = [
     "tools": ["Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", "Project Status Snapshots"],
     "procore_led_tools": ["Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (32 hrs.)"]
   },
   {
@@ -139,7 +139,7 @@ const packagingData = [
     "tools": ["Documents", "Directory", "Tasks", "Conversations", "Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", "Project Status Snapshots", "Estimating", "Bid Board", "Drawings", "Insights", "Analytics"],
     "procore_led_tools": ["Prime Contracts", "Commitments", "Budget", "Change Events", "Invoicing", "Direct Costs", "Estimating", "Analytics"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
@@ -167,7 +167,7 @@ const packagingData = [
     "tools": ["Directory", "Drawings", "Specifications", "Photos", "Observations", "Daily Log", "Emails", "Forms", "Equipment", "Timesheets", "Punch List", "Inspections", "Incidents", "Instructions", "Submittals", "RFIs", "Project Map", "Transmittals", "Schedule", "Correspondence", "Action Plans", "Meetings", "Bidding"],
     "procore_led_tools": ["Drawings", "RFIs", "Submittals", "Observations", "Daily Log", "Schedule", "Correspondence", "Action Plans", "Punch List", "Inspections", "Bidding", "Analytics", "Equipment", "Timesheets", "Incidents", "Emails"],
     "included_features": ["Assist"],
-    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Systems"],
+    "available_add-ons": ["Procore Pay", "Resource Tracking", "Resource Planning", "Prequalifications", "ERP Connectors"],
     "available_services": ["Professional Services Implementation (52 hrs.)"]
   },
   {
