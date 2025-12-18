@@ -6,7 +6,7 @@ const nodesData = [
 
   // --- [Group: External Integrations] ---
   {
-    "id": "ERP Systems",
+    "id": "ERP Connectors",
     "group": "External Integrations",
     "level": "company",
     "description": "Connection to external ERP or accounting system (e.g., Sage, Viewpoint).",
