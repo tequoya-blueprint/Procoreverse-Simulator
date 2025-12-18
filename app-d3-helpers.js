@@ -1,5 +1,5 @@
 // --- app-d3-helpers.js ---
-// VERSION: 1000 (SMART HIGHLIGHT & PHANTOM LINE FIX)
+// VERSION: 600 (COMPLETE: SPOTLIGHT, DRAG, & HIGHLIGHT HELPERS)
 
 // 1. SHAPE GENERATOR
 function generateHexagonPath(size) {
@@ -36,62 +36,21 @@ function drag(simulation) {
         .on("end", dragended);
 }
 
-// 3. SMART HIGHLIGHT (Phantom Line Fix)
+// 3. STANDARD HIGHLIGHT (One Node + Neighbors)
 function applyHighlight(d) {
     if (!app.simulation) return;
     
-    // --- STEP 1: Determine what is currently visible ---
-    // If a package is selected, we must NOT highlight lines to tools outside that package.
-    let isNeighborValid = (id) => true; // Default: All neighbors valid
-    
-    if (typeof getActiveFilters === 'function') {
-        const filters = getActiveFilters();
-        
-        // 1. Check Regional Exclusions (Strongest)
-        const exclusions = filters.excludedTools || new Set();
-        
-        // 2. Check Package Scope (if active)
-        const packageTools = filters.packageTools;
-        const hasPackage = packageTools && packageTools.size > 0;
-        
-        // 3. Check Custom Stack (Gap Analysis)
-        const stack = (app.state && app.state.myStack) ? app.state.myStack : new Set();
-        
-        isNeighborValid = (id) => {
-            // A. Is it excluded regionally?
-            if (exclusions.has(id)) return false;
-            
-            // B. If Package is active, is it in Package OR in my Custom Stack?
-            if (hasPackage) {
-                if (packageTools.has(id) || stack.has(id)) return true;
-                return false; // Ghost node - don't highlight connection
-            }
-            
-            return true; // No package selected, all non-excluded are valid
-        };
-    }
-
     const connectedNodeIds = new Set([d.id]);
     const connectedLinks = new Set();
     
     app.simulation.force("link").links().forEach(l => {
-        const s = l.source.id || l.source;
-        const t = l.target.id || l.target;
-        
-        if (s === d.id) {
-            if (isNeighborValid(t)) { // CRITICAL CHECK
-                connectedNodeIds.add(t);
-                connectedLinks.add(l);
-            }
-        } else if (t === d.id) {
-            if (isNeighborValid(s)) { // CRITICAL CHECK
-                connectedNodeIds.add(s);
-                connectedLinks.add(l);
-            }
+        if (l.source.id === d.id || l.target.id === d.id) {
+            connectedNodeIds.add(l.source.id);
+            connectedNodeIds.add(l.target.id);
+            connectedLinks.add(l);
         }
     });
 
-    // --- STEP 2: Apply Styles ---
     app.node.transition().duration(300)
         .style("opacity", n => connectedNodeIds.has(n.id) ? 1 : 0.1);
         
@@ -151,22 +110,16 @@ function resetHighlight(hidePanel = true) {
     // Reset Links
     if (app.link) {
         app.link.classed("highlighted", false).classed("pulsing", false);
-        
-        // Let updateGraph handle the opacity if possible, otherwise reset to default
-        if (typeof updateGraph === 'function') {
-             // updateGraph handles link opacity via filtering
-        } else {
-            app.link.transition().duration(400)
-                .style("stroke-opacity", 0.6)
-                .style("stroke-width", 2)
-                .attr("marker-end", d => {
-                    if (typeof legendData !== 'undefined') {
-                         const legend = legendData.find(l => l.type_id === d.type);
-                         if (legend && legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
-                    }
-                    return null;
-                });
-        }
+        app.link.transition().duration(400)
+            .style("stroke-opacity", 0.6)
+            .style("stroke-width", 2)
+            .attr("marker-end", d => {
+                if (typeof legendData !== 'undefined') {
+                     const legend = legendData.find(l => l.type_id === d.type);
+                     if (legend && legend.visual_style.includes("one arrow")) return `url(#arrow-${d.type})`;
+                }
+                return null;
+            });
     }
 
     // Close Panel
