@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 900 (CURRENCY LOGIC + REGION LABEL UPDATE)
+// VERSION: 980 (GLOBAL EXCLUSIONS ENFORCED)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
@@ -45,7 +45,7 @@ const REGIONAL_CONFIG = {
         }
     },
     "NAMER": {
-        "label": "NAMER (North America)", // <--- UPDATED LABEL
+        "label": "NAMER (North America)", 
         "legal_entity": "Procore Technologies, Inc.",
         "jurisdiction": "Delaware",
         "currency": "USD",
@@ -1179,6 +1179,13 @@ function getActiveFilters() {
     let packageTools = null;
     let procoreLedTools = new Set();
     
+    // --- V2.3 GLOBAL EXCLUSION EXPORT ---
+    // This allows the main graph loop to access exclusions without needing selected packages
+    let regionExclusions = [];
+    if (region === 'EUR') regionExclusions = REGIONAL_CONFIG["EMEA"].exclusions;
+    else if (region === 'APAC') regionExclusions = REGIONAL_CONFIG["APAC"].exclusions;
+    // ------------------------------------
+
     if (region !== 'all' && audience !== 'all') {
         const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
         if (selectedPackageNames.length > 0) {
@@ -1190,14 +1197,24 @@ function getActiveFilters() {
                     p.package_name === pkgName
                 );
                 if (pkg) {
-                    pkg.tools.forEach(t => packageTools.add(t));
+                    pkg.tools.forEach(t => {
+                        // Apply Exclusion Logic to Core Tools
+                        if (!regionExclusions.includes(t)) {
+                            packageTools.add(t);
+                        }
+                    });
                     if (pkg.procore_led_tools) {
                         pkg.procore_led_tools.forEach(t => procoreLedTools.add(t));
                     }
                 }
             });
             const selectedAddOns = d3.selectAll("#add-ons-checkboxes input:checked").nodes().map(el => el.value);
-            selectedAddOns.forEach(addOn => packageTools.add(addOn));
+            // Add-ons are already filtered in the UI, but double check here
+            selectedAddOns.forEach(addOn => {
+                if (!regionExclusions.includes(addOn)) {
+                    packageTools.add(addOn);
+                }
+            });
         }
     }
 
@@ -1208,7 +1225,8 @@ function getActiveFilters() {
         packageTools: packageTools,
         procoreLedTools: procoreLedTools,
         connectionTypes: new Set(activeConnectionTypes),
-        showProcoreLed: showProcoreLed
+        showProcoreLed: showProcoreLed,
+        excludedTools: new Set(regionExclusions) // EXPORTED EXCLUSIONS
     };
 }
 
@@ -1368,4 +1386,3 @@ function updateActivePackageState() {
         app.currentPackage = null;
     }
 }
-// --- app-controls.js END ---
