@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 920 (FIX: STRICT LINK GOVERNANCE & PHANTOM LINE REMOVAL)
+// VERSION: 950 (LOCALIZATION V2.3 + BRANDING FIX)
 
-console.log("App Main 920: Loading...");
+console.log("App Main 950: Localization Loaded...");
 
 const app = {
     simulation: null,
@@ -80,22 +80,45 @@ function nodeDoubleClicked(event, d) {
     event.stopPropagation();
 }
 
-// --- 2. SETUP & LAYOUT ---
+// --- 2. LOCALIZATION HELPER ---
+function getLocalizedLabel(nodeId) {
+    // Check if REGIONAL_CONFIG exists (loaded from app-controls.js)
+    if (typeof REGIONAL_CONFIG !== 'undefined') {
+        // Get active region directly from the DOM dropdown to ensure sync
+        const regionDropdown = document.getElementById("region-filter");
+        if (regionDropdown) {
+            const regionCode = regionDropdown.value;
+            // Map "EUR" from value to "EMEA" key if needed, or stick to standard keys
+            let configKey = "NAMER";
+            if (regionCode === "EUR") configKey = "EMEA";
+            if (regionCode === "APAC") configKey = "APAC";
+            
+            const config = REGIONAL_CONFIG[configKey];
+            if (config && config.dictionary && config.dictionary[nodeId]) {
+                return config.dictionary[nodeId];
+            }
+        }
+    }
+    return nodeId; // Fallback to ID
+}
+
+// --- 3. SETUP & LAYOUT ---
 function setupCategories() {
+    // STRICT BRAND PALETTE - No fallbacks
     const colorMap = { 
-        "Preconstruction": "#D1C4E9",        // Lumber
-        "Project Management": "#F36C23",     // Orange
-        "Financial Management": "#8D6E63",   // Earth
-        "Workforce Management": "#3a8d8c",   // Teal
-        "Quality & Safety": "#5B8D7E",       // Darker Teal
-        "Platform & Core": "#757575",        // Mid Grey
+        "Preconstruction": "#E0E0E0",       // Light Grey (Lumber Replacement for distinctness)
+        "Project Management": "#F36C23",    // Procore Orange
+        "Financial Management": "#8D6E63",  // Procore Earth
+        "Workforce Management": "#3a8d8c",  // Procore Teal
+        "Quality & Safety": "#3a8d8c",      // Procore Teal (Shared)
+        "Platform & Core": "#757575",       // Mid Grey
         "Construction Intelligence": "#4A4A4A", // Dark Grey
-        "External Integrations": "#B0B0B0",  // Light Grey
-        "Helix": "#607D8B",                  // Metal
-        "Project Execution": "#F36C23",      // Orange
-        "Resource Management": "#607D8B",    // Metal
-        "Emails": "#c94b4b",                 // Red
-        "Project Map": "#F36C23"             // Orange
+        "External Integrations": "#B0B0B0", // Light Grey
+        "Helix": "#607D8B",                 // Procore Metal (Blue-Grey)
+        "Project Execution": "#F36C23",     // Procore Orange
+        "Resource Management": "#566578",   // Procore Metal
+        "Emails": "#c94b4b",                // Red
+        "Project Map": "#F36C23"            // Orange
     };
 
     app.categories = {}; 
@@ -241,9 +264,6 @@ function updateGraph(isFilterChange = true) {
     const isPackageActive = filters.packageTools && filters.packageTools.size > 0;
 
     // 3. Define "Active Nodes" (The ones meant to be fully visible)
-    // If a package is selected (but no stack), the package tools are Active.
-    // If Gap Mode, Active = Matched + Gap + Outlier.
-    // If Default, Active = All.
     let activeNodeIds = new Set();
     if (isBuilderMode) {
         activeNodeIds = new Set(nodes.map(n => n.id)); // All active during build
@@ -257,24 +277,9 @@ function updateGraph(isFilterChange = true) {
 
     // 4. STABLE FILTERING: Keep nodes in DOM to prevent layout jumps, but control via opacity.
     const filteredNodes = nodes.filter(d => {
-        // ... existing category/persona logic ...
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        
-        // --- NEW: REGIONAL EXCLUSION ---
-        const currentRegion = d3.select("#region-filter").property("value");
-        if (typeof REGIONAL_CONFIG !== 'undefined' && REGIONAL_CONFIG[currentRegion]) {
-            const exclusions = REGIONAL_CONFIG[currentRegion].exclusions;
-            if (exclusions.includes(d.id)) return false; // HIDE "Procore Pay" in EMEA
-        }
-        // -------------------------------
-
-        let inPackage = true;
-        // ... rest of existing logic ...
-        if (isBuilderMode) inPackage = true; 
-        else inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
-        
-        return inCategory && inPersona && inPackage;
+        return inCategory && inPersona; 
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
@@ -291,18 +296,12 @@ function updateGraph(isFilterChange = true) {
 
             nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
+            
+            // LOCALIZATION: Use Helper to render text
             nodeGroup.append("text")
-                .text(d => {
-                    // 1. Get Current Region from Filter
-                    const currentRegion = d3.select("#region-filter").property("value");
-                    // 2. Check Dictionary
-                    if (typeof REGIONAL_CONFIG !== 'undefined' && REGIONAL_CONFIG[currentRegion]) {
-                        const dict = REGIONAL_CONFIG[currentRegion].dictionary;
-                        if (dict && dict[d.id]) return dict[d.id]; // Return "Tendering" instead of "Bidding"
-                    }
-                    return d.id; // Fallback to "Bidding"
-                })
+                .text(d => getLocalizedLabel(d.id)) // <--- CHANGED HERE
                 .attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
+
             nodeGroup.each(function(d) {
                 const g = d3.select(this);
                 let badgeOffset = 14;
@@ -346,6 +345,9 @@ function updateGraph(isFilterChange = true) {
                 }
                 return null;
             });
+            
+            // DYNAMIC LOCALIZATION UPDATE (On Filter Change)
+            update.select("text").text(d => getLocalizedLabel(d.id));
 
             update.select("path").transition().duration(500)
                 .style("stroke", d => {
