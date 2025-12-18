@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 980 (GLOBAL EXCLUSIONS ENFORCED)
+// VERSION: 1000 (REGIONAL PRICING + CURRENCY SYMBOLS)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
@@ -8,9 +8,19 @@ const REGIONAL_CONFIG = {
         "legal_entity": "Procore Technologies, Inc.",
         "jurisdiction": "England",
         "currency": "GBP",
+        "symbol": "£",
         "tax_term": "VAT",
         "data_protection": "GDPR Compliant",
         "exclusions": ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"],
+        "pricing": {
+            "hourly_rate": 190,
+            "onsite": 5610,
+            "sop": 26200,
+            "consulting": 35000,
+            "admin": 26200,
+            "integration": 4700,
+            "custom": 7500
+        },
         "dictionary": {
             "Bidding": "Tendering",
             "Change Events": "Variations",
@@ -28,9 +38,19 @@ const REGIONAL_CONFIG = {
         "legal_entity": "Procore Technologies, Inc.",
         "jurisdiction": "Australia",
         "currency": "AUD",
+        "symbol": "$",
         "tax_term": "GST",
         "data_protection": "Standard Privacy",
         "exclusions": ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"],
+        "pricing": {
+            "hourly_rate": 380,
+            "onsite": 11350,
+            "sop": 53000,
+            "consulting": 75650,
+            "admin": 15150,
+            "integration": 9500,
+            "custom": 15150
+        },
         "dictionary": {
             "Bidding": "Tendering",
             "Change Events": "Variations",
@@ -49,9 +69,19 @@ const REGIONAL_CONFIG = {
         "legal_entity": "Procore Technologies, Inc.",
         "jurisdiction": "Delaware",
         "currency": "USD",
+        "symbol": "$",
         "tax_term": "Tax",
         "data_protection": "Standard",
         "exclusions": [],
+        "pricing": {
+            "hourly_rate": 250,
+            "onsite": 7500,
+            "sop": 35000,
+            "consulting": 100000,
+            "admin": 35000,
+            "integration": 6250,
+            "custom": 10000
+        },
         "dictionary": {}
     }
 };
@@ -134,12 +164,13 @@ const STACK_PRESETS = {
 };
 
 // --- SOW QUESTIONNAIRE CONFIGURATION ---
+// Note: Costs are now dynamic placeholders. Logic is in calculateScoping.
 const SOW_QUESTIONS = [
-    { id: "q-sop", label: "SOP Development", type: "cost", hrs: 140, cost: 35000, module: "MOD_SOP" },
-    { id: "q-consulting", label: "Virtual Consulting", type: "cost", hrs: 400, cost: 100000, module: "MOD_CONSULTING" },
-    { id: "q-admin", label: "Project Admin", type: "cost", hrs: 140, cost: 35000, module: "MOD_ADMIN" },
-    { id: "q-integration", label: "Integration Consulting", type: "cost", hrs: 25, cost: 6250, module: "MOD_INTEGRATION" },
-    { id: "q-custom", label: "Custom Solutions", type: "cost", hrs: 40, cost: 10000, module: "MOD_CUSTOM" },
+    { id: "q-sop", label: "SOP Development", type: "cost", key: "sop", module: "MOD_SOP" },
+    { id: "q-consulting", label: "Virtual Consulting", type: "cost", key: "consulting", module: "MOD_CONSULTING" },
+    { id: "q-admin", label: "Project Admin", type: "cost", key: "admin", module: "MOD_ADMIN" },
+    { id: "q-integration", label: "Integration Consulting", type: "cost", key: "integration", module: "MOD_INTEGRATION" },
+    { id: "q-custom", label: "Custom Solutions", type: "cost", key: "custom", module: "MOD_CUSTOM" },
     
     // Risk Factors (Modifiers)
     { id: "q-financials", label: "Complex Finance", type: "risk", factor: 0.3, target: "data" },
@@ -247,7 +278,7 @@ function initializeControls() {
 
     populateRegionFilter(0); 
     populatePersonaFilter();
-    renderSOWQuestionnaire();
+    renderSOWQuestionnaire(); // Initial render (NAMER)
     injectControlsFooter(); 
    
     // Filter Listeners
@@ -572,6 +603,7 @@ function setComplexity(level) {
     }
 }
 
+// --- UPDATED: RENDER QUESTIONNAIRE (DYNAMIC REGIONAL PRICING) ---
 function renderSOWQuestionnaire() {
     const revenueContainer = d3.select("#revenue-container");
     if(revenueContainer.empty()) return;
@@ -579,6 +611,13 @@ function renderSOWQuestionnaire() {
     revenueContainer.attr("class", "block w-full pt-2 border-t border-gray-200");
     revenueContainer.html("");
     
+    // 1. Get Active Region Config & Symbol
+    const region = d3.select("#region-filter").property('value');
+    const configKey = (region === 'EUR') ? 'EMEA' : (region === 'all' ? 'NAMER' : region);
+    const conf = REGIONAL_CONFIG[configKey] || REGIONAL_CONFIG["NAMER"];
+    const sym = conf.symbol || "$";
+    const pricing = conf.pricing;
+
     // --- GAP PRICING TOGGLE (DYNAMIC) ---
     revenueContainer.append("div")
         .attr("id", "gap-pricing-toggle-container")
@@ -597,7 +636,15 @@ function renderSOWQuestionnaire() {
 
     const settingsGroup = revenueContainer.append("div").attr("class", "mb-1 w-full");
     const onsiteRow = settingsGroup.append("div").attr("class", "mb-3 border-b border-gray-100 pb-3");
-    onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1").text("On-Site Visits ($7.5k each)");
+    
+    // Dynamic Onsite Label
+    const onsiteCostDisplay = (pricing.onsite >= 1000) 
+        ? (pricing.onsite / 1000).toFixed(1) + 'k' 
+        : pricing.onsite;
+        
+    onsiteRow.append("label").attr("class", "text-[10px] font-bold text-gray-500 uppercase block mb-1")
+        .text(`On-Site Visits (${sym}${onsiteCostDisplay} each)`);
+        
     onsiteRow.append("input")
         .attr("type", "number")
         .attr("id", "onsite-input")
@@ -621,8 +668,10 @@ function renderSOWQuestionnaire() {
         const textCol = label.append("div").attr("class", "ml-2 flex flex-col min-w-0");
         textCol.append("span").attr("class", "text-[11px] text-gray-700 font-medium leading-tight truncate").text(q.label).attr("title", q.label);
         
-        if (q.type === 'cost') {
-             textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text("+$" + (q.cost/1000) + "k");
+        if (q.type === 'cost' && pricing[q.key]) {
+             const cost = pricing[q.key];
+             const display = (cost >= 1000) ? (cost/1000).toFixed(1) + 'k' : cost;
+             textCol.append("span").attr("class", "text-[9px] text-gray-400 mt-0.5").text(`+${sym}${display}`);
         }
     });
     
@@ -709,18 +758,33 @@ function calculateScoping() {
         }
     }
 
-    // 4. Add Services & Custom
+    // 4. Add Services & Custom (Dynamic Pricing)
     const customScopeHours = (app.customScope ? app.customScope.size : 0) * 5; 
-    let servicesHours = 0; let servicesCost = 0; let activeModules = []; 
+    
+    // --- REGIONAL PRICING LOOKUP ---
+    const regionVal = d3.select("#region-filter").property('value');
+    const configKey = (regionVal === 'EUR') ? 'EMEA' : (regionVal === 'all' ? 'NAMER' : regionVal);
+    const conf = REGIONAL_CONFIG[configKey] || REGIONAL_CONFIG["NAMER"];
+    const pricing = conf.pricing;
+    const sym = conf.symbol || "$";
+
+    let servicesCost = 0; 
+    let activeModules = []; 
+    
     SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => { 
         const chk = document.getElementById(q.id); 
         if (chk && chk.checked) { 
-            servicesHours += q.hrs; servicesCost += q.cost; if (q.module) activeModules.push(q.module); 
+            // Use dynamic price from config
+            if (pricing[q.key]) {
+                servicesCost += pricing[q.key];
+            }
+            if (q.module) activeModules.push(q.module); 
         } 
     });
 
     // 5. Calculate Final Totals
-    const totalHoursRaw = baseHours + customScopeHours + servicesHours;
+    // Note: 'servicesHours' are no longer tracked for timeline, we treat services as flat fees now.
+    const totalHoursRaw = baseHours + customScopeHours;
     
     // Update UI List
     let listContainer = document.getElementById('custom-scope-list-container');
@@ -743,18 +807,15 @@ function calculateScoping() {
     const finalWeeks = Math.round(((totalHoursRaw * 1.5) / 3.5) * multiplier);
     document.getElementById('calc-weeks').innerText = finalWeeks;
     
-    const impCost = (baseHours + customScopeHours) * 1.5 * multiplier * 250;
+    // Use Regional Hourly Rate
+    const hourlyRate = pricing.hourly_rate;
+    const onsiteRate = pricing.onsite;
+    
+    const impCost = (baseHours + customScopeHours) * 1.5 * multiplier * hourlyRate;
     const onsiteCount = parseInt(document.getElementById('onsite-input').value || 0);
-    const totalSOW = impCost + (onsiteCount * 7500) + servicesCost;
+    const totalSOW = impCost + (onsiteCount * onsiteRate) + servicesCost;
     
-    // 7. DYNAMIC CURRENCY DISPLAY (V2.3 Update)
-    const region = d3.select("#region-filter").property('value');
-    // Map "EUR" from dropdown -> "EMEA" config key if needed
-    const configKey = (region === 'EUR') ? 'EMEA' : (region === 'all' ? 'NAMER' : region);
-    const conf = REGIONAL_CONFIG[configKey] || REGIONAL_CONFIG["NAMER"];
-    const prefix = conf.currency === 'USD' ? '$' : (conf.currency + ' ');
-    
-    document.getElementById('sow-total').innerText = prefix + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+    document.getElementById('sow-total').innerText = sym + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 
     app.currentSOW = {
         totalCost: totalSOW, weeks: finalWeeks, activeModules: activeModules, onsite: onsiteCount, isGapPricing: isGapPricing,
@@ -1018,6 +1079,9 @@ function onRegionChange() {
         [...availableAudiences].sort().forEach(audKey => {
              audienceFilter.append("option").attr("value", audKey).text(audienceKeyToLabelMap[audKey]);
         });
+        
+        // --- NEW: Refresh Questionnaire Pricing ---
+        renderSOWQuestionnaire();
     } else {
         // Disable Stack Builder if no region
         stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", true)
