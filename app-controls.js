@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 850 (REGIONAL LOCALIZATION V2.3 + FULL RESTORATION)
+// VERSION: 900 (CURRENCY LOGIC + REGION LABEL UPDATE)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
@@ -45,7 +45,7 @@ const REGIONAL_CONFIG = {
         }
     },
     "NAMER": {
-        "label": "North America",
+        "label": "NAMER (North America)", // <--- UPDATED LABEL
         "legal_entity": "Procore Technologies, Inc.",
         "jurisdiction": "Delaware",
         "currency": "USD",
@@ -747,7 +747,14 @@ function calculateScoping() {
     const onsiteCount = parseInt(document.getElementById('onsite-input').value || 0);
     const totalSOW = impCost + (onsiteCount * 7500) + servicesCost;
     
-    document.getElementById('sow-total').innerText = "$" + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+    // 7. DYNAMIC CURRENCY DISPLAY (V2.3 Update)
+    const region = d3.select("#region-filter").property('value');
+    // Map "EUR" from dropdown -> "EMEA" config key if needed
+    const configKey = (region === 'EUR') ? 'EMEA' : (region === 'all' ? 'NAMER' : region);
+    const conf = REGIONAL_CONFIG[configKey] || REGIONAL_CONFIG["NAMER"];
+    const prefix = conf.currency === 'USD' ? '$' : (conf.currency + ' ');
+    
+    document.getElementById('sow-total').innerText = prefix + totalSOW.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 
     app.currentSOW = {
         totalCost: totalSOW, weeks: finalWeeks, activeModules: activeModules, onsite: onsiteCount, isGapPricing: isGapPricing,
@@ -762,7 +769,9 @@ function generateSOWPrintView() {
     
     // V2.3: REGIONAL DYNAMIC LOOKUP
     const region = d3.select("#region-filter").property('value');
-    const regionConfig = REGIONAL_CONFIG[region] || REGIONAL_CONFIG["NAMER"];
+    // Map "EUR" -> "EMEA" here as well
+    const configKey = (region === 'EUR') ? 'EMEA' : (region === 'all' ? 'NAMER' : region);
+    const regionConfig = REGIONAL_CONFIG[configKey] || REGIONAL_CONFIG["NAMER"];
     
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
@@ -964,7 +973,7 @@ function populateRegionFilter(retryCount = 0) {
     // Force order: NAMER, EMEA, APAC
     ["NAMER", "EUR", "APAC"].forEach(region => {
         let label = region;
-        if (region === "NAMER") label = "North America";
+        if (region === "NAMER") label = "NAMER (North America)"; // <--- UPDATED LABEL
         if (region === "EUR") label = "EMEA (Europe)";
         if (region === "APAC") label = "APAC (Australia/Asia)";
         regionFilter.append("option").attr("value", region).text(label);
@@ -1359,3 +1368,4 @@ function updateActivePackageState() {
         app.currentPackage = null;
     }
 }
+// --- app-controls.js END ---
