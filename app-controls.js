@@ -10,7 +10,7 @@ const REGIONAL_CONFIG = {
         currency: "GBP",
         tax: "VAT",
         protection: "GDPR Compliant",
-        dictionary: { "Bidding": "Tendering", "Change Events": "Variations", "Daily Log": "Site Diary", "Schedule": "Programme", "ERP Connectors": "Accounting Integrations", "Punch List": "Snag List", "Prime Contract": "Main Contract", "T&M Tickets": "Daywork Sheets" },
+        dictionary: { "Bidding": "Tendering", "Change Events": "Variations", "Daily Log": "Site Diary", "Schedule": "Programme", "ERP Connectors": "Accounting Integrations", "Punch List": "Snag List", "Prime Contract": "Main Contract", "T&M Tickets": "Daywork Sheets", "Bid Board": "Tender Board" },
         exclusions: ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"]
     },
     "APAC": {
