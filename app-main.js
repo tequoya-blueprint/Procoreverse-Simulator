@@ -257,10 +257,24 @@ function updateGraph(isFilterChange = true) {
 
     // 4. STABLE FILTERING: Keep nodes in DOM to prevent layout jumps, but control via opacity.
     const filteredNodes = nodes.filter(d => {
+        // ... existing category/persona logic ...
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        return inCategory && inPersona; 
-        // NOTE: We do NOT filter by 'inPackage' here anymore. We handle it in styling below.
+        
+        // --- NEW: REGIONAL EXCLUSION ---
+        const currentRegion = d3.select("#region-filter").property("value");
+        if (typeof REGIONAL_CONFIG !== 'undefined' && REGIONAL_CONFIG[currentRegion]) {
+            const exclusions = REGIONAL_CONFIG[currentRegion].exclusions;
+            if (exclusions.includes(d.id)) return false; // HIDE "Procore Pay" in EMEA
+        }
+        // -------------------------------
+
+        let inPackage = true;
+        // ... rest of existing logic ...
+        if (isBuilderMode) inPackage = true; 
+        else inPackage = !filters.packageTools || filters.packageTools.has(d.id) || (isGapMode && gapAnalysis.outlier.has(d.id));
+        
+        return inCategory && inPersona && inPackage;
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
@@ -277,7 +291,18 @@ function updateGraph(isFilterChange = true) {
 
             nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
-            nodeGroup.append("text").text(d => d.id).attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
+            nodeGroup.append("text")
+                .text(d => {
+                    // 1. Get Current Region from Filter
+                    const currentRegion = d3.select("#region-filter").property("value");
+                    // 2. Check Dictionary
+                    if (typeof REGIONAL_CONFIG !== 'undefined' && REGIONAL_CONFIG[currentRegion]) {
+                        const dict = REGIONAL_CONFIG[currentRegion].dictionary;
+                        if (dict && dict[d.id]) return dict[d.id]; // Return "Tendering" instead of "Bidding"
+                    }
+                    return d.id; // Fallback to "Bidding"
+                })
+                .attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
             nodeGroup.each(function(d) {
                 const g = d3.select(this);
                 let badgeOffset = 14;
