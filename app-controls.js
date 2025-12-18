@@ -1,6 +1,32 @@
 // --- app-controls.js ---
 // VERSION: 990 (PART 1 - CONFIG & CALCULATORS)
 
+// --- REGIONAL CONFIGURATION (Source of Truth) ---
+const REGIONAL_CONFIG = {
+    "EMEA": {
+        label: "Europe",
+        entity: "Procore Technologies, Inc.",
+        jurisdiction: "England",
+        currency: "GBP",
+        tax: "VAT",
+        protection: "GDPR Compliant",
+        dictionary: { "Bidding": "Tendering", "Change Events": "Variations", "Daily Log": "Site Diary", "Schedule": "Programme", "ERP Connectors": "Accounting Integrations", "Punch List": "Snag List", "Prime Contract": "Main Contract", "T&M Tickets": "Daywork Sheets" },
+        exclusions: ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"]
+    },
+    "APAC": {
+        label: "APAC",
+        entity: "Procore Technologies, Inc.",
+        jurisdiction: "Australia",
+        currency: "AUD",
+        tax: "GST",
+        protection: "Standard Privacy",
+        dictionary: { "Bidding": "Tendering", "Change Events": "Variations", "Daily Log": "Site Diary", "Schedule": "Programme", "ERP Connectors": "Accounting Integrations", "Punch List": "Defect List", "Prime Contract": "Main Contract", "T&M Tickets": "Daywork Sheets", "Crews": "Site Teams" },
+        exclusions: ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"]
+    },
+    "NAMER": { label: "North America", entity: "Procore Technologies, Inc.", jurisdiction: "Delaware", currency: "USD", tax: "Tax", protection: "Standard", dictionary: {}, exclusions: [] },
+    "Global": { label: "Global", entity: "Procore Technologies, Inc.", jurisdiction: "Delaware", currency: "USD", tax: "Tax", protection: "Standard", dictionary: {}, exclusions: [] }
+};
+
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
     admin: { 
@@ -277,29 +303,38 @@ const SOW_LIBRARY = {
 
 // --- DYNAMIC CONTENT ASSEMBLER ---
 function getSOWContent(sowData) {
-    // 1. Determine Base Wrapper (Region + Audience)
-    let baseKey = "NAM_GC_BASE"; // Default
-    if (sowData.region === "APAC") baseKey = "APAC_BASE";
-    else if (sowData.region === "EMEA") baseKey = "EMEA_BASE";
-    else if (sowData.audience === "O") baseKey = "NAM_OWNER_BASE";
-
-    // 2. Determine Modules (Services)
-    let modules = [];
+    // 1. Get Regional Rules
+    const rConfig = REGIONAL_CONFIG[sowData.region] || REGIONAL_CONFIG["NAMER"];
     
-    // Look up modules based on the IDs saved in sowData.activeModules
+    // 2. Build Base Template Dynamically
+    const baseTitle = `STATEMENT OF WORK (${rConfig.label.toUpperCase()})`;
+    const baseBody = `
+        <div class="sow-section">
+            <h3>PARTIES</h3>
+            <p><strong>Provider:</strong> ${rConfig.entity}<br><strong>Client:</strong> {{Client Name}}</p>
+        </div>
+        <div class="sow-section">
+            <h3>REGIONAL TERMS</h3>
+            <ul>
+                <li><strong>Jurisdiction:</strong> Governed by the laws of ${rConfig.jurisdiction}.</li>
+                <li><strong>Currency:</strong> Fees are in ${rConfig.currency}.</li>
+                <li><strong>Tax:</strong> Fees are exclusive of ${rConfig.tax}.</li>
+                <li><strong>Data Protection:</strong> ${rConfig.protection}.</li>
+            </ul>
+        </div>
+        <div class="sow-section"><h3>OVERVIEW</h3><p>Client agrees to the custom scope outlined below.</p></div>
+    `;
+
+    // 3. Determine Modules
+    let modules = [];
     if (sowData.activeModules && sowData.activeModules.length > 0) {
         sowData.activeModules.forEach(modKey => {
-            if (SOW_LIBRARY[modKey]) {
-                modules.push(SOW_LIBRARY[modKey]);
-            }
+            if (SOW_LIBRARY[modKey]) modules.push(SOW_LIBRARY[modKey]);
         });
     }
-    
-    // Check Onsite Input specially
     if (sowData.onsite > 0) modules.push(SOW_LIBRARY["MOD_TRAINING"]);
 
-    // Fallback: If modules list is empty, default to nothing
-    return { base: SOW_LIBRARY[baseKey], modules: modules };
+    return { base: { title: baseTitle, body: baseBody }, modules: modules };
 }
 
 // --- INITIALIZATION ---
