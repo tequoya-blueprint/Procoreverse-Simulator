@@ -530,19 +530,19 @@ const linksData = [
   },
   {
     "source": "Budget",
-    "target": "ERP Systems",
+    "target": "ERP Connectors",
     "type": "syncs",
     "dataFlow": "Syncs Budget data with the company's main financial records."
   },
   {
     "source": "Commitments",
-    "target": "ERP Systems",
+    "target": "ERP Connectors",
     "type": "syncs",
     "dataFlow": "Syncs Commitments data with the company's main financial records."
   },
   {
     "source": "Invoicing",
-    "target": "ERP Systems",
+    "target": "ERP Connectors",
     "type": "syncs",
     "dataFlow": "Syncs Invoicing data with the company's main financial records."
   },
@@ -692,7 +692,7 @@ const linksData = [
   },
   {
     "source": "Procore Pay",
-    "target": "ERP Systems",
+    "target": "ERP Connectors",
     "type": "syncs",
     "dataFlow": "Payment status is synced in the ERP system."
   },
