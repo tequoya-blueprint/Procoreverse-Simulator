@@ -1,30 +1,59 @@
 // --- app-controls.js ---
-// VERSION: 990 (PART 1 - CONFIG & CALCULATORS)
+// VERSION: 850 (REGIONAL LOCALIZATION V2.3 + FULL RESTORATION)
 
-// --- REGIONAL CONFIGURATION (Source of Truth) ---
+// --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
     "EMEA": {
-        label: "Europe",
-        entity: "Procore Technologies, Inc.",
-        jurisdiction: "England",
-        currency: "GBP",
-        tax: "VAT",
-        protection: "GDPR Compliant",
-        dictionary: { "Bidding": "Tendering", "Change Events": "Variations", "Daily Log": "Site Diary", "Schedule": "Programme", "ERP Connectors": "Accounting Integrations", "Punch List": "Snag List", "Prime Contract": "Main Contract", "T&M Tickets": "Daywork Sheets", "Bid Board": "Tender Board" },
-        exclusions: ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"]
+        "label": "Europe",
+        "legal_entity": "Procore Technologies, Inc.",
+        "jurisdiction": "England",
+        "currency": "GBP",
+        "tax_term": "VAT",
+        "data_protection": "GDPR Compliant",
+        "exclusions": ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"],
+        "dictionary": {
+            "Bidding": "Tendering",
+            "Change Events": "Variations",
+            "Daily Log": "Site Diary",
+            "Schedule": "Programme",
+            "ERP Connectors": "Accounting Integrations",
+            "Bid Board": "Tender Board",
+            "Punch List": "Snag List",
+            "Prime Contracts": "Main Contract",
+            "T&M Tickets": "Daywork Sheets"
+        }
     },
     "APAC": {
-        label: "APAC",
-        entity: "Procore Technologies, Inc.",
-        jurisdiction: "Australia",
-        currency: "AUD",
-        tax: "GST",
-        protection: "Standard Privacy",
-        dictionary: { "Bidding": "Tendering", "Change Events": "Variations", "Daily Log": "Site Diary", "Schedule": "Programme", "ERP Connectors": "Accounting Integrations", "Punch List": "Defect List", "Prime Contract": "Main Contract", "T&M Tickets": "Daywork Sheets", "Crews": "Site Teams" },
-        exclusions: ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"]
+        "label": "APAC",
+        "legal_entity": "Procore Technologies, Inc.",
+        "jurisdiction": "Australia",
+        "currency": "AUD",
+        "tax_term": "GST",
+        "data_protection": "Standard Privacy",
+        "exclusions": ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"],
+        "dictionary": {
+            "Bidding": "Tendering",
+            "Change Events": "Variations",
+            "Daily Log": "Site Diary",
+            "Schedule": "Programme",
+            "ERP Connectors": "Accounting Integrations",
+            "Bid Board": "Tender Board",
+            "Punch List": "Defect List",
+            "Prime Contracts": "Main Contract",
+            "T&M Tickets": "Daywork Sheets",
+            "Crews": "Site Teams"
+        }
     },
-    "NAMER": { label: "North America", entity: "Procore Technologies, Inc.", jurisdiction: "Delaware", currency: "USD", tax: "Tax", protection: "Standard", dictionary: {}, exclusions: [] },
-    "Global": { label: "Global", entity: "Procore Technologies, Inc.", jurisdiction: "Delaware", currency: "USD", tax: "Tax", protection: "Standard", dictionary: {}, exclusions: [] }
+    "NAMER": {
+        "label": "North America",
+        "legal_entity": "Procore Technologies, Inc.",
+        "jurisdiction": "Delaware",
+        "currency": "USD",
+        "tax_term": "Tax",
+        "data_protection": "Standard",
+        "exclusions": [],
+        "dictionary": {}
+    }
 };
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
@@ -100,7 +129,7 @@ const STACK_PRESETS = {
     },
     "finance": {
         label: "ERP / Finance Focus",
-        tools: ["Budget", "Commitments", "Direct Costs", "Invoicing", "ERP Systems"]
+        tools: ["Budget", "Commitments", "Direct Costs", "Invoicing", "ERP Connectors"]
     }
 };
 
@@ -119,105 +148,6 @@ const SOW_QUESTIONS = [
 
 // --- SOW TEMPLATE LIBRARY (FULL TEXT) ---
 const SOW_LIBRARY = {
-    // 1. LEGAL WRAPPERS
-    "NAM_GC_BASE": {
-        title: "STATEMENT OF WORK (GENERAL CONTRACTOR)",
-        body: `
-        <div class="sow-section">
-            <h3>PARTIES</h3>
-            <p><strong>Provider:</strong> Procore Technologies, Inc., a Delaware corporation.<br>
-            <strong>Client:</strong> {{Client Name}}</p>
-        </div>
-        <div class="sow-section">
-            <h3>OVERVIEW</h3>
-            <p>Client is currently implementing project management software products and has identified a need for standardizing processes and content. To support Client’s strategic initiative, Client and Provider agree to the custom scope of services outlined below.</p>
-        </div>
-        <div class="sow-section">
-            <h3>TERM</h3>
-            <p>Unless otherwise noted in a specific module, access to resources and service hours must be used within thirty-six (36) months of the service start date.</p>
-        </div>
-        <div class="sow-section">
-            <h3>GOVERNING TERMS</h3>
-            <p>This SOW is governed by the Master Services Agreement ("MSA") or Subscription Terms currently in place between the parties. All fees are in USD.</p>
-        </div>
-        `
-    },
-    "NAM_OWNER_BASE": {
-        title: "STATEMENT OF WORK (OWNER/DEVELOPER)",
-        body: `
-        <div class="sow-section">
-            <h3>PARTIES</h3>
-            <p><strong>Provider:</strong> Procore Technologies, Inc.<br>
-            <strong>Client:</strong> {{Client Name}}</p>
-        </div>
-        <div class="sow-section">
-            <h3>OVERVIEW</h3>
-            <p>Client requires specialized assistance to standardize capital project controls and financial workflows. Client and Provider agree to the custom scope of services outlined below to ensure successful onboarding of future assets.</p>
-        </div>
-        <div class="sow-section">
-            <h3>TERM</h3>
-            <p>Services outlined herein are valid for thirty-six (36) months from execution.</p>
-        </div>
-        <div class="sow-section">
-            <h3>GOVERNING TERMS</h3>
-            <p>This SOW is governed by the Master Services Agreement ("MSA") executed by the Client. All fees are in USD.</p>
-        </div>
-        `
-    },
-    "APAC_BASE": {
-        title: "STATEMENT OF WORK (APAC)",
-        body: `
-        <div class="sow-section">
-            <h3>PARTIES</h3>
-            <p><strong>Provider:</strong> Procore Technologies Pty Ltd.<br>
-            <strong>Client:</strong> {{Client Name}}</p>
-        </div>
-        <div class="sow-section">
-            <h3>OVERVIEW</h3>
-            <p>Client and Provider agree to the custom scope of services outlined below.</p>
-        </div>
-        <div class="sow-section">
-            <h3>REGIONAL TERMS</h3>
-            <ul>
-                <li><strong>Currency:</strong> All fees are listed in AUD/SGD unless otherwise specified.</li>
-                <li><strong>GST/Tax:</strong> Fees are exclusive of Goods and Services Tax (GST).</li>
-                <li><strong>Jurisdiction:</strong> This agreement is governed by the laws of New South Wales (or relevant APAC jurisdiction).</li>
-            </ul>
-        </div>
-        <div class="sow-section">
-            <h3>TERM</h3>
-            <p>Services must be utilized within thirty-six (36) months of the service start date.</p>
-        </div>
-        `
-    },
-    "EMEA_BASE": {
-        title: "STATEMENT OF WORK (EMEA)",
-        body: `
-        <div class="sow-section">
-            <h3>PARTIES</h3>
-            <p><strong>Provider:</strong> Procore Technologies Ltd.<br>
-            <strong>Client:</strong> {{Client Name}}</p>
-        </div>
-        <div class="sow-section">
-            <h3>OVERVIEW</h3>
-            <p>Client and Provider agree to the custom scope of services outlined below to support Client's standardization and implementation initiatives.</p>
-        </div>
-        <div class="sow-section">
-            <h3>REGIONAL TERMS</h3>
-            <ul>
-                <li><strong>Data Protection:</strong> Both parties agree to comply with all applicable provisions of the General Data Protection Regulation (GDPR).</li>
-                <li><strong>VAT:</strong> All fees are exclusive of VAT.</li>
-                <li><strong>Jurisdiction:</strong> This agreement is governed by the laws of England and Wales.</li>
-            </ul>
-        </div>
-        <div class="sow-section">
-            <h3>TERM</h3>
-            <p>Services must be utilized within thirty-six (36) months of the service start date.</p>
-        </div>
-        `
-    },
-
-    // 2. SCOPE MODULES
     "MOD_SOP": {
         title: "STANDARD OPERATING PROCEDURE (SOP) SERVICES",
         body: `
@@ -301,42 +231,6 @@ const SOW_LIBRARY = {
     }
 };
 
-// --- DYNAMIC CONTENT ASSEMBLER ---
-function getSOWContent(sowData) {
-    // 1. Get Regional Rules
-    const rConfig = REGIONAL_CONFIG[sowData.region] || REGIONAL_CONFIG["NAMER"];
-    
-    // 2. Build Base Template Dynamically
-    const baseTitle = `STATEMENT OF WORK (${rConfig.label.toUpperCase()})`;
-    const baseBody = `
-        <div class="sow-section">
-            <h3>PARTIES</h3>
-            <p><strong>Provider:</strong> ${rConfig.entity}<br><strong>Client:</strong> {{Client Name}}</p>
-        </div>
-        <div class="sow-section">
-            <h3>REGIONAL TERMS</h3>
-            <ul>
-                <li><strong>Jurisdiction:</strong> Governed by the laws of ${rConfig.jurisdiction}.</li>
-                <li><strong>Currency:</strong> Fees are in ${rConfig.currency}.</li>
-                <li><strong>Tax:</strong> Fees are exclusive of ${rConfig.tax}.</li>
-                <li><strong>Data Protection:</strong> ${rConfig.protection}.</li>
-            </ul>
-        </div>
-        <div class="sow-section"><h3>OVERVIEW</h3><p>Client agrees to the custom scope outlined below.</p></div>
-    `;
-
-    // 3. Determine Modules
-    let modules = [];
-    if (sowData.activeModules && sowData.activeModules.length > 0) {
-        sowData.activeModules.forEach(modKey => {
-            if (SOW_LIBRARY[modKey]) modules.push(SOW_LIBRARY[modKey]);
-        });
-    }
-    if (sowData.onsite > 0) modules.push(SOW_LIBRARY["MOD_TRAINING"]);
-
-    return { base: { title: baseTitle, body: baseBody }, modules: modules };
-}
-
 // --- INITIALIZATION ---
 function initializeControls() {
     if (typeof app !== 'undefined') {
@@ -354,7 +248,7 @@ function initializeControls() {
     populateRegionFilter(0); 
     populatePersonaFilter();
     renderSOWQuestionnaire();
-    injectControlsFooter();
+    injectControlsFooter(); 
    
     // Filter Listeners
     d3.select("#region-filter").on("change", onRegionChange);
@@ -422,74 +316,95 @@ function initializeControls() {
              if (!container.empty()) {
                 container.insert("button", ":first-child")
                     .attr("id", "stack-builder-btn")
-                    // NO GREEN: Use Blue
                     .attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition ease-in-out duration-150 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
-                    .html('<i class="fas fa-layer-group mr-2 text-blue-600"></i> Define Customer Stack')
+                    .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack')
                     .on("click", toggleStackBuilderMode);
              }
         }
     }, 500);
 }
 
-// --- TEAM VIEW MANAGER (HARDENED) ---
-function applyTeamView(team) {
-    const config = TEAM_CONFIG[team];
-    if (!config) return;
-
-    // Force strict display states
-    const tourAccordion = d3.select("#tour-accordion");
-    if(!tourAccordion.empty()) tourAccordion.style("display", config.showTours ? "block" : "none");
-
-    const aiBtn = d3.select("#ai-workflow-builder-btn");
-    if(!aiBtn.empty()) aiBtn.style("display", config.showAiBuilder ? "block" : "none");
+// --- NEW: DYNAMIC FOOTER INJECTION ---
+function injectControlsFooter() {
+    const controls = d3.select("#controls");
     
-    const aiGroup = d3.select("#ai-tours");
-    if(!aiGroup.empty()) aiGroup.style("display", config.showAiBuilder ? "block" : "none");
+    // Clean up any existing footer elements to prevent duplicates
+    controls.select("#reset-view").remove();
+    controls.select("#demo-toggle-btn").remove();
+    controls.select("#version-link").remove();
+    controls.select(".pt-5.mt-5.border-t").remove();
 
-    const manualBtn = d3.select("#manual-workflow-builder-btn");
-    if (!manualBtn.empty()) {
-        manualBtn.style("display", config.showManualBuilder ? "block" : "none");
+    // Create container
+    const footer = controls.append("div")
+        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
+
+    // 1. Reset Button (Full Width)
+    footer.append("button")
+        .attr("id", "reset-view")
+        .attr("class", "w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
+        .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
+        .on("click", resetView);
+
+    // 2. Presentation Mode Toggle (Full Width)
+    footer.append("button")
+        .attr("id", "demo-toggle-btn")
+        .attr("class", "w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center")
+        .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
+        .on("click", toggleDemoMode);
+
+    // 3. Version Link (Centered)
+    footer.append("div")
+        .attr("class", "text-center")
+        .append("a")
+        .attr("href", "#")
+        .attr("id", "version-link")
+        .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
+        .text("v2.3 Localized")
+        .on("click", (e) => {
+            e.preventDefault();
+            const modal = document.getElementById('credits-modal-overlay');
+            if(modal) modal.classList.add('visible');
+        });
+}
+
+// --- DEMO MODE TOGGLE ---
+function toggleDemoMode() {
+    const body = d3.select("body");
+    const isDemo = body.classed("demo-mode-active");
+    const btn = d3.select("#demo-toggle-btn");
+    
+    if (isDemo) {
+        // DISABLE
+        body.classed("demo-mode-active", false);
+        d3.select("#scoping-ui-container").style("display", "block"); 
+        d3.select("#ai-workflow-builder-btn").style("display", "block");
+        d3.select("#manual-workflow-builder-btn").style("display", "block");
+        d3.select("#team-selector").property("disabled", false).style("opacity", 1);
+        
+        // Visuals
+        btn.classed("bg-green-600 hover:bg-green-700 text-white", false)
+           .classed("bg-gray-200 hover:bg-gray-300 text-gray-700", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
+        
+        if(typeof showToast === 'function') showToast("Demo Mode Deactivated.");
+    } else {
+        // ENABLE
+        body.classed("demo-mode-active", true);
+        d3.select("#scoping-ui-container").style("display", "none"); 
+        d3.select("#ai-workflow-builder-btn").style("display", "none"); 
+        d3.select("#manual-workflow-builder-btn").style("display", "none"); 
+        
+        // Force Admin view to ensure graph elements are visible
+        applyTeamView('admin'); 
+        d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
+        
+        // Visuals
+        btn.classed("bg-gray-200 hover:bg-gray-300 text-gray-700", false)
+           .classed("bg-green-600 hover:bg-green-700 text-white", true);
+        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
+        
+        if(typeof showToast === 'function') showToast("Demo Mode Active.");
     }
-
-    const scopingContainer = d3.select("#scoping-ui-container");
-    if (!scopingContainer.empty()) {
-        if (config.calculatorMode === 'hidden') {
-            scopingContainer.classed("hidden", true).style("display", "none");
-        } else {
-            scopingContainer.classed("hidden", !config.showScoping).style("display", config.showScoping ? "block" : "none");
-            if (typeof app !== 'undefined' && app.state) {
-                app.state.calculatorMode = config.calculatorMode;
-                const isView = config.calculatorMode === 'view';
-                d3.selectAll('.sow-question').property('disabled', isView);
-                ['slider-maturity','slider-data','slider-change','onsite-input'].forEach(id => {
-                    const el = document.getElementById(id); if(el) el.disabled = isView;
-                });
-                calculateScoping(); 
-            }
-        }
-    }
-    
-    const legendAccordion = d3.select("#view-options-accordion");
-    if(!legendAccordion.empty()) legendAccordion.style("display", config.showLegend ? "block" : "none");
-
-    const filterAccordion = d3.select("#filter-accordion");
-    if(!filterAccordion.empty()) filterAccordion.style("display", config.showFilters ? "block" : "none");
-
-    document.querySelectorAll('.accordion-item').forEach(item => {
-        item.classList.remove('active');
-        const content = item.querySelector('.accordion-content');
-        if(content) content.style.maxHeight = 0;
-    });
-    
-    const target = document.getElementById(config.defaultOpen);
-    if (target) {
-        target.classList.add('active');
-        const content = target.querySelector('.accordion-content');
-        if (content) content.style.maxHeight = content.scrollHeight + "px";
-    }
-    
-    // FORCE UPDATE
-    if (typeof updateGraph === 'function') updateGraph(true);
 }
 
 // --- CUSTOM SCOPE MANAGER ---
@@ -506,7 +421,7 @@ function toggleCustomScopeItem(nodeId) {
     calculateScoping();
 }
 
-// --- STACK BUILDER ---
+// --- GAP ANALYSIS V2 MANAGER ---
 function toggleStackBuilderMode() {
     if (d3.select("#region-filter").property("value") === "all") {
         if(typeof showToast === 'function') showToast("Please select a Region first.", 3000);
@@ -521,21 +436,21 @@ function toggleStackBuilderMode() {
         // --- ACTIVATE BUILDER MODE ---
         app.interactionState = 'building_stack';
         
-        // NO GREEN: Use Blue
-        btn.classed("bg-blue-600 hover:bg-blue-700 text-white border-blue-700", true)
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
         
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
         
+        // --- NEW: INJECT PRESET DROPDOWN ---
         const presetContainer = d3.select("#packaging-container").insert("div", "#stack-builder-btn + *")
             .attr("id", "stack-preset-container")
-            .attr("class", "mb-4 p-3 bg-blue-50 rounded border border-blue-200");
+            .attr("class", "mb-4 p-3 bg-green-50 rounded border border-green-200");
             
-        presetContainer.append("label").attr("class", "block text-xs font-bold text-blue-800 mb-1 uppercase").text("Quick Stack Presets");
+        presetContainer.append("label").attr("class", "block text-xs font-bold text-green-800 mb-1 uppercase").text("Quick Stack Presets");
         
         const select = presetContainer.append("select")
-            .attr("class", "w-full text-xs border-blue-300 rounded p-1.5 focus:ring-blue-500 focus:border-blue-500 bg-white")
+            .attr("class", "w-full text-xs border-green-300 rounded p-1.5 focus:ring-green-500 focus:border-green-500 bg-white")
             .on("change", function() {
                 const key = this.value;
                 if (key === 'none') return;
@@ -554,16 +469,18 @@ function toggleStackBuilderMode() {
         // --- DEACTIVATE BUILDER MODE ---
         app.interactionState = 'explore';
         
-        btn.classed("bg-blue-600 hover:bg-blue-700 text-white border-blue-700", false)
+        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
-           .html('<i class="fas fa-layer-group mr-2 text-blue-600"></i> Define Customer Stack');
+           .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
         
+        // Remove Preset Dropdown
         d3.select("#stack-preset-container").remove();
         
+        // Return to normal view
         if (typeof updateGraph === 'function') updateGraph(true);
         if (app.state.myStack.size > 0 && typeof showToast === 'function') {
             showToast("Stack Saved! Select a Package to see Gaps.", 3000);
-            calculateScoping(); 
+            calculateScoping(); // Triggers Gap Check
         }
     }
 }
@@ -593,10 +510,9 @@ function highlightOwnedNodes() {
     
     app.node.transition().duration(200)
         .style("opacity", d => app.state.myStack.has(d.id) ? 1 : 0.4) 
-        // NO GREEN: Use Procore Blue
-        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(0, 112, 243, 0.6))" : "none") 
+        .style("filter", d => app.state.myStack.has(d.id) ? "drop-shadow(0 0 6px rgba(77, 164, 70, 0.6))" : "none") // Brand Green
         .select("path")
-        .style("stroke", d => app.state.myStack.has(d.id) ? "#0070f3" : "#fff") 
+        .style("stroke", d => app.state.myStack.has(d.id) ? "#4da446" : "#fff") // Brand Green
         .style("stroke-width", d => app.state.myStack.has(d.id) ? 3 : 1);
 }
 
@@ -633,6 +549,7 @@ function getGapAnalysis() {
 
 // --- SOW V2: COMPLEXITY & T-SHIRT SIZING ---
 function setComplexity(level) {
+    // Only allow if not in Read-Only mode
     if (app.state.calculatorMode === 'view') {
         if(typeof showToast === 'function') showToast("View Only: Complexity cannot be edited.");
         return;
@@ -724,7 +641,9 @@ function renderSOWQuestionnaire() {
     setTimeout(refreshAccordionHeight, 50);
 }
 
+// --- SCOPING CALCULATOR (WITH SMART GAP LOGIC) ---
 function calculateScoping() {
+    // 1. Setup & Permissions
     const isViewOnly = (app.state.calculatorMode === 'view');
     const sliderMaturity = document.getElementById('slider-maturity');
     if (sliderMaturity) {
@@ -736,6 +655,7 @@ function calculateScoping() {
     }
     if (!sliderMaturity) return;
 
+    // 2. Read Risk Factors
     let mat = parseFloat(sliderMaturity.value); 
     let data = parseFloat(document.getElementById('slider-data').value); 
     let change = parseFloat(document.getElementById('slider-change').value);
@@ -752,6 +672,7 @@ function calculateScoping() {
     document.getElementById('val-data').innerText = data.toFixed(1) + "x"; 
     document.getElementById('val-change').innerText = change.toFixed(1) + "x";
 
+    // 3. Determine Base Scope (Gap vs Full)
     let baseHours = 0;
     const gapAnalysis = getGapAnalysis();
     const gapToggle = d3.select("#gap-pricing-toggle-container");
@@ -788,6 +709,7 @@ function calculateScoping() {
         }
     }
 
+    // 4. Add Services & Custom
     const customScopeHours = (app.customScope ? app.customScope.size : 0) * 5; 
     let servicesHours = 0; let servicesCost = 0; let activeModules = []; 
     SOW_QUESTIONS.filter(q => q.type === 'cost').forEach(q => { 
@@ -797,6 +719,7 @@ function calculateScoping() {
         } 
     });
 
+    // 5. Calculate Final Totals
     const totalHoursRaw = baseHours + customScopeHours + servicesHours;
     
     // Update UI List
@@ -815,6 +738,7 @@ function calculateScoping() {
 
     document.getElementById('base-tools-count').innerText = totalHoursRaw + " Hrs";
     
+    // 6. Multipliers & Cost
     const multiplier = (mat + data + change) / 3;
     const finalWeeks = Math.round(((totalHoursRaw * 1.5) / 3.5) * multiplier);
     document.getElementById('calc-weeks').innerText = finalWeeks;
@@ -832,11 +756,13 @@ function calculateScoping() {
     refreshAccordionHeight();
 }
 
-// --- app-controls.js (PART 2) ---
-
 // --- PRINT SOW (BRANDING + TEMPLATES) ---
 function generateSOWPrintView() {
     if (!app.currentSOW) { alert("Please configure a scope first."); return; }
+    
+    // V2.3: REGIONAL DYNAMIC LOOKUP
+    const region = d3.select("#region-filter").property('value');
+    const regionConfig = REGIONAL_CONFIG[region] || REGIONAL_CONFIG["NAMER"];
     
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
@@ -846,42 +772,64 @@ function generateSOWPrintView() {
         : `<div class="logo">PROCORE</div>`;
 
     const sow = app.currentSOW;
-    const templateData = getSOWContent(sow); 
     const today = new Date().toLocaleDateString();
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) { alert("Please allow popups to print the SOW."); return; }
 
     let modulesHtml = "";
-    templateData.modules.forEach(mod => {
-        modulesHtml += `<div class="module">
-            ${mod.body}
-        </div>`;
-    });
+    if (sow.activeModules) {
+        sow.activeModules.forEach(modKey => {
+            const mod = SOW_LIBRARY[modKey];
+            if(mod) {
+                 modulesHtml += `<div class="module"><h3>${mod.title}</h3>${mod.body}</div>`;
+            }
+        });
+    }
+    if (sow.onsite > 0) {
+        modulesHtml += `<div class="module"><h3>${SOW_LIBRARY.MOD_TRAINING.title}</h3>${SOW_LIBRARY.MOD_TRAINING.body}</div>`;
+    }
 
-    let bodyContent = templateData.base.body
-        .replace(/{{Client Name}}/g, clientName)
-        .replace(/{{Date}}/g, today);
-    
+    // Dynamic SOW Body based on Region Configuration
+    let bodyContent = `
+        <div class="sow-section">
+            <h3>PARTIES</h3>
+            <p><strong>Provider:</strong> ${regionConfig.legal_entity}<br>
+            <strong>Client:</strong> ${clientName}</p>
+        </div>
+        <div class="sow-section">
+            <h3>REGIONAL TERMS</h3>
+            <ul>
+                <li><strong>Jurisdiction:</strong> ${regionConfig.jurisdiction}</li>
+                <li><strong>Currency:</strong> ${regionConfig.currency}</li>
+                <li><strong>Tax:</strong> All fees exclusive of ${regionConfig.tax_term}</li>
+                <li><strong>Data Protection:</strong> ${regionConfig.data_protection}</li>
+            </ul>
+        </div>
+        <div class="sow-section">
+            <h3>OVERVIEW</h3>
+            <p>Client and Provider agree to the custom scope of services outlined below to support Client's standardization and implementation initiatives.</p>
+        </div>
+    `;
+
     // --- EXECUTIVE GAP REPORT (NEW) ---
     let gapReportHtml = "";
     if (sow.gapTools && sow.gapTools.length > 0) {
-        // NO GREEN: Used Blue (#2563EB) for Matched
         gapReportHtml = `
         <div class="sow-section" style="page-break-after: avoid;">
             <h3>Platform Maturity Assessment</h3>
             <div style="display: flex; gap: 10px; font-size: 11px;">
                 <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
-                    <div style="background: #2563EB; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Current State</div>
-                    <div style="padding: 10px; background: #eff6ff;">${sow.ownedTools.length > 0 ? sow.ownedTools.join(", ") : "No tools selected."}</div>
+                    <div style="background: #4da446; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Current State</div>
+                    <div style="padding: 10px; background: #f0fdf4;">${sow.ownedTools.length > 0 ? sow.ownedTools.join(", ") : "No tools selected."}</div>
                 </div>
                 <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
-                    <div style="background: #F36C23; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Target Package</div>
-                    <div style="padding: 10px; background: #fff7ed;">${sow.targetTools.length > 0 ? sow.targetTools.join(", ") : "No target package."}</div>
+                    <div style="background: #2563EB; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Target Package</div>
+                    <div style="padding: 10px; background: #eff6ff;">${sow.targetTools.length > 0 ? sow.targetTools.join(", ") : "No target package."}</div>
                 </div>
                 <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
-                    <div style="background: #757575; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Critical Gap</div>
-                    <div style="padding: 10px; background: #f9fafb; font-weight: 600; color: #1f2937;">${sow.gapTools.join(", ")}</div>
+                    <div style="background: #F36C23; color: white; padding: 5px 8px; font-weight: bold; text-transform: uppercase;">Critical Gap</div>
+                    <div style="padding: 10px; background: #fff7ed; font-weight: 600; color: #c2410c;">${sow.gapTools.join(", ")}</div>
                 </div>
             </div>
         </div>`;
@@ -900,7 +848,7 @@ function generateSOWPrintView() {
     <!DOCTYPE html>
     <html>
     <head>
-        <title>SOW: ${templateData.base.title}</title>
+        <title>SOW: ${clientName}</title>
         <style>
             body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.5; max-width: 800px; margin: 0 auto; }
             .header { border-bottom: 3px solid #F36C23; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -919,7 +867,7 @@ function generateSOWPrintView() {
     <body>
         <div class="header">
             <div>${logoHtml}</div>
-            <div class="title">${templateData.base.title}</div>
+            <div class="title">STATEMENT OF WORK - ${regionConfig.label}</div>
         </div>
         ${bodyContent}
         ${gapReportHtml}
@@ -927,7 +875,7 @@ function generateSOWPrintView() {
         ${modulesHtml}
         <div class="total-box">
             <div style="font-size: 12px; text-transform: uppercase; font-weight: bold; opacity: 0.8;">Total Implementation Investment</div>
-            <div class="total-cost">$${sow.totalCost.toLocaleString()}</div>
+            <div class="total-cost">${regionConfig.currency === 'USD' ? '$' : regionConfig.currency + ' '}${sow.totalCost.toLocaleString()}</div>
             <div style="font-size: 14px; margin-top: 5px; opacity: 0.8;">Est. Timeline: ${sow.weeks} Weeks</div>
         </div>
         <div class="disclaimer">
@@ -941,6 +889,44 @@ function generateSOWPrintView() {
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
+}
+
+// --- TEAM VIEW MANAGER ---
+function applyTeamView(team) {
+    const config = TEAM_CONFIG[team];
+    if (!config) return;
+
+    d3.select("#tour-accordion").style("display", config.showTours ? "block" : "none");
+    d3.select("#ai-workflow-builder-btn").style("display", config.showAiBuilder ? "block" : "none");
+    d3.select("#ai-tours").style("display", config.showAiBuilder ? "block" : "none");
+    
+    const manualBtn = d3.select("#manual-workflow-builder-btn");
+    if (!manualBtn.empty()) {
+        manualBtn.style("display", config.showManualBuilder ? "block" : "none");
+    }
+
+    const scopingContainer = d3.select("#scoping-ui-container");
+    if (config.calculatorMode === 'hidden') {
+        scopingContainer.classed("hidden", true);
+    } else {
+        scopingContainer.classed("hidden", !config.showScoping);
+        if (typeof app !== 'undefined' && app.state) {
+            app.state.calculatorMode = config.calculatorMode;
+            calculateScoping(); 
+        }
+    }
+    
+    // LEGEND ACCESS FIX (Explicitly Handle Visibility)
+    d3.select("#view-options-accordion").style("display", config.showLegend ? "block" : "none");
+
+    document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
+    
+    const target = document.getElementById(config.defaultOpen);
+    if (target) {
+        target.classList.add('active');
+        const content = target.querySelector('.accordion-content');
+        if (content) content.style.maxHeight = content.scrollHeight + "px";
+    }
 }
 
 // --- UI HELPER FUNCTIONS ---
@@ -975,16 +961,12 @@ function populateRegionFilter(retryCount = 0) {
     // Clear existing to prevent duplicates on re-run
     regionFilter.html('<option value="all">Select Region...</option>');
 
-    const regions = new Set();
-    packagingData.forEach(pkg => {
-        if (pkg.region === 'NAM') regions.add('NAMER'); 
-        else regions.add(pkg.region);
-    });
-
-    [...regions].sort().forEach(region => {
+    // Force order: NAMER, EMEA, APAC
+    ["NAMER", "EUR", "APAC"].forEach(region => {
         let label = region;
-        // EUROPE FIX: Map EUR to Europe
-        if (region === "EUR") label = "Europe";
+        if (region === "NAMER") label = "North America";
+        if (region === "EUR") label = "EMEA (Europe)";
+        if (region === "APAC") label = "APAC (Australia/Asia)";
         regionFilter.append("option").attr("value", region).text(label);
     });
 }
@@ -1111,6 +1093,12 @@ function updatePackageAddOns() {
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
     const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
     
+    // --- V2.3 EXCLUSION LOGIC ---
+    let regionExclusions = [];
+    if (region === 'EUR') regionExclusions = REGIONAL_CONFIG["EMEA"].exclusions;
+    else if (region === 'APAC') regionExclusions = REGIONAL_CONFIG["APAC"].exclusions;
+    // ---------------------------
+
     const allAddOns = new Set();
     const allServices = new Set();
     
@@ -1122,7 +1110,11 @@ function updatePackageAddOns() {
         );
         if (pkg) {
             const addOns = pkg['available_add-ons'] || pkg['available_add_ons'] || pkg['add_ons'] || [];
-            addOns.forEach(a => allAddOns.add(a));
+            addOns.forEach(a => {
+                if (!regionExclusions.includes(a)) { // APPLY EXCLUSION CHECK
+                    allAddOns.add(a);
+                }
+            });
             const services = pkg['available_services'] || [];
             services.forEach(s => allServices.add(s));
         }
@@ -1156,8 +1148,7 @@ function updatePackageAddOns() {
         servicesContainer.classed('hidden', false);
         [...allServices].sort().forEach(service => {
             servicesList.append("div").attr("class", "flex items-center text-gray-700")
-                // NO GREEN: Use Blue Check
-                .html(`<i class="fas fa-check-circle text-blue-500 mr-2"></i> ${service}`);
+                .html(`<i class="fas fa-check-circle text-green-500 mr-2"></i> ${service}`);
         });
     } else {
         servicesContainer.classed('hidden', true);
@@ -1366,88 +1357,5 @@ function updateActivePackageState() {
         app.currentPackage = pkg;
     } else {
         app.currentPackage = null;
-    }
-}
-
-// --- NEW: DYNAMIC FOOTER INJECTION ---
-function injectControlsFooter() {
-    const controls = d3.select("#controls");
-    
-    // Clean up any existing footer elements to prevent duplicates
-    controls.select("#reset-view").remove();
-    controls.select("#demo-toggle-btn").remove();
-    controls.select("#version-link").remove();
-    controls.select(".pt-5.mt-5.border-t").remove();
-
-    // Create container
-    const footer = controls.append("div")
-        .attr("class", "pt-5 mt-5 border-t border-gray-100 flex-shrink-0 space-y-3");
-
-    // 1. Reset Button (Full Width)
-    footer.append("button")
-        .attr("id", "reset-view")
-        .attr("class", "w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
-        .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
-        .on("click", resetView);
-
-    // 2. Presentation Mode Toggle (Full Width)
-    footer.append("button")
-        .attr("id", "demo-toggle-btn")
-        .attr("class", "w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center")
-        .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
-        .on("click", toggleDemoMode);
-
-    // 3. Version Link (Centered)
-    footer.append("div")
-        .attr("class", "text-center")
-        .append("a")
-        .attr("href", "#")
-        .attr("id", "version-link")
-        .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
-        .text("v2.3 Enterprise")
-        .on("click", (e) => {
-            e.preventDefault();
-            const modal = document.getElementById('credits-modal-overlay');
-            if(modal) modal.classList.add('visible');
-        });
-}
-
-// --- DEMO MODE TOGGLE ---
-function toggleDemoMode() {
-    const body = d3.select("body");
-    const isDemo = body.classed("demo-mode-active");
-    const btn = d3.select("#demo-toggle-btn");
-    
-    if (isDemo) {
-        // DISABLE
-        body.classed("demo-mode-active", false);
-        d3.select("#scoping-ui-container").style("display", "block"); 
-        d3.select("#ai-workflow-builder-btn").style("display", "block");
-        d3.select("#manual-workflow-builder-btn").style("display", "block");
-        d3.select("#team-selector").property("disabled", false).style("opacity", 1);
-        
-        // Visuals
-        btn.classed("bg-green-600 hover:bg-green-700 text-white", false)
-           .classed("bg-gray-200 hover:bg-gray-300 text-gray-700", true);
-        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
-        
-        if(typeof showToast === 'function') showToast("Demo Mode Deactivated.");
-    } else {
-        // ENABLE
-        body.classed("demo-mode-active", true);
-        d3.select("#scoping-ui-container").style("display", "none"); 
-        d3.select("#ai-workflow-builder-btn").style("display", "none"); 
-        d3.select("#manual-workflow-builder-btn").style("display", "none"); 
-        
-        // Force Admin view to ensure graph elements are visible
-        applyTeamView('admin'); 
-        d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
-        
-        // Visuals
-        btn.classed("bg-gray-200 hover:bg-gray-300 text-gray-700", false)
-           .classed("bg-green-600 hover:bg-green-700 text-white", true);
-        btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
-        
-        if(typeof showToast === 'function') showToast("Demo Mode Active.");
     }
 }
