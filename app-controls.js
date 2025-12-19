@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 1000 (REGIONAL PRICING + CURRENCY SYMBOLS)
+// VERSION: 1050 (FIX: GAP PRICING LOGIC)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
@@ -722,6 +722,23 @@ function calculateScoping() {
     document.getElementById('val-change').innerText = change.toFixed(1) + "x";
 
     // 3. Determine Base Scope (Gap vs Full)
+    // FIX: Calculate Package Base Hours regardless of Gap Toggle
+    let packageBaseHours = 0;
+    const region = d3.select("#region-filter").property('value');
+    const audience = d3.select("#audience-filter").property('value');
+    
+    if (region !== 'all' && audience !== 'all') {
+        const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+        d3.selectAll(".package-checkbox:checked").each(function() {
+            const pkgName = this.value;
+            const pkg = packagingData.find(p => (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
+            if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
+                const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
+                if (match) packageBaseHours += parseInt(match[1], 10);
+            }
+        });
+    }
+
     let baseHours = 0;
     const gapAnalysis = getGapAnalysis();
     const gapToggle = d3.select("#gap-pricing-toggle-container");
@@ -739,23 +756,21 @@ function calculateScoping() {
     }
 
     if (isGapPricing) {
-        // GAP LOGIC: Only charge for missing tools (e.g. 8 hours per tool)
-        baseHours = gapAnalysis.gap.size * 8; 
+        // GAP LOGIC (PROPORTIONAL): 
+        // We charge a % of the implementation based on the % of missing tools.
+        // This ensures the price strictly "takes away" credit for owned tools.
+        const totalPackageTools = gapAnalysis.target.size;
+        const gapCount = gapAnalysis.gap.size;
+        
+        if (totalPackageTools > 0) {
+             const ratio = gapCount / totalPackageTools;
+             baseHours = Math.round(packageBaseHours * ratio);
+        } else {
+             baseHours = 0;
+        }
     } else {
         // STANDARD LOGIC: Use Package Base Hours
-        const region = d3.select("#region-filter").property('value');
-        const audience = d3.select("#audience-filter").property('value');
-        if (region !== 'all' && audience !== 'all') {
-            const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
-            d3.selectAll(".package-checkbox:checked").each(function() {
-                const pkgName = this.value;
-                const pkg = packagingData.find(p => (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
-                if (pkg && pkg["available_services"] && pkg["available_services"].length > 0) {
-                    const match = pkg["available_services"][0].match(/(\d+)\s*hrs/);
-                    if (match) baseHours += parseInt(match[1], 10);
-                }
-            });
-        }
+        baseHours = packageBaseHours;
     }
 
     // 4. Add Services & Custom (Dynamic Pricing)
