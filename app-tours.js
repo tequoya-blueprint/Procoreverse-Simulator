@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 1100 (PERSISTENCE FIXED + DELETE FUNCTIONALITY)
+// VERSION: 1200 (PERSISTENCE + COMBINED HEADING + FULL RESTORATION)
 
 /**
  * Initializes the dropdowns and event listeners for the Tour system.
@@ -10,28 +10,31 @@ function initializeTourControls() {
     const packageGroup = d3.select("#package-tours");
     const aiGroup = d3.select("#ai-tours"); 
     
+    // --- 1. RENAME GROUP (Combined Heading) ---
+    if (!aiGroup.empty()) aiGroup.attr("label", "Saved Processes");
+
     // Ensure tours object exists
     if (typeof tours === 'undefined') window.tours = { platform: {}, packages: {}, ai: {} };
     if (!tours.ai) tours.ai = {};
 
-    // 1. Load Standard Tours - Platform
+    // 2. Load Standard Tours - Platform
     if (tours.platform) {
         Object.entries(tours.platform).forEach(([id, tour]) => {
             platformGroup.append("option").attr("value", id).text(tour.name);
         });
     }
 
-    // 2. Load Standard Tours - Packages
+    // 3. Load Standard Tours - Packages
     if (tours.packages) {
         Object.entries(tours.packages).forEach(([id, tour]) => {
             packageGroup.append("option").attr("value", id).text(tour.name);
         });
     }
 
-    // 3. Load Saved Tours from LocalStorage (CRITICAL FIX)
+    // 4. Load Saved Tours from LocalStorage (Auto-Populate Saved Processes)
     loadSavedTours();
 
-    // 4. Setup Dropdown Listener
+    // 5. Setup Dropdown Listener
     d3.select("#tour-select").on("change", function() {
         const tourId = this.value;
         
@@ -56,7 +59,7 @@ function initializeTourControls() {
         }
     });
 
-    // 5. Setup Navigation Buttons
+    // 6. Setup Navigation Buttons
     d3.select("#tour-prev").on("click", () => { 
         if (app.currentStep > 0) { 
             app.currentStep--; 
@@ -71,10 +74,16 @@ function initializeTourControls() {
         } 
     });
 
-    // 6. AI Modal Triggers
+    // 7. AI Modal Triggers
     const aiModalOverlay = d3.select("#ai-modal-overlay");
-    d3.select("#ai-workflow-builder-btn").on("click", () => aiModalOverlay.classed("visible", true));
-    d3.select("#ai-modal-close").on("click", () => aiModalOverlay.classed("visible", false));
+    
+    d3.select("#ai-workflow-builder-btn").on("click", () => {
+        aiModalOverlay.classed("visible", true);
+    });
+    
+    d3.select("#ai-modal-close").on("click", () => {
+        aiModalOverlay.classed("visible", false);
+    });
     
     aiModalOverlay.on("click", function(e) { 
         if (e.target === this) aiModalOverlay.classed("visible", false); 
@@ -82,7 +91,7 @@ function initializeTourControls() {
     
     d3.select("#ai-workflow-generate").on("click", generateAiWorkflow);
 
-    // 7. Manual Builder Trigger
+    // 8. Manual Builder Trigger
     const container = d3.select("#tour-container");
     if (container.select("#manual-workflow-builder-btn").empty()) {
         container.append("button")
@@ -103,22 +112,28 @@ function loadSavedTours() {
             const parsedTours = JSON.parse(saved);
             const aiGroup = d3.select("#ai-tours");
             
-            // Clear existing AI options to avoid duplicates
+            // Clear existing AI options to avoid duplicates, then repopulate
             aiGroup.html("");
 
             // Re-populate from Storage
             Object.entries(parsedTours).forEach(([id, tour]) => {
                 tours.ai[id] = tour; // Inject into runtime object
+                
+                // Add icon if missing
+                const label = (tour.name.startsWith("✨") || tour.name.startsWith("📝")) 
+                    ? tour.name 
+                    : "📝 " + tour.name;
+                    
                 aiGroup.append("option")
                     .attr("value", id)
-                    .text(tour.name.startsWith("✨") || tour.name.startsWith("📝") ? tour.name : "📝 " + tour.name);
+                    .text(label);
             });
             
             console.log(`Loaded ${Object.keys(parsedTours).length} saved tours.`);
         } catch (e) { 
             console.error("Error loading saved tours:", e); 
-            // Reset if corrupt
-            localStorage.removeItem('procoreverse_saved_tours');
+            // Optional: Reset if corrupt
+            // localStorage.removeItem('procoreverse_saved_tours');
         }
     }
 }
@@ -127,7 +142,8 @@ function saveCurrentTour() {
     if (!app.currentTour) return;
     
     let tourId = app.currentTour.id;
-    // Generate ID if missing or generic
+    // Generate ID if missing or if it's a generic AI/Custom ID
+    // We want to persist the same ID if we are just updating, but AI tours get new IDs on save.
     if (!tourId || tourId.startsWith('ai_tour_') || tourId.startsWith('custom_')) {
         // Keep ID stable if it exists, otherwise make new one
         if (!tourId) tourId = `saved_${Date.now()}`;
@@ -159,7 +175,7 @@ function saveCurrentTour() {
     // 4. Select the saved tour
     d3.select("#tour-select").property("value", tourId);
     
-    if(typeof showToast === 'function') showToast("Process Saved to Browser!");
+    if(typeof showToast === 'function') showToast("Process Saved!");
     
     // 5. Update Buttons
     updateTourControlButtons(true);
@@ -198,6 +214,7 @@ function deleteCurrentTour() {
 
 let manualBuilderSteps = [];
 
+// Helper to safely get the String ID from a Node or Link Source/Target
 function safeId(obj) {
     if (typeof obj === 'string') return obj;
     if (obj && obj.id) return obj.id;
@@ -248,6 +265,7 @@ function startManualBuilder() {
 }
 
 function handleManualNodeClick(d) {
+    // 1. Force Side Panel to Open FIRST (Context is key)
     if (typeof showInfoPanel === 'function') {
         showInfoPanel(d);
     }
@@ -255,12 +273,15 @@ function handleManualNodeClick(d) {
     const existingIndex = manualBuilderSteps.findIndex(s => s.nodeId === d.id);
     
     if (existingIndex !== -1) {
+        // Undo Steps
         manualBuilderSteps = manualBuilderSteps.slice(0, existingIndex);
         if(typeof showToast === 'function') showToast(`Removed steps starting from: ${d.id}`);
     } else {
+        // Add Step
         const desc = d.description || `Step involving ${d.id}.`;
         manualBuilderSteps.push({ nodeId: d.id, info: desc });
         
+        // Pulse animation via D3 filter selection to avoid 'event' reference issues
         app.node.filter(n => n.id === d.id)
             .select("circle") 
             .transition().duration(100).attr("stroke-width", 10)
@@ -273,6 +294,7 @@ function updateManualBuilderVisuals() {
     d3.select("#manual-step-count").text(`${manualBuilderSteps.length} Steps`);
     d3.select("#finish-manual-btn").property("disabled", manualBuilderSteps.length === 0);
 
+    // Dynamic Instructions
     const instructionText = d3.select("#manual-instruction-text");
     if (manualBuilderSteps.length === 0) {
         instructionText.html("Select a tool to start.");
@@ -286,6 +308,7 @@ function updateManualBuilderVisuals() {
         lastNodeId = manualBuilderSteps[manualBuilderSteps.length - 1].nodeId;
     }
 
+    // 1. Path Keys (History) - Bi-directional matching
     const pathKeys = new Set();
     for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
         const u = manualBuilderSteps[i].nodeId;
@@ -294,6 +317,7 @@ function updateManualBuilderVisuals() {
         pathKeys.add(`${v}-${u}`);
     }
 
+    // 2. Candidate Keys (Future - Strict Data Flow)
     const candidateLinkKeys = new Set();
     const candidateNodeIds = new Set();
 
@@ -302,12 +326,17 @@ function updateManualBuilderVisuals() {
             const s = safeId(l.source);
             const t = safeId(l.target);
             
+            // STRICT LOGIC:
+            // A. OUTGOING: Source == LastNode -> Target (Always Valid)
             if (s === lastNodeId && !activeIds.has(t)) {
                 if (l.type !== 'pulls-data-from') {
                     candidateLinkKeys.add(`${s}-${t}`);
                     candidateNodeIds.add(t);
                 }
-            } else if (t === lastNodeId && !activeIds.has(s)) {
+            } 
+            // B. INCOMING: Target == LastNode -> Source
+            // Valid ONLY if 'pulls-data-from' (data flows Source->Target) OR 'syncs' (Bi-directional)
+            else if (t === lastNodeId && !activeIds.has(s)) {
                 if (l.type === 'pulls-data-from' || l.type === 'syncs') {
                     candidateLinkKeys.add(`${s}-${t}`); 
                     candidateNodeIds.add(s);
@@ -316,6 +345,7 @@ function updateManualBuilderVisuals() {
         });
     }
 
+    // --- NODE UPDATES ---
     app.node.transition().duration(200)
         .style("opacity", n => {
             if (activeIds.has(n.id)) return 1.0;            
@@ -328,6 +358,7 @@ function updateManualBuilderVisuals() {
             return null;
         });
 
+    // --- LINK UPDATES ---
     app.link.each(function(d) {
         const s = safeId(d.source);
         const t = safeId(d.target);
@@ -335,6 +366,7 @@ function updateManualBuilderVisuals() {
         const key = `${s}-${t}`;
 
         let isPath = false;
+        // Check History (Bi-directional match)
         for (let i = 0; i < manualBuilderSteps.length - 1; i++) {
             const u = manualBuilderSteps[i].nodeId;
             const v = manualBuilderSteps[i+1].nodeId;
@@ -347,6 +379,7 @@ function updateManualBuilderVisuals() {
         let isCandidate = candidateLinkKeys.has(key);
 
         if (isPath) {
+            // HISTORY: Solid Orange
             el.transition().duration(200)
               .style("stroke", "#F36C23")
               .style("opacity", 1)
@@ -355,6 +388,7 @@ function updateManualBuilderVisuals() {
               .attr("stroke-dasharray", "none")
               .attr("marker-end", "url(#arrow-highlighted)");
         } else if (isCandidate) {
+            // FUTURE: Dashed Blue
             el.transition().duration(200)
               .style("stroke", "#2563EB")
               .style("opacity", 1)
@@ -363,6 +397,7 @@ function updateManualBuilderVisuals() {
               .attr("stroke-dasharray", "6,3")
               .attr("marker-end", "url(#arrow-candidate)");
         } else {
+            // IRRELEVANT: Hidden
             el.transition().duration(200)
               .style("stroke", "#a0a0a0")
               .style("opacity", 0.02)
@@ -397,6 +432,8 @@ function previewTour(tourData) {
     app.interactionState = 'tour_preview';
     
     const nodeIds = new Set(tourData.steps.map(s => s.nodeId));
+    
+    // Path Calculation
     const pathKeys = new Set();
     for(let i=0; i<tourData.steps.length-1; i++) {
         const u = tourData.steps[i].nodeId;
@@ -433,7 +470,6 @@ function previewTour(tourData) {
     let isSaved = false;
     if (tours.ai) isSaved = Object.values(tours.ai).some(t => t.name === tourData.name);
 
-    // Initial Button Render
     const controls = d3.select("#tour-controls");
     controls.style("display", "block").html(`
         <div class="flex flex-col gap-3 pb-2">
@@ -486,7 +522,7 @@ function updateTourControlButtons(isSaved) {
     }
 }
 
-// --- SOP GENERATOR V2 ---
+// --- SOP GENERATOR V2: SUPPORT DOCS & SMART BRANDING ---
 function generateSOP() {
     if (!app.currentTour) {
         alert("No active process to export.");
@@ -495,6 +531,8 @@ function generateSOP() {
     
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
+    
+    // Logic: Use input if provided, otherwise fallback to Procore text/logo
     const logoHtml = (logoInput && logoInput.trim() !== "") 
         ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
         : `<div class="logo" style="font-size: 24px; font-weight: 800; color: #F36C23; letter-spacing: -0.5px;">PROCORE</div>`;
@@ -552,14 +590,25 @@ function generateSOP() {
                 <div style="font-size: 12px; color: #888;">Generated ${date}</div>
             </div>
         </div>
+        
         <div class="section">
             <div class="section-title">1. Purpose & Scope</div>
-            <p>This Standard Operating Procedure (SOP) outlines the required workflow for the <strong>${tour.name.replace(/^[✨📝]\s*/, '')}</strong> process using the Procore Platform.</p>
+            <p>This Standard Operating Procedure (SOP) outlines the required workflow for the <strong>${tour.name.replace(/^[✨📝]\s*/, '')}</strong> process using the Procore Platform. It is intended to standardize data entry and ensure compliance across the <strong>${clientName}</strong> project portfolio.</p>
         </div>
+
         <div class="section">
             <div class="section-title">2. Procedure Steps</div>
             ${stepsHtml}
         </div>
+
+        <div class="section">
+            <div class="section-title">3. Approval</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 40px;">
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px; color: #888;">Process Owner Signature</div>
+                <div style="border-top: 1px solid #ccc; width: 45%; padding-top: 5px; font-size: 12px; color: #888;">Date</div>
+            </div>
+        </div>
+
         <div class="footer">
             Generated by Procoreverse Simulator. Confidential and Proprietary.
         </div>
@@ -610,43 +659,53 @@ function runTourStep() {
     d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
-    
-    // Save button only on last step logic removed to allow saving anytime
-    // const isLastStep = (app.currentStep === app.currentTour.steps.length - 1);
 
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
         
+        // Define Active and Past Sets
         const activeNodeId = step.nodeId;
         const pastNodeIds = new Set(app.currentTour.steps.slice(0, app.currentStep).map(s => s.nodeId));
         const allTourNodeIds = new Set(app.currentTour.steps.map(s => s.nodeId));
         
+        // --- POLISHED NODE OPACITY LOGIC ---
         app.node.transition().duration(400).style("opacity", d => {
-            if (d.id === activeNodeId) return 1;
-            if (pastNodeIds.has(d.id)) return 0.4;
-            if (allTourNodeIds.has(d.id)) return 0.1;
-            return 0.02;
+            if (d.id === activeNodeId) return 1;     // Active: Full Opacity
+            if (pastNodeIds.has(d.id)) return 0.4;   // Past: Dimmed but visible
+            if (allTourNodeIds.has(d.id)) return 0.1;// Future: Faint ghost
+            return 0.02;                             // Unrelated: Almost invisible
         });
         
+        // --- POLISHED LINK LOGIC ---
         let prevNodeId = app.currentStep > 0 ? app.currentTour.steps[app.currentStep - 1].nodeId : null;
         
         app.link.transition().duration(400)
             .style("opacity", l => {
                 const s = safeId(l.source);
                 const t = safeId(l.target);
+                
+                // Active Link (Previous -> Current)
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 if (isActiveLink) return 1;
+                
+                // Check if link is part of the tour history
                 const isHistoryLink = pastNodeIds.has(s) && pastNodeIds.has(t); 
                 if (isHistoryLink) return 1.0;
+                
                 return 0.05;
             })
             .style("stroke-opacity", l => {
                 const s = safeId(l.source);
                 const t = safeId(l.target);
+                
+                // Active Link (Previous -> Current)
                 const isActiveLink = prevNodeId && ((s === prevNodeId && t === activeNodeId) || (s === activeNodeId && t === prevNodeId));
                 if (isActiveLink) return 1;
+                
+                // Check if link is part of the tour history
                 const isHistoryLink = pastNodeIds.has(s) && pastNodeIds.has(t); 
                 if (isHistoryLink) return 0.2;
+                
                 return 0.01;
             })
             .attr("stroke", l => {
@@ -682,6 +741,7 @@ function stopTour(fullReset = true) {
         app.currentStep = -1;
         app.interactionState = 'explore';
         
+        // AGGRESSIVE RESET: Remove all inline styles so CSS takes over
         app.node.attr("style", null);
         app.link.attr("style", null);
         
