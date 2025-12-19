@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 1100 (ANALYTICS LOGGER ADDED)
+// VERSION: 1105 (LABEL UPDATE: v2.4 ANALYTICS)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
@@ -15,11 +15,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 190,
             "onsite": 5610,
-            "sop": 2620,
-            "consulting": 3500,
-            "admin": 2620,
+            "sop": 26200,
+            "consulting": 35000,
+            "admin": 26200,
             "integration": 4700,
-            "custom": 750
+            "custom": 7500
         },
         "dictionary": {
             "Bidding": "Tendering",
@@ -45,11 +45,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 380,
             "onsite": 11350,
-            "sop": 5300,
-            "consulting": 7565,
-            "admin": 1515,
+            "sop": 53000,
+            "consulting": 75650,
+            "admin": 15150,
             "integration": 9500,
-            "custom": 1515
+            "custom": 15150
         },
         "dictionary": {
             "Bidding": "Tendering",
@@ -76,11 +76,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 250,
             "onsite": 7500,
-            "sop": 3500,
-            "consulting": 10000,
-            "admin": 3500,
+            "sop": 35000,
+            "consulting": 100000,
+            "admin": 35000,
             "integration": 6250,
-            "custom": 1000
+            "custom": 10000
         },
         "dictionary": {}
     }
@@ -412,7 +412,7 @@ function injectControlsFooter() {
         .attr("href", "#")
         .attr("id", "version-link")
         .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
-        .text("v2.3 Localized")
+        .text("v2.4 Analytics")
         .on("click", (e) => {
             e.preventDefault();
             const modal = document.getElementById('credits-modal-overlay');
