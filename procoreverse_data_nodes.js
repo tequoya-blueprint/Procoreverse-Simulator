@@ -4,6 +4,88 @@
  */
 const nodesData = [
 
+  // --- [Group: External Tech] (NEW LAYER) ---
+  {
+    "id": "External ERP",
+    "group": "External Tech",
+    "level": "company",
+    "description": "Third-party Accounting or ERP system (e.g., Sage, Viewpoint, CMiC).",
+    "personas": ["fm", "owner", "admin"],
+    "features": [],
+    "supportDocUrl": "",
+    "whatsNewUrl": ""
+  },
+  {
+    "id": "External Scheduling",
+    "group": "External Tech",
+    "level": "project",
+    "description": "Third-party Scheduling tool (e.g., P6, MS Project, Asta).",
+    "personas": ["pm", "super", "owner"],
+    "features": [],
+    "supportDocUrl": "",
+    "whatsNewUrl": ""
+  },
+  {
+    "id": "External Estimating",
+    "group": "External Tech",
+    "level": "project",
+    "description": "Third-party estimating software (e.g., HeavyBid, Stack, OST).",
+    "personas": ["estimator", "pm"],
+    "features": [],
+    "supportDocUrl": "",
+    "whatsNewUrl": ""
+  },
+  {
+    "id": "External Document Management",
+    "group": "External Tech",
+    "level": "company",
+    "description": "External Common Data Environment (CDE) or Cloud Storage (e.g., SharePoint, Box, Dropbox).",
+    "personas": ["pm", "admin", "owner"],
+    "features": [],
+    "supportDocUrl": "",
+    "whatsNewUrl": ""
+  },
+  {
+    "id": "External Resource Coordination",
+    "group": "External Tech",
+    "level": "company",
+    "description": "Spreadsheets or point solutions for labor and workforce planning.",
+    "personas": ["super", "sub"],
+    "features": [],
+    "supportDocUrl": "",
+    "whatsNewUrl": ""
+  },
+  {
+    "id": "External Safety",
+    "group": "External Tech",
+    "level": "project",
+    "description": "Point solutions for safety inspections, forms, and incident tracking.",
+    "personas": ["super", "safety"],
+    "features": [],
+    "supportDocUrl": "",
+    "whatsNewUrl": ""
+  },
+  {
+    "id": "External BIM",
+    "group": "External Tech",
+    "level": "project",
+    "description": "Third-party model viewing or clash detection software (e.g., Navisworks, Revizto).",
+    "personas": ["design", "pm"],
+    "features": [],
+    "supportDocUrl": "",
+    "whatsNewUrl": ""
+  },
+  {
+    "id": "External Bidding",
+    "group": "External Tech",
+    "level": "company",
+    "description": "Third-party Bid Solicitation tool (e.g., BuildingConnected, iSqFt).",
+    "personas": ["estimator", "pm"],
+    "features": [],
+    "supportDocUrl": "",
+    "whatsNewUrl": ""
+  },
+  
   // --- [Group: External Integrations] ---
   {
     "id": "ERP Connectors",
