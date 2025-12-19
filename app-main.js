@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 1000 (PHANTOM LINE FIX + GLOBAL EXCLUSION)
+// VERSION: 1100 (PHANTOM LINE FIX + EXTERNAL TECH SHAPES)
 
-console.log("App Main 1000: Phantom Lines Removed...");
+console.log("App Main 1100: External Tech Shapes Active...");
 
 const app = {
     simulation: null,
@@ -114,7 +114,8 @@ function setupCategories() {
         "Project Execution": "#F36C23",     
         "Resource Management": "#566578",   
         "Emails": "#c94b4b",                
-        "Project Map": "#F36C23"            
+        "Project Map": "#F36C23",
+        "External Tech": "#2d3748" // Dark Charcoal for External Tech            
     };
 
     app.categories = {}; 
@@ -149,7 +150,8 @@ function setHexFoci() {
         "Workforce Management": { angle: 150, dist: 0.7 }, 
         "Project Map": { angle: -60, dist: 0.5 },
         "External Integrations": { angle: 30, dist: 1.3 }, 
-        "Emails": { angle: 210, dist: 1.3 } 
+        "Emails": { angle: 210, dist: 1.3 },
+        "External Tech": { angle: 180, dist: 1.5 } // Positioned on the left periphery
     };
     Object.keys(app.categories).forEach(cat => {
         const config = layoutMap[cat] || { angle: 0, dist: 0 };
@@ -295,7 +297,19 @@ function updateGraph(isFilterChange = true) {
                 .on("click", nodeClicked).on("dblclick", nodeDoubleClicked)
                 .call(drag(app.simulation)); 
 
-            nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
+            // --- V2.4 UPDATE: EXTERNAL TECH DIAMONDS ---
+            nodeGroup.append("path")
+                .attr("d", d => {
+                    const size = d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize;
+                    if (d.group === "External Tech") {
+                        // Diamond Shape for External Tools (M0,-r Lr,0 L0,r L-r,0 Z)
+                        return `M0,-${size}L${size},0L0,${size}L-${size},0Z`; 
+                    }
+                    return generateHexagonPath(size);
+                })
+                .attr("fill", d => app.categories[d.group].color)
+                .style("color", d => app.categories[d.group].color);
+            
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
             
             // LOCALIZATION: Use Helper to render text
