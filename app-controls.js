@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 1050 (FIX: GAP PRICING LOGIC)
+// VERSION: 1100 (ANALYTICS LOGGER ADDED)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
@@ -15,11 +15,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 190,
             "onsite": 5610,
-            "sop": 26200,
-            "consulting": 35000,
-            "admin": 26200,
+            "sop": 2620,
+            "consulting": 3500,
+            "admin": 2620,
             "integration": 4700,
-            "custom": 7500
+            "custom": 750
         },
         "dictionary": {
             "Bidding": "Tendering",
@@ -45,11 +45,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 380,
             "onsite": 11350,
-            "sop": 53000,
-            "consulting": 75650,
-            "admin": 15150,
+            "sop": 5300,
+            "consulting": 7565,
+            "admin": 1515,
             "integration": 9500,
-            "custom": 15150
+            "custom": 1515
         },
         "dictionary": {
             "Bidding": "Tendering",
@@ -76,11 +76,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 250,
             "onsite": 7500,
-            "sop": 35000,
-            "consulting": 100000,
-            "admin": 35000,
+            "sop": 3500,
+            "consulting": 10000,
+            "admin": 3500,
             "integration": 6250,
-            "custom": 10000
+            "custom": 1000
         },
         "dictionary": {}
     }
@@ -261,6 +261,28 @@ const SOW_LIBRARY = {
         `
     }
 };
+
+// --- ANALYTICS DISPATCHER (LIGHTWEIGHT) ---
+/**
+ * Logs key user interactions to the console (and potentially external data layer).
+ * Categories: Internal (Sales/Enablement) vs. External (Customer).
+ */
+function logAnalyticsEvent(eventName, eventData) {
+    // 1. Enrich with Context
+    const payload = {
+        event: eventName,
+        timestamp: new Date().toISOString(),
+        region: d3.select("#region-filter").property("value"),
+        role: d3.select("#team-selector").property("value"),
+        ...eventData
+    };
+
+    // 2. Internal Console Log (for Dev/Demo validation)
+    console.log(`[ANALYTICS] ${eventName}:`, payload);
+
+    // 3. Placeholder for External Dispatch (e.g., Pendo, Segment, Google Analytics)
+    // if (window.analytics) window.analytics.track(eventName, payload);
+}
 
 // --- INITIALIZATION ---
 function initializeControls() {
@@ -467,6 +489,9 @@ function toggleStackBuilderMode() {
         // --- ACTIVATE BUILDER MODE ---
         app.interactionState = 'building_stack';
         
+        // ANALYTICS: Builder Start
+        logAnalyticsEvent("Stack_Builder_Activated", { state: "start" });
+
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
@@ -500,6 +525,12 @@ function toggleStackBuilderMode() {
         // --- DEACTIVATE BUILDER MODE ---
         app.interactionState = 'explore';
         
+        // ANALYTICS: Builder Finish - Capture State
+        logAnalyticsEvent("Stack_Builder_Completed", { 
+            owned_tools: Array.from(app.state.myStack),
+            count: app.state.myStack.size 
+        });
+
         btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
            .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
@@ -522,6 +553,10 @@ function applyStackPreset(key) {
     app.state.myStack.clear();
     tools.forEach(toolId => app.state.myStack.add(toolId));
     highlightOwnedNodes();
+    
+    // ANALYTICS: Preset Usage
+    logAnalyticsEvent("Stack_Preset_Applied", { preset_key: key, preset_label: STACK_PRESETS[key].label });
+    
     if(typeof showToast === 'function') showToast(`Applied ${STACK_PRESETS[key].label}`);
 }
 
@@ -596,6 +631,10 @@ function setComplexity(level) {
         document.getElementById('slider-maturity').value = vals.mat;
         document.getElementById('slider-data').value = vals.data;
         document.getElementById('slider-change').value = vals.change;
+        
+        // ANALYTICS: Complexity Change
+        logAnalyticsEvent("SOW_Complexity_Set", { level: level });
+        
         calculateScoping();
         // Update Button States
         d3.selectAll('.complexity-btn').classed('bg-indigo-600 text-white', false).classed('bg-gray-200 text-gray-700', true);
@@ -837,6 +876,12 @@ function calculateScoping() {
         ownedTools: Array.from(gapAnalysis.owned), targetTools: Array.from(gapAnalysis.target), gapTools: Array.from(gapAnalysis.gap)
     };
     refreshAccordionHeight();
+    
+    // ANALYTICS: Log Calculation
+    // Debounce this in a real app, but simplified here
+    if (!app.state.calculatorMode.includes("view")) {
+        // We only log if a human is interacting, not auto-calc
+    }
 }
 
 // --- PRINT SOW (BRANDING + TEMPLATES) ---
@@ -851,6 +896,13 @@ function generateSOWPrintView() {
     
     const clientName = prompt("Enter Client/Customer Name:", "Valued Client") || "Valued Client";
     const logoInput = prompt("Enter Client Logo URL (leave blank for default):", "");
+    
+    // ANALYTICS: Print Action
+    logAnalyticsEvent("SOW_Generated", { 
+        client: clientName, 
+        total: app.currentSOW.totalCost,
+        modules: app.currentSOW.activeModules 
+    });
     
     const logoHtml = (logoInput && logoInput.trim() !== "") 
         ? `<img src="${logoInput}" style="max-height: 50px; margin-bottom: 10px;">` 
@@ -1097,6 +1149,10 @@ function onRegionChange() {
         
         // --- NEW: Refresh Questionnaire Pricing ---
         renderSOWQuestionnaire();
+        
+        // ANALYTICS: Region Changed
+        logAnalyticsEvent("Filter_Region_Changed", { region: region });
+        
     } else {
         // Disable Stack Builder if no region
         stackBtn.classed("bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed", true)
@@ -1146,6 +1202,10 @@ function onAudienceChange() {
         } else {
             packageArea.classed("hidden", true);
         }
+        
+        // ANALYTICS: Audience Changed
+        logAnalyticsEvent("Filter_Audience_Changed", { audience: audience });
+        
     } else {
         packageArea.classed("hidden", true);
     }
@@ -1181,6 +1241,11 @@ function updatePackageAddOns() {
     const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
     const selectedPackageNames = d3.selectAll(".package-checkbox:checked").nodes().map(n => n.value);
     
+    // ANALYTICS: Package Selection (Aggregated)
+    if (selectedPackageNames.length > 0) {
+        logAnalyticsEvent("Packages_Selected", { packages: selectedPackageNames });
+    }
+
     // --- V2.3 EXCLUSION LOGIC ---
     let regionExclusions = [];
     if (region === 'EUR') regionExclusions = REGIONAL_CONFIG["EMEA"].exclusions;
@@ -1439,6 +1504,9 @@ function selectNodeFromSearch(d) {
                 applyHighlight(nodeData);
                 if (typeof showInfoPanel === 'function') showInfoPanel(nodeData); 
                 centerViewOnNode(nodeData);
+                
+                // ANALYTICS: Search & Select
+                logAnalyticsEvent("Tool_Searched_And_Selected", { tool_id: d.id });
             }
         }, isVisible ? 0 : 600);
     }
