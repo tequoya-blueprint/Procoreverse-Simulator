@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 920 (FIX: STRICT LINK GOVERNANCE & PHANTOM LINE REMOVAL)
+// VERSION: 1000 (PHANTOM LINE FIX + GLOBAL EXCLUSION)
 
-console.log("App Main 920: Loading...");
+console.log("App Main 1000: Phantom Lines Removed...");
 
 const app = {
     simulation: null,
@@ -80,22 +80,41 @@ function nodeDoubleClicked(event, d) {
     event.stopPropagation();
 }
 
-// --- 2. SETUP & LAYOUT ---
+// --- 2. LOCALIZATION HELPER ---
+function getLocalizedLabel(nodeId) {
+    if (typeof REGIONAL_CONFIG !== 'undefined') {
+        const regionDropdown = document.getElementById("region-filter");
+        if (regionDropdown) {
+            const regionCode = regionDropdown.value;
+            let configKey = "NAMER";
+            if (regionCode === "EUR") configKey = "EMEA";
+            if (regionCode === "APAC") configKey = "APAC";
+            
+            const config = REGIONAL_CONFIG[configKey];
+            if (config && config.dictionary && config.dictionary[nodeId]) {
+                return config.dictionary[nodeId];
+            }
+        }
+    }
+    return nodeId;
+}
+
+// --- 3. SETUP & LAYOUT ---
 function setupCategories() {
     const colorMap = { 
-        "Preconstruction": "#D1C4E9",        // Lumber
-        "Project Management": "#F36C23",     // Orange
-        "Financial Management": "#8D6E63",   // Earth
-        "Workforce Management": "#3a8d8c",   // Teal
-        "Quality & Safety": "#5B8D7E",       // Darker Teal
-        "Platform & Core": "#757575",        // Mid Grey
-        "Construction Intelligence": "#4A4A4A", // Dark Grey
-        "External Integrations": "#B0B0B0",  // Light Grey
-        "Helix": "#607D8B",                  // Metal
-        "Project Execution": "#F36C23",      // Orange
-        "Resource Management": "#607D8B",    // Metal
-        "Emails": "#c94b4b",                 // Red
-        "Project Map": "#F36C23"             // Orange
+        "Preconstruction": "#CEC4A1",       
+        "Project Management": "#F36C23",    
+        "Financial Management": "#8D6E63",  
+        "Workforce Management": "#566578",  
+        "Quality & Safety": "#566578",      
+        "Platform & Core": "#757575",       
+        "Construction Intelligence": "#4A4A4A", 
+        "External Integrations": "#B0B0B0", 
+        "Helix": "#607D8B",                 
+        "Project Execution": "#F36C23",     
+        "Resource Management": "#566578",   
+        "Emails": "#c94b4b",                
+        "Project Map": "#F36C23"            
     };
 
     app.categories = {}; 
@@ -230,7 +249,7 @@ function updateGraph(isFilterChange = true) {
     if (app.interactionState === 'manual_building') return;
 
     // 1. Data Retrieval
-    const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set() };
+    const filters = (typeof getActiveFilters === 'function') ? getActiveFilters() : { categories: new Set(), persona: 'all', packageTools: null, connectionTypes: new Set(), showProcoreLed: false, procoreLedTools: new Set(), excludedTools: new Set() };
     const nodes = (typeof nodesData !== 'undefined' && Array.isArray(nodesData)) ? nodesData : [];
     const allLinks = (typeof linksData !== 'undefined' && Array.isArray(linksData)) ? linksData : [];
     
@@ -241,30 +260,31 @@ function updateGraph(isFilterChange = true) {
     const isPackageActive = filters.packageTools && filters.packageTools.size > 0;
 
     // 3. Define "Active Nodes" (The ones meant to be fully visible)
-    // If a package is selected (but no stack), the package tools are Active.
-    // If Gap Mode, Active = Matched + Gap + Outlier.
-    // If Default, Active = All.
     let activeNodeIds = new Set();
+    
+    // --- V2.3: FILTER OUT EXCLUDED TOOLS FROM "ALL" LIST ---
+    const validNodes = nodes.filter(n => !filters.excludedTools || !filters.excludedTools.has(n.id));
+    
     if (isBuilderMode) {
-        activeNodeIds = new Set(nodes.map(n => n.id)); // All active during build
+        activeNodeIds = new Set(validNodes.map(n => n.id)); 
     } else if (isGapMode) {
         activeNodeIds = new Set([...gapAnalysis.matched, ...gapAnalysis.gap, ...gapAnalysis.outlier]);
     } else if (isPackageActive) {
         activeNodeIds = filters.packageTools;
     } else {
-        activeNodeIds = new Set(nodes.map(n => n.id)); // All active
+        // Default View: Show all valid nodes for the region
+        activeNodeIds = new Set(validNodes.map(n => n.id));
     }
 
     // 4. STABLE FILTERING: Keep nodes in DOM to prevent layout jumps, but control via opacity.
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
-        return inCategory && inPersona; 
-        // NOTE: We do NOT filter by 'inPackage' here anymore. We handle it in styling below.
+        const isExcluded = filters.excludedTools && filters.excludedTools.has(d.id);
+        return inCategory && inPersona && !isExcluded; 
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
-    // Filter links: ensure endpoints exist
     const filteredLinks = allLinks.filter(d => nodeIds.has(d.source.id || d.source) && nodeIds.has(d.target.id || d.target) && filters.connectionTypes.has(d.type)).map(d => ({...d})); 
 
     // 5. D3 Update - Nodes
@@ -277,7 +297,12 @@ function updateGraph(isFilterChange = true) {
 
             nodeGroup.append("path").attr("d", d => generateHexagonPath(d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize)).attr("fill", d => app.categories[d.group].color).style("color", d => app.categories[d.group].color);
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
-            nodeGroup.append("text").text(d => d.id).attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
+            
+            // LOCALIZATION: Use Helper to render text
+            nodeGroup.append("text")
+                .text(d => getLocalizedLabel(d.id))
+                .attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
+
             nodeGroup.each(function(d) {
                 const g = d3.select(this);
                 let badgeOffset = 14;
@@ -289,7 +314,6 @@ function updateGraph(isFilterChange = true) {
             return nodeGroup;
         },
         update => {
-            // Builder Mode Override
             if (isBuilderMode) {
                 update.transition().duration(500)
                     .style("opacity", d => app.state.myStack.has(d.id) ? 1.0 : 0.4) 
@@ -306,7 +330,6 @@ function updateGraph(isFilterChange = true) {
             update.transition().duration(500)
             .style("opacity", d => {
                 if (activeNodeIds.has(d.id)) return 1.0;
-                // Ghost Logic: If not active, but in graph, dim it.
                 return 0.15; 
             })
             .style("filter", d => {
@@ -321,6 +344,8 @@ function updateGraph(isFilterChange = true) {
                 }
                 return null;
             });
+            
+            update.select("text").text(d => getLocalizedLabel(d.id));
 
             update.select("path").transition().duration(500)
                 .style("stroke", d => {
@@ -386,34 +411,48 @@ function updateGraph(isFilterChange = true) {
             return null;
         });
 
-    app.link.transition().duration(500).style("opacity", d => {
-        if (isBuilderMode) return 0.15;
-        
-        const s = d.source.id || d.source;
-        const t = d.target.id || d.target;
-        
-        // --- STRICT VISIBILITY GOVERNANCE ---
-        const sActive = activeNodeIds.has(s);
-        const tActive = activeNodeIds.has(t);
+    app.link.transition().duration(500)
+        .style("opacity", d => {
+            if (isBuilderMode) return 0.15;
+            
+            const s = d.source.id || d.source;
+            const t = d.target.id || d.target;
+            
+            // --- STRICT VISIBILITY GOVERNANCE ---
+            const sActive = activeNodeIds.has(s);
+            const tActive = activeNodeIds.has(t);
 
-        // 1. Both Visible (Active)
-        if (sActive && tActive) {
-            // Slight dim if in "Procore Led" mode and not part of it
-            if (filters.showProcoreLed && !isGapMode) {
-                const sLed = filters.procoreLedTools.has(s) || app.customScope.has(s);
-                const tLed = filters.procoreLedTools.has(t) || app.customScope.has(t);
-                return (sLed && tLed) ? 0.6 : 0.05;
+            // 1. Both Visible (Active)
+            if (sActive && tActive) {
+                // Slight dim if in "Procore Led" mode and not part of it
+                if (filters.showProcoreLed && !isGapMode) {
+                    const sLed = filters.procoreLedTools.has(s) || app.customScope.has(s);
+                    const tLed = filters.procoreLedTools.has(t) || app.customScope.has(t);
+                    return (sLed && tLed) ? 0.6 : 0.05;
+                }
+                return 0.6;
             }
-            return 0.6;
-        }
 
-        // 2. Both Hidden (Ghost -> Ghost)
-        if (!sActive && !tActive) return 0; // COMPLETELY HIDDEN
-        
-        // 3. One Visible / One Hidden (Ghost Connection)
-        // User requested removal of phantom lines. We hide these too.
-        return 0; 
-    });
+            // 2. PHANTOM LINE FIX: If either node is not active, hide the line completely
+            return 0; 
+        })
+        .style("stroke-opacity", d => { // New explicit stroke-opacity handler
+             if (isBuilderMode) return 0.15;
+             const s = d.source.id || d.source;
+             const t = d.target.id || d.target;
+             const sActive = activeNodeIds.has(s);
+             const tActive = activeNodeIds.has(t);
+             
+             if (sActive && tActive) {
+                 if (filters.showProcoreLed && !isGapMode) {
+                    const sLed = filters.procoreLedTools.has(s) || app.customScope.has(s);
+                    const tLed = filters.procoreLedTools.has(t) || app.customScope.has(t);
+                    return (sLed && tLed) ? 0.8 : 0.05; // Slightly higher stroke-opacity
+                 }
+                 return 0.8;
+             }
+             return 0; // Hide Ghost Connections
+        });
 
     app.nodeG.raise(); 
     app.simulation.nodes(filteredNodes);

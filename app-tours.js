@@ -1,5 +1,5 @@
 // --- app-tours.js ---
-// VERSION: 710 (FULL RESTORATION: NO MINIFICATION & EXPANDED TEMPLATES)
+// VERSION: 1200 (PERSISTENCE + COMBINED HEADING + FULL RESTORATION)
 
 /**
  * Initializes the dropdowns and event listeners for the Tour system.
@@ -10,36 +10,28 @@ function initializeTourControls() {
     const packageGroup = d3.select("#package-tours");
     const aiGroup = d3.select("#ai-tours"); 
     
-    // 1. Load Standard Tours - Platform
-    if (typeof tours !== 'undefined' && tours.platform) {
+    // --- 1. RENAME GROUP (Combined Heading) ---
+    if (!aiGroup.empty()) aiGroup.attr("label", "Saved Processes");
+
+    // Ensure tours object exists
+    if (typeof tours === 'undefined') window.tours = { platform: {}, packages: {}, ai: {} };
+    if (!tours.ai) tours.ai = {};
+
+    // 2. Load Standard Tours - Platform
+    if (tours.platform) {
         Object.entries(tours.platform).forEach(([id, tour]) => {
-            platformGroup.append("option")
-                .attr("value", id)
-                .text(tour.name);
+            platformGroup.append("option").attr("value", id).text(tour.name);
         });
     }
 
-    // 2. Load Standard Tours - Packages
-    if (typeof tours !== 'undefined' && tours.packages) {
+    // 3. Load Standard Tours - Packages
+    if (tours.packages) {
         Object.entries(tours.packages).forEach(([id, tour]) => {
-            packageGroup.append("option")
-                .attr("value", id)
-                .text(tour.name);
+            packageGroup.append("option").attr("value", id).text(tour.name);
         });
     }
 
-    // 3. Load AI/Saved Tours
-    if (typeof tours !== 'undefined' && tours.ai) {
-        Object.entries(tours.ai).forEach(([id, tour]) => {
-            if (aiGroup.select(`option[value="${id}"]`).empty()) {
-                aiGroup.append("option")
-                    .attr("value", id)
-                    .text("✨ " + tour.name);
-            }
-        });
-    }
-
-    // 4. Load from LocalStorage
+    // 4. Load Saved Tours from LocalStorage (Auto-Populate Saved Processes)
     loadSavedTours();
 
     // 5. Setup Dropdown Listener
@@ -54,9 +46,9 @@ function initializeTourControls() {
             // Search Priority: Flat List -> AI -> Categories
             if (typeof flatTours !== 'undefined' && flatTours[tourId]) {
                 tourData = flatTours[tourId];
-            } else if (typeof tours !== 'undefined' && tours.ai && tours.ai[tourId]) {
+            } else if (tours.ai && tours.ai[tourId]) {
                 tourData = tours.ai[tourId];
-            } else if (typeof tours !== 'undefined') {
+            } else {
                  if (tours.platform && tours.platform[tourId]) tourData = tours.platform[tourId];
                  if (tours.packages && tours.packages[tourId]) tourData = tours.packages[tourId];
             }
@@ -111,7 +103,7 @@ function initializeTourControls() {
     }
 }
 
-// --- PERSISTENCE ---
+// --- PERSISTENCE ENGINE ---
 
 function loadSavedTours() {
     const saved = localStorage.getItem('procoreverse_saved_tours');
@@ -120,20 +112,28 @@ function loadSavedTours() {
             const parsedTours = JSON.parse(saved);
             const aiGroup = d3.select("#ai-tours");
             
-            if (!tours.ai) tours.ai = {};
-            
+            // Clear existing AI options to avoid duplicates, then repopulate
+            aiGroup.html("");
+
+            // Re-populate from Storage
             Object.entries(parsedTours).forEach(([id, tour]) => {
-                tours.ai[id] = tour;
+                tours.ai[id] = tour; // Inject into runtime object
                 
-                // Only append if not already there
-                if(aiGroup.select(`option[value="${id}"]`).empty()) {
-                    aiGroup.append("option")
-                        .attr("value", id)
-                        .text(tour.name);
-                }
+                // Add icon if missing
+                const label = (tour.name.startsWith("✨") || tour.name.startsWith("📝")) 
+                    ? tour.name 
+                    : "📝 " + tour.name;
+                    
+                aiGroup.append("option")
+                    .attr("value", id)
+                    .text(label);
             });
+            
+            console.log(`Loaded ${Object.keys(parsedTours).length} saved tours.`);
         } catch (e) { 
             console.error("Error loading saved tours:", e); 
+            // Optional: Reset if corrupt
+            // localStorage.removeItem('procoreverse_saved_tours');
         }
     }
 }
@@ -142,15 +142,19 @@ function saveCurrentTour() {
     if (!app.currentTour) return;
     
     let tourId = app.currentTour.id;
-    // Generate ID if missing
-    if (!tourId || tourId.startsWith('custom_')) {
-        tourId = `custom_tour_${Date.now()}`;
+    // Generate ID if missing or if it's a generic AI/Custom ID
+    // We want to persist the same ID if we are just updating, but AI tours get new IDs on save.
+    if (!tourId || tourId.startsWith('ai_tour_') || tourId.startsWith('custom_')) {
+        // Keep ID stable if it exists, otherwise make new one
+        if (!tourId) tourId = `saved_${Date.now()}`;
         app.currentTour.id = tourId;
     }
     
+    // 1. Update Runtime Object
     if (!tours.ai) tours.ai = {};
     tours.ai[tourId] = app.currentTour;
 
+    // 2. Persist to LocalStorage
     let saved = {};
     const existing = localStorage.getItem('procoreverse_saved_tours');
     if (existing) { 
@@ -160,19 +164,50 @@ function saveCurrentTour() {
     saved[tourId] = app.currentTour;
     localStorage.setItem('procoreverse_saved_tours', JSON.stringify(saved));
     
+    // 3. Update Dropdown UI
     const aiGroup = d3.select("#ai-tours");
     if (aiGroup.select(`option[value="${tourId}"]`).empty()) {
-        aiGroup.append("option").attr("value", tourId).text(app.currentTour.name);
+        aiGroup.append("option")
+            .attr("value", tourId)
+            .text(app.currentTour.name);
     }
     
+    // 4. Select the saved tour
     d3.select("#tour-select").property("value", tourId);
     
     if(typeof showToast === 'function') showToast("Process Saved!");
     
-    // Update Button State
-    d3.selectAll(".save-tour-btn")
-        .property("disabled", true)
-        .html('<i class="fas fa-check mr-2"></i>Saved');
+    // 5. Update Buttons
+    updateTourControlButtons(true);
+}
+
+function deleteCurrentTour() {
+    if (!app.currentTour || !app.currentTour.id) return;
+    
+    const id = app.currentTour.id;
+    
+    if (confirm(`Delete process "${app.currentTour.name}"?`)) {
+        // 1. Remove from LocalStorage
+        let saved = {};
+        const existing = localStorage.getItem('procoreverse_saved_tours');
+        if (existing) {
+            try { saved = JSON.parse(existing); } catch(e) {}
+        }
+        if (saved[id]) {
+            delete saved[id];
+            localStorage.setItem('procoreverse_saved_tours', JSON.stringify(saved));
+        }
+        
+        // 2. Remove from Runtime
+        if (tours.ai && tours.ai[id]) delete tours.ai[id];
+        
+        // 3. Remove from Dropdown
+        d3.select(`#ai-tours option[value="${id}"]`).remove();
+        
+        // 4. Reset View
+        stopTour(true);
+        if(typeof showToast === 'function') showToast("Process Deleted.");
+    }
 }
 
 // --- MANUAL BUILDER LOGIC ---
@@ -180,7 +215,6 @@ function saveCurrentTour() {
 let manualBuilderSteps = [];
 
 // Helper to safely get the String ID from a Node or Link Source/Target
-// Ensures compatibility whether D3 uses objects or strings
 function safeId(obj) {
     if (typeof obj === 'string') return obj;
     if (obj && obj.id) return obj.id;
@@ -444,8 +478,11 @@ function previewTour(tourData) {
                 <div class="text-xs text-gray-500 mt-1">${tourData.steps.length} steps</div>
             </div>
             <div class="flex items-center gap-2 w-full">
-                <button class="save-tour-btn flex-1 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-200 text-xs font-bold py-2 px-2 rounded shadow-sm transition flex items-center justify-center" title="Save to Browser">
+                <button id="save-tour-btn" class="flex-1 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-200 text-xs font-bold py-2 px-2 rounded shadow-sm transition flex items-center justify-center">
                     <i class="fas fa-save mr-2"></i> Save
+                </button>
+                <button id="delete-tour-btn" class="hidden flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold py-2 px-2 rounded shadow-sm transition items-center justify-center">
+                    <i class="fas fa-trash mr-2"></i> Delete
                 </button>
                 <button id="start-tour-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-2 rounded shadow-md transition flex items-center justify-center">
                     Start <i class="fas fa-play ml-2"></i>
@@ -458,11 +495,31 @@ function previewTour(tourData) {
     `);
 
     d3.select("#start-tour-btn").on("click", startTour);
-    d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
+    d3.select("#save-tour-btn").on("click", saveCurrentTour);
+    d3.select("#delete-tour-btn").on("click", deleteCurrentTour);
     d3.select("#export-sop-btn").on("click", generateSOP);
     
-    if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
+    updateTourControlButtons(isSaved);
     resizeTourAccordion();
+}
+
+function updateTourControlButtons(isSaved) {
+    const saveBtn = d3.select("#save-tour-btn");
+    const deleteBtn = d3.select("#delete-tour-btn");
+    
+    if (isSaved) {
+        saveBtn.property("disabled", true)
+               .html('<i class="fas fa-check mr-2"></i>Saved')
+               .classed("opacity-50 cursor-not-allowed", true);
+        
+        // Show delete button for saved/custom tours
+        deleteBtn.classed("hidden", false).classed("flex", true);
+    } else {
+        saveBtn.property("disabled", false)
+               .html('<i class="fas fa-save mr-2"></i> Save')
+               .classed("opacity-50 cursor-not-allowed", false);
+        deleteBtn.classed("hidden", true).classed("flex", false);
+    }
 }
 
 // --- SOP GENERATOR V2: SUPPORT DOCS & SMART BRANDING ---
@@ -567,19 +624,28 @@ function generateSOP() {
 function startTour() {
     app.interactionState = 'tour';
     app.currentStep = 0;
+    
+    // Check if saved
+    let isSaved = false;
+    if (tours.ai) isSaved = Object.values(tours.ai).some(t => t.id === app.currentTour.id);
+
     d3.select("#tour-controls").style("display", "flex").html(`
         <button id="tour-prev" class="text-gray-500 hover:text-gray-700 px-3 py-1 disabled:opacity-30"><i class="fas fa-chevron-left"></i></button>
         <span id="tour-step-indicator" class="text-xs font-semibold text-gray-600">1 / ${app.currentTour.steps.length}</span>
         <button id="tour-next" class="text-gray-500 hover:text-gray-700 px-3 py-1 disabled:opacity-30"><i class="fas fa-chevron-right"></i></button>
-        <button class="save-tour-btn hidden ml-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-3 rounded shadow-md transition items-center" title="Save this Process"><i class="fas fa-save mr-2"></i> Save</button>
+        <button id="save-tour-btn" class="ml-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-3 rounded shadow-md transition flex items-center" title="Save this Process"><i class="fas fa-save mr-2"></i> Save</button>
     `);
+    
     d3.select("#tour-prev").on("click", () => { if (app.currentStep > 0) { app.currentStep--; runTourStep(); } });
     d3.select("#tour-next").on("click", () => { if (app.currentTour && app.currentStep < app.currentTour.steps.length - 1) { app.currentStep++; runTourStep(); } });
     
-    let isSaved = false;
-    if (tours.ai) isSaved = Object.values(tours.ai).some(t => t.name === app.currentTour.name);
-    if (isSaved) d3.selectAll(".save-tour-btn").property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved');
-    else d3.selectAll(".save-tour-btn").on("click", saveCurrentTour);
+    const saveBtn = d3.select("#save-tour-btn");
+    
+    if (isSaved) {
+        saveBtn.property("disabled", true).html('<i class="fas fa-check mr-2"></i>Saved').classed("bg-gray-400 hover:bg-gray-400", true);
+    } else {
+        saveBtn.on("click", saveCurrentTour);
+    }
 
     runTourStep();
     resizeTourAccordion();
@@ -593,9 +659,6 @@ function runTourStep() {
     d3.select("#tour-step-indicator").text(`${app.currentStep + 1} / ${app.currentTour.steps.length}`);
     d3.select("#tour-prev").property("disabled", app.currentStep === 0);
     d3.select("#tour-next").property("disabled", app.currentStep === app.currentTour.steps.length - 1);
-    const isLastStep = (app.currentStep === app.currentTour.steps.length - 1);
-    const saveBtn = d3.select("#tour-controls .save-tour-btn");
-    saveBtn.classed("hidden", !isLastStep).classed("flex", isLastStep);
 
     if (nodeData) {
         if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
