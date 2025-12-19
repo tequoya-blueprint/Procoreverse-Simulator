@@ -1,7 +1,7 @@
 // --- app-main.js ---
-// VERSION: 1100 (PHANTOM LINE FIX + EXTERNAL TECH SHAPES)
+// VERSION: 1150 (FIX: PROCORE LED VISIBILITY IN GAP MODE)
 
-console.log("App Main 1100: External Tech Shapes Active...");
+console.log("App Main 1150: Procore Led Overlay Fix Active...");
 
 const app = {
     simulation: null,
@@ -379,7 +379,9 @@ function updateGraph(isFilterChange = true) {
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    if (isGapMode || !activeNodeIds.has(d.id)) return 0; // Hide ring if ghost or gap mode
+                    // --- V2.4 FIX: ALLOW PROCORE LED RINGS IN GAP MODE ---
+                    // Original Code: if (isGapMode || !activeNodeIds.has(d.id)) return 0;
+                    if (!activeNodeIds.has(d.id)) return 0; // Check only for visibility
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
