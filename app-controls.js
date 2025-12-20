@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 1105 (LABEL UPDATE: v2.4 ANALYTICS)
+// VERSION: 1110 (DEMO MODE: KEEP BUILDER VISIBLE)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
@@ -430,10 +430,17 @@ function toggleDemoMode() {
         // DISABLE
         body.classed("demo-mode-active", false);
         d3.select("#scoping-ui-container").style("display", "block"); 
-        d3.select("#ai-workflow-builder-btn").style("display", "block");
-        d3.select("#manual-workflow-builder-btn").style("display", "block");
+        
+        // --- CHANGE: Keep Builders visible or managed by TEAM_CONFIG
+        // d3.select("#ai-workflow-builder-btn").style("display", "block");
+        // d3.select("#manual-workflow-builder-btn").style("display", "block");
+        
         d3.select("#team-selector").property("disabled", false).style("opacity", 1);
         
+        // Re-apply current team view to restore correct button visibility
+        const currentTeam = d3.select("#team-selector").property("value");
+        applyTeamView(currentTeam);
+
         // Visuals
         btn.classed("bg-green-600 hover:bg-green-700 text-white", false)
            .classed("bg-gray-200 hover:bg-gray-300 text-gray-700", true);
@@ -444,10 +451,12 @@ function toggleDemoMode() {
         // ENABLE
         body.classed("demo-mode-active", true);
         d3.select("#scoping-ui-container").style("display", "none"); 
-        d3.select("#ai-workflow-builder-btn").style("display", "none"); 
-        d3.select("#manual-workflow-builder-btn").style("display", "none"); 
         
-        // Force Admin view to ensure graph elements are visible
+        // --- CHANGE: DO NOT HIDE BUILDERS HERE ---
+        // d3.select("#ai-workflow-builder-btn").style("display", "none"); 
+        // d3.select("#manual-workflow-builder-btn").style("display", "none"); 
+        
+        // Force Admin view to ensure graph elements are visible, BUT keep builders visible per Admin config
         applyTeamView('admin'); 
         d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
         
