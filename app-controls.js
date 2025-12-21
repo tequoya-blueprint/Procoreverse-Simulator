@@ -594,14 +594,14 @@ function injectControlsFooter() {
         .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
         .on("click", toggleDemoMode);
 
-    // 4. Version Link
+    // 4. Version Link (CORRECTED)
     footer.append("div")
         .attr("class", "text-center")
         .append("a")
         .attr("href", "#")
         .attr("id", "version-link")
         .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
-        .text("v1650 (Full Integrity)")
+        .text("v2.4 (Analytics Edition)") // <--- UPDATED HERE
         .on("click", (e) => {
             e.preventDefault();
             const modal = document.getElementById('credits-modal-overlay');
