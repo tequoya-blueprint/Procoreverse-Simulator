@@ -1,10 +1,10 @@
 // --- app-controls.js ---
-// VERSION: 1200 (PHASE 8: DEEP LINKING & STATE SHARING)
+// VERSION: 1300 (BRAND COMPLIANCE + EUROPE FIX + ROADMAP INTEGRATION)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
     "EMEA": {
-        "label": "Europe",
+        "label": "Europe", // Corrected Label
         "legal_entity": "Procore Technologies, Inc.",
         "jurisdiction": "England",
         "currency": "GBP",
@@ -15,9 +15,9 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 190,
             "onsite": 5610,
-            "sop": 2620,
-            "consulting": 3500,
-            "admin": 2620,
+            "sop": 26200,
+            "consulting": 35000,
+            "admin": 26200,
             "integration": 4700,
             "custom": 7500
         },
@@ -45,11 +45,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 380,
             "onsite": 11350,
-            "sop": 5300,
-            "consulting": 7565,
-            "admin": 1515,
+            "sop": 53000,
+            "consulting": 75650,
+            "admin": 15150,
             "integration": 9500,
-            "custom": 1515
+            "custom": 15150
         },
         "dictionary": {
             "Bidding": "Tendering",
@@ -76,11 +76,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 250,
             "onsite": 7500,
-            "sop": 3500,
-            "consulting": 10000,
-            "admin": 3500,
+            "sop": 35000,
+            "consulting": 100000,
+            "admin": 35000,
             "integration": 6250,
-            "custom": 1000
+            "custom": 10000
         },
         "dictionary": {}
     }
@@ -262,8 +262,13 @@ const SOW_LIBRARY = {
     }
 };
 
-// --- ANALYTICS DISPATCHER ---
+// --- ANALYTICS DISPATCHER (LIGHTWEIGHT) ---
+/**
+ * Logs key user interactions to the console (and potentially external data layer).
+ * Categories: Internal (Sales/Enablement) vs. External (Customer).
+ */
 function logAnalyticsEvent(eventName, eventData) {
+    // 1. Enrich with Context
     const payload = {
         event: eventName,
         timestamp: new Date().toISOString(),
@@ -271,7 +276,11 @@ function logAnalyticsEvent(eventName, eventData) {
         role: d3.select("#team-selector").property("value"),
         ...eventData
     };
+
+    // 2. Internal Console Log (for Dev/Demo validation)
     console.log(`[ANALYTICS] ${eventName}:`, payload);
+
+    // 3. Placeholder for External Dispatch (e.g., Pendo, Segment, Google Analytics)
     // if (window.analytics) window.analytics.track(eventName, payload);
 }
 
@@ -473,21 +482,22 @@ function injectControlsFooter() {
     // 1. Reset Button (Full Width)
     footer.append("button")
         .attr("id", "reset-view")
-        .attr("class", "w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
+        .attr("class", "w-full btn-secondary py-3 px-4 rounded-lg text-sm shadow-md")
         .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
         .on("click", resetView);
 
     // 2. Share View Button (New Phase 8)
     footer.append("button")
         .attr("id", "share-view-btn")
-        .attr("class", "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
+        .attr("class", "w-full btn-secondary py-3 px-4 rounded-lg text-sm shadow-md") 
+        .style("background-color", "#2563EB") // Keep blue for "Share" context, or switch to orange if preferred
         .html('<i class="fas fa-share-alt mr-2"></i> Share View')
         .on("click", shareView);
 
     // 3. Presentation Mode Toggle (Full Width)
     footer.append("button")
         .attr("id", "demo-toggle-btn")
-        .attr("class", "w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center")
+        .attr("class", "w-full btn-brand py-2 px-4 rounded-lg text-xs flex items-center justify-center")
         .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
         .on("click", toggleDemoMode);
 
@@ -498,7 +508,7 @@ function injectControlsFooter() {
         .attr("href", "#")
         .attr("id", "version-link")
         .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
-        .text("v1200 (Deep Linking)")
+        .text("v2.4 Analytics (Brand Compliant)")
         .on("click", (e) => {
             e.preventDefault();
             const modal = document.getElementById('credits-modal-overlay');
@@ -528,8 +538,7 @@ function toggleDemoMode() {
         applyTeamView(currentTeam);
 
         // Visuals
-        btn.classed("bg-green-600 hover:bg-green-700 text-white", false)
-           .classed("bg-gray-200 hover:bg-gray-300 text-gray-700", true);
+        btn.classed("btn-brand", true).classed("btn-secondary", false);
         btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
         
         if(typeof showToast === 'function') showToast("Demo Mode Deactivated.");
@@ -547,8 +556,7 @@ function toggleDemoMode() {
         d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
         
         // Visuals
-        btn.classed("bg-gray-200 hover:bg-gray-300 text-gray-700", false)
-           .classed("bg-green-600 hover:bg-green-700 text-white", true);
+        btn.classed("btn-brand", false).classed("btn-secondary", true);
         btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
         
         if(typeof showToast === 'function') showToast("Demo Mode Active.");
@@ -587,8 +595,8 @@ function toggleStackBuilderMode() {
         // ANALYTICS: Builder Start
         logAnalyticsEvent("Stack_Builder_Activated", { state: "start" });
 
-        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", true)
-           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", false)
+        // Use Green for "Active" state
+        btn.attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition bg-green-600 text-white border-green-700")
            .html('<i class="fas fa-check-circle mr-2"></i> Done Selecting Tools');
         
         if(typeof showToast === 'function') showToast("Builder Active: Click tools the customer CURRENTLY owns.", 4000);
@@ -626,8 +634,8 @@ function toggleStackBuilderMode() {
             count: app.state.myStack.size 
         });
 
-        btn.classed("bg-green-600 hover:bg-green-700 text-white border-green-700", false)
-           .classed("bg-white text-gray-700 border-gray-300 hover:bg-gray-50", true)
+        // Revert to white
+        btn.attr("class", "w-full mb-4 font-bold py-2 px-4 rounded shadow transition bg-white text-gray-700 border border-gray-300 hover:bg-gray-50")
            .html('<i class="fas fa-layer-group mr-2 text-green-600"></i> Define Customer Stack');
         
         // Remove Preset Dropdown
@@ -1199,7 +1207,7 @@ function populateRegionFilter(retryCount = 0) {
     ["NAMER", "EUR", "APAC"].forEach(region => {
         let label = region;
         if (region === "NAMER") label = "NAMER (North America)"; // <--- UPDATED LABEL
-        if (region === "EUR") label = "EMEA (Europe)";
+        if (region === "EUR") label = "Europe"; // <--- FIXED LABEL
         if (region === "APAC") label = "APAC (Australia/Asia)";
         regionFilter.append("option").attr("value", region).text(label);
     });
