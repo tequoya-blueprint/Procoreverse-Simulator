@@ -1,25 +1,29 @@
 // --- app-controls.js ---
-// VERSION: 1300 (BRAND COMPLIANCE + EUROPE FIX + ROADMAP INTEGRATION)
+// VERSION: 1405 (FULL RESTORATION: BRANDING + DEEP LINKING + ANALYTICS + FULL SOW TEXT)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
     "EMEA": {
-        "label": "Europe", // Corrected Label
+        "label": "Europe",
         "legal_entity": "Procore Technologies, Inc.",
         "jurisdiction": "England",
         "currency": "GBP",
         "symbol": "£",
         "tax_term": "VAT",
         "data_protection": "GDPR Compliant",
-        "exclusions": ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"],
+        "exclusions": [
+            "Procore Pay",
+            "Procore Construction Network",
+            "Premier Bronze Support"
+        ],
         "pricing": {
             "hourly_rate": 190,
             "onsite": 5610,
-            "sop": 26200,
-            "consulting": 35000,
-            "admin": 26200,
+            "sop": 2620,
+            "consulting": 3500,
+            "admin": 2620,
             "integration": 4700,
-            "custom": 7500
+            "custom": 750
         },
         "dictionary": {
             "Bidding": "Tendering",
@@ -41,15 +45,19 @@ const REGIONAL_CONFIG = {
         "symbol": "$",
         "tax_term": "GST",
         "data_protection": "Standard Privacy",
-        "exclusions": ["Procore Pay", "Procore Construction Network", "Premier Bronze Support"],
+        "exclusions": [
+            "Procore Pay",
+            "Procore Construction Network",
+            "Premier Bronze Support"
+        ],
         "pricing": {
             "hourly_rate": 380,
             "onsite": 11350,
-            "sop": 53000,
-            "consulting": 75650,
-            "admin": 15150,
+            "sop": 5300,
+            "consulting": 7565,
+            "admin": 1515,
             "integration": 9500,
-            "custom": 15150
+            "custom": 1515
         },
         "dictionary": {
             "Bidding": "Tendering",
@@ -65,7 +73,7 @@ const REGIONAL_CONFIG = {
         }
     },
     "NAMER": {
-        "label": "NAMER (North America)", 
+        "label": "NAMER (North America)",
         "legal_entity": "Procore Technologies, Inc.",
         "jurisdiction": "Delaware",
         "currency": "USD",
@@ -76,11 +84,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 250,
             "onsite": 7500,
-            "sop": 35000,
-            "consulting": 100000,
-            "admin": 35000,
+            "sop": 3500,
+            "consulting": 10000,
+            "admin": 3500,
             "integration": 6250,
-            "custom": 10000
+            "custom": 1000
         },
         "dictionary": {}
     }
@@ -88,30 +96,55 @@ const REGIONAL_CONFIG = {
 
 // --- TEAM CONFIGURATION RULES (RBAC) ---
 const TEAM_CONFIG = {
-    admin: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: true, calculatorMode: 'edit',
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+    admin: {
+        showTours: true,
+        showAiBuilder: true,
+        showManualBuilder: true,
+        showScoping: true,
+        calculatorMode: 'edit',
+        showFilters: true,
+        showLegend: true,
+        defaultOpen: 'view-options-accordion'
     },
-    enablement: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: false, calculatorMode: 'hidden',
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+    enablement: {
+        showTours: true,
+        showAiBuilder: true,
+        showManualBuilder: true,
+        showScoping: false,
+        calculatorMode: 'hidden',
+        showFilters: true,
+        showLegend: true,
+        defaultOpen: 'view-options-accordion'
     },
-    sales: { 
-        showTours: true, showAiBuilder: false, showManualBuilder: false, 
-        showScoping: true, calculatorMode: 'view', // VIEW ONLY
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+    sales: {
+        showTours: true,
+        showAiBuilder: false,
+        showManualBuilder: false,
+        showScoping: true,
+        calculatorMode: 'view', // VIEW ONLY
+        showFilters: true,
+        showLegend: true,
+        defaultOpen: 'view-options-accordion'
     },
-    product: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: false, calculatorMode: 'hidden',
-        showFilters: true, showLegend: true, defaultOpen: 'view-options-accordion' 
+    product: {
+        showTours: true,
+        showAiBuilder: true,
+        showManualBuilder: true,
+        showScoping: false,
+        calculatorMode: 'hidden',
+        showFilters: true,
+        showLegend: true,
+        defaultOpen: 'view-options-accordion'
     },
-    services: { 
-        showTours: true, showAiBuilder: true, showManualBuilder: true, 
-        showScoping: true, calculatorMode: 'edit', // FULL EDIT
-        showFilters: true, showLegend: true, defaultOpen: 'scoping-ui-container' 
+    services: {
+        showTours: true,
+        showAiBuilder: true,
+        showManualBuilder: true,
+        showScoping: true,
+        calculatorMode: 'edit', // FULL EDIT
+        showFilters: true,
+        showLegend: true,
+        defaultOpen: 'scoping-ui-container'
     }
 };
 
@@ -125,13 +158,13 @@ const audienceKeyToDataValuesMap = {
     "GC": ["Contractor", "General Contractor", "GC"],
     "SC": ["SC", "Specialty Contractor"],
     "O": ["Owners", "Owner", "Owner Developer *Coming Soon", "O"],
-    "RM": ["Resource Management"] 
+    "RM": ["Resource Management"]
 };
 
 const audienceDataToKeyMap = {
     "Contractor": "GC", "General Contractor": "GC", "GC": "GC",
     "SC": "SC", "Specialty Contractor": "SC",
-    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O", "O": "O", 
+    "Owners": "O", "Owner": "O", "Owner Developer *Coming Soon": "O", "O": "O",
     "Resource Management": "RM"
 };
 
@@ -144,18 +177,18 @@ const audienceKeyToLabelMap = {
 
 // --- STACK PRESETS (RAPID SCOPING) ---
 const STACK_PRESETS = {
-    "legacy": { 
-        label: "Legacy Procore (PM Only)", 
+    "legacy": {
+        label: "Legacy Procore (PM Only)",
         // Note: "Meetings" is the correct Node ID
-        tools: ["Drawings", "RFIs", "Submittals", "Directory", "Photos", "Daily Log", "Meetings"] 
+        tools: ["Drawings", "RFIs", "Submittals", "Directory", "Photos", "Daily Log", "Meetings"]
     },
-    "competitor_a": { 
-        label: "Competitor Replacement (Field)", 
-        tools: ["Drawings", "Photos", "Punch List", "Inspections", "Observations"] 
+    "competitor_a": {
+        label: "Competitor Replacement (Field)",
+        tools: ["Drawings", "Photos", "Punch List", "Inspections", "Observations"]
     },
-    "manual": { 
-        label: "Manual / Excel Warrior", 
-        tools: ["Emails", "Documents", "Directory"] 
+    "manual": {
+        label: "Manual / Excel Warrior",
+        tools: ["Emails", "Documents", "Directory"]
     },
     "finance": {
         label: "ERP / Finance Focus",
@@ -286,17 +319,15 @@ function logAnalyticsEvent(eventName, eventData) {
 
 // --- PHASE 8: DEEP LINKING (URL STATE) ---
 function updateURL() {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(window.location.search); // Read existing to preserve client/ts
     
-    // 1. Region
+    // 1. Update State Params
     const region = d3.select("#region-filter").property("value");
     if (region && region !== 'all') params.set('region', region);
     
-    // 2. Audience
     const audience = d3.select("#audience-filter").property("value");
     if (audience && audience !== 'all') params.set('audience', audience);
     
-    // 3. Package
     const checkedPackage = d3.select(".package-checkbox:checked");
     if (!checkedPackage.empty()) {
         params.set('package', checkedPackage.property("value"));
@@ -307,7 +338,8 @@ function updateURL() {
         params.set('stack', Array.from(app.state.myStack).join(','));
     }
     
-    // 5. Update without reload
+    // Note: We do NOT update 'client', 'sfdc' or 'ts' here automatically to avoid overwriting them during exploration.
+    
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState({}, '', newUrl);
 }
@@ -352,16 +384,61 @@ function initDeepLinking() {
         app.state.myStack = new Set(tools);
         if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes();
     }
+
+    // 5. Metadata (Client & SFDC)
+    const client = params.get('client');
+    const sfdc = params.get('sfdc');
+    const ts = params.get('ts');
+    
+    if (client) {
+        let msg = `Loaded Snapshot: ${client}`;
+        if (sfdc) msg += ` (Opp #${sfdc})`;
+        if(typeof showToast === 'function') {
+            showToast(msg, 5000);
+        }
+        
+        // Update Page Title for Browser History
+        document.title = `Procoreverse: ${client}`;
+        
+        // Log "View Open" analytics
+        logAnalyticsEvent("Shared_View_Opened", { 
+            client: client, 
+            sfdc_id: sfdc, 
+            timestamp_origin: ts 
+        });
+    }
     
     // Final Calculation
     if (typeof updateGraph === 'function') updateGraph(true);
     calculateScoping();
 }
 
+// --- UPDATED SHARE VIEW FUNCTION (SEQUENTIAL PROMPTS) ---
 function shareView() {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-        if(typeof showToast === 'function') showToast("Link copied to clipboard!", 3000);
+    // 1. Get Current URL State
+    updateURL(); // Ensure params are fresh
+    const urlObj = new URL(window.location.href);
+
+    // 2. Inject Timestamp (Always)
+    urlObj.searchParams.set('ts', new Date().toISOString());
+
+    // 3. Prompt 1: Client Name
+    const clientName = prompt("Enter Customer Name for this Snapshot (Optional):\n(e.g. 'Acme Construction')");
+    
+    if (clientName && clientName.trim() !== "") {
+        urlObj.searchParams.set('client', clientName.trim());
+        
+        // 4. Prompt 2: Salesforce ID (Only if Client Name provided)
+        const sfdcId = prompt("Enter Salesforce Opportunity ID (Optional):\n(e.g. '006Dn000005ABCd')");
+        if (sfdcId && sfdcId.trim() !== "") {
+            urlObj.searchParams.set('sfdc', sfdcId.trim());
+        }
+    }
+
+    // 5. Copy
+    const finalUrl = urlObj.toString();
+    navigator.clipboard.writeText(finalUrl).then(() => {
+        if(typeof showToast === 'function') showToast("Snapshot URL copied to clipboard!", 3000);
     }).catch(err => {
         console.error('Could not copy text: ', err);
     });
@@ -486,18 +563,18 @@ function injectControlsFooter() {
         .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
         .on("click", resetView);
 
-    // 2. Share View Button (New Phase 8)
+    // 2. Share View Button (Brand Compliant)
     footer.append("button")
         .attr("id", "share-view-btn")
-        .attr("class", "w-full btn-secondary py-3 px-4 rounded-lg text-sm shadow-md") 
-        .style("background-color", "#2563EB") // Keep blue for "Share" context, or switch to orange if preferred
+        .attr("class", "w-full btn-brand py-3 px-4 rounded-lg text-sm shadow-md") 
+        .style("background-color", "#2563EB") // Keeping Blue for distinct action
         .html('<i class="fas fa-share-alt mr-2"></i> Share View')
         .on("click", shareView);
 
     // 3. Presentation Mode Toggle (Full Width)
     footer.append("button")
         .attr("id", "demo-toggle-btn")
-        .attr("class", "w-full btn-brand py-2 px-4 rounded-lg text-xs flex items-center justify-center")
+        .attr("class", "w-full btn-secondary py-2 px-4 rounded-lg text-xs flex items-center justify-center")
         .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
         .on("click", toggleDemoMode);
 
@@ -537,8 +614,8 @@ function toggleDemoMode() {
         const currentTeam = d3.select("#team-selector").property("value");
         applyTeamView(currentTeam);
 
-        // Visuals
-        btn.classed("btn-brand", true).classed("btn-secondary", false);
+        // Visuals - Restore to Secondary (OFF)
+        btn.classed("btn-brand", false).classed("btn-secondary", true);
         btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF');
         
         if(typeof showToast === 'function') showToast("Demo Mode Deactivated.");
@@ -555,8 +632,8 @@ function toggleDemoMode() {
         applyTeamView('admin'); 
         d3.select("#team-selector").property("disabled", true).style("opacity", 0.5);
         
-        // Visuals
-        btn.classed("btn-brand", false).classed("btn-secondary", true);
+        // Visuals - Set to Brand (ON)
+        btn.classed("btn-brand", true).classed("btn-secondary", false);
         btn.html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: ON');
         
         if(typeof showToast === 'function') showToast("Demo Mode Active.");
