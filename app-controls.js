@@ -15,9 +15,9 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 190,
             "onsite": 5610,
-            "sop": 26200,
-            "consulting": 35000,
-            "admin": 26200,
+            "sop": 2620,
+            "consulting": 3500,
+            "admin": 2620,
             "integration": 4700,
             "custom": 7500
         },
@@ -45,11 +45,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 380,
             "onsite": 11350,
-            "sop": 53000,
-            "consulting": 75650,
-            "admin": 15150,
+            "sop": 5300,
+            "consulting": 7565,
+            "admin": 1515,
             "integration": 9500,
-            "custom": 15150
+            "custom": 1515
         },
         "dictionary": {
             "Bidding": "Tendering",
@@ -76,11 +76,11 @@ const REGIONAL_CONFIG = {
         "pricing": {
             "hourly_rate": 250,
             "onsite": 7500,
-            "sop": 35000,
-            "consulting": 100000,
-            "admin": 35000,
+            "sop": 3500,
+            "consulting": 10000,
+            "admin": 3500,
             "integration": 6250,
-            "custom": 10000
+            "custom": 1000
         },
         "dictionary": {}
     }
