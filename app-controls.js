@@ -1,7 +1,7 @@
 // --- app-controls.js ---
-// VERSION: 1600 (GOLDEN MASTER: FULLY UN-MINIFIED)
+// VERSION: 1650 (GOLDEN MASTER: NO TRUNCATION - FULL RESTORATION)
 
-console.log("App Controls 1600: Loaded with Full Integrity.");
+console.log("App Controls 1650: Loaded with Full Integrity & No Truncation.");
 
 // =============================================================================
 // ZONE 1: CONFIGURATION & DATA (SOURCE OF TRUTH)
@@ -79,7 +79,7 @@ const REGIONAL_CONFIG = {
         }
     },
     "NAMER": {
-        "label": "NAMER (North America)", 
+        "label": "North America", 
         "legal_entity": "Procore Technologies, Inc.",
         "jurisdiction": "Delaware",
         "currency": "USD",
@@ -180,7 +180,6 @@ const audienceKeyToLabelMap = {
 const STACK_PRESETS = {
     "legacy": { 
         label: "Legacy Procore (PM Only)", 
-        // Note: "Meetings" is the correct Node ID for the graph
         tools: ["Drawings", "RFIs", "Submittals", "Directory", "Photos", "Daily Log", "Meetings"] 
     },
     "competitor_a": { 
@@ -192,7 +191,7 @@ const STACK_PRESETS = {
         tools: ["Emails", "Documents", "Directory"] 
     },
     "finance": {
-        label: "ERP / Finance Focus",
+        label: "ERP / Finance Focus", 
         tools: ["Budget", "Commitments", "Direct Costs", "Invoicing", "ERP Connectors"]
     }
 };
@@ -210,7 +209,7 @@ const SOW_QUESTIONS = [
     { id: "q-ent", label: "Enterprise Scale", type: "risk", factor: 0.2, target: "change" }
 ];
 
-// --- SOW TEMPLATE LIBRARY (FULL TEXT RESTORED) ---
+// --- SOW TEMPLATE LIBRARY ---
 const SOW_LIBRARY = {
     "MOD_SOP": {
         title: "STANDARD OPERATING PROCEDURE (SOP) SERVICES",
@@ -602,7 +601,7 @@ function injectControlsFooter() {
         .attr("href", "#")
         .attr("id", "version-link")
         .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
-        .text("v1600 (Verified Full)")
+        .text("v1650 (Full Integrity)")
         .on("click", (e) => {
             e.preventDefault();
             const modal = document.getElementById('credits-modal-overlay');
@@ -920,6 +919,11 @@ function calculateScoping() {
 }
 
 function getGapAnalysis() {
+    // CRITICAL FIX: Ensure getActiveFilters exists before calling
+    if (typeof getActiveFilters !== 'function') {
+        console.error("getActiveFilters not found. Filters broken.");
+        return { owned: new Set(), gap: new Set(), matched: new Set(), outlier: new Set(), target: new Set() };
+    }
     const filters = getActiveFilters(); 
     const targetPackageTools = filters.packageTools || new Set();
     
@@ -947,6 +951,49 @@ function getGapAnalysis() {
     }
     
     return { owned, gap, matched, outlier, target: targetPackageTools };
+}
+
+// --- FILTERS & STATE HELPER FUNCTIONS (RESTORED) ---
+function getActiveFilters() {
+    const filters = {
+        region: d3.select("#region-filter").property("value"),
+        audience: d3.select("#audience-filter").property("value"),
+        packageTools: new Set(),
+        excludedTools: new Set(),
+        procoreLedTools: new Set(),
+        showProcoreLed: d3.select("#toggle-procore-led").property("checked"),
+        persona: d3.select("#persona-filter").property("value"),
+        categories: new Set(),
+        connectionTypes: new Set()
+    };
+
+    if (typeof REGIONAL_CONFIG !== 'undefined') {
+        const regionKey = (filters.region === 'EUR') ? 'EMEA' : (filters.region === 'all' ? 'NAMER' : filters.region);
+        const config = REGIONAL_CONFIG[regionKey];
+        if (config && config.exclusions) {
+            config.exclusions.forEach(ex => filters.excludedTools.add(ex));
+        }
+    }
+
+    if (filters.region !== 'all' && filters.audience !== 'all') {
+        const checked = d3.selectAll(".package-checkbox:checked");
+        checked.each(function() {
+            const pkgName = this.value;
+            const audienceDataKeys = audienceKeyToDataValuesMap[filters.audience] || [];
+            const pkg = packagingData.find(p => (p.region === filters.region || (filters.region === 'NAMER' && p.region === 'NAM')) && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
+            if (pkg) {
+                pkg.tools.forEach(t => filters.packageTools.add(t));
+                if (pkg.procore_led_tools) {
+                    pkg.procore_led_tools.forEach(t => filters.procoreLedTools.add(t));
+                }
+            }
+        });
+    }
+
+    d3.selectAll("#category-filters input:checked").each(function() { filters.categories.add(this.value); });
+    d3.selectAll(".legend-checkbox:checked").each(function() { filters.connectionTypes.add(this.value); });
+
+    return filters;
 }
 
 // --- STACK BUILDER & PRESETS ---
@@ -1072,7 +1119,7 @@ function toggleCustomScopeItem(nodeId) {
     calculateScoping();
 }
 
-// ... [The standard Filter handlers (populateRegionFilter, onRegionChange, etc.) are kept as in previous versions] ...
+// --- FILTER & HELPER LOGIC RESTORED BELOW ---
 
 function populateRegionFilter(retryCount = 0) {
     // FIX: Retry mechanism if data isn't loaded yet
@@ -1217,14 +1264,54 @@ function onPackageChange() {
         const packageInfo = packagingData.find(pkg =>
             pkg.region === region && audienceDataKeys.includes(pkg.audience) && pkg.package_name === pkgName
         );
-        if (packageInfo) populateAddOnsAndServices(packageInfo); 
+        if (packageInfo) populateAddOnsAndServices(packageInfo); // Legacy hook if needed, but updatePackageAddOns is preferred
+        updatePackageAddOns(); // Standard method
     }
     refreshAccordionHeight();
     if (typeof updateGraph === 'function') updateGraph(true);
     calculateScoping();
 }
 
-// ... [Helper functions: updatePackageAddOns, getActiveFilters, clearPackageDetails, refreshAccordionHeight, populatePersonaFilter, populateCategoryFilters, resetView, handleSearchInput, selectNodeFromSearch, updateActivePackageState - ALL KEPT STANDARD] ...
+function updatePackageAddOns() {
+    const region = d3.select("#region-filter").property("value");
+    const audience = d3.select("#audience-filter").property("value");
+    
+    const addOnContainer = d3.select("#add-ons-container");
+    const servicesContainer = d3.select("#package-services-container");
+    const addOnList = d3.select("#add-ons-checkboxes").html("");
+    const servicesList = d3.select("#package-services-list").html("");
+    
+    let allAddOns = new Set();
+    let allServices = new Set();
+    
+    d3.selectAll(".package-checkbox:checked").each(function() {
+        const pkgName = this.value;
+        const audienceDataKeys = audienceKeyToDataValuesMap[audience] || [];
+        const pkg = packagingData.find(p => (p.region === region || (region === 'NAMER' && p.region === 'NAM')) && audienceDataKeys.includes(p.audience) && p.package_name === pkgName);
+        if (pkg) {
+            if (pkg['available_add-ons']) pkg['available_add-ons'].forEach(a => allAddOns.add(a));
+            if (pkg['available_services']) pkg['available_services'].forEach(s => allServices.add(s));
+        }
+    });
+    
+    if (allAddOns.size > 0) {
+        addOnContainer.classed("hidden", false);
+        allAddOns.forEach(addOn => {
+            addOnList.append("div").attr("class", "flex items-center text-gray-600").html(`<i class="fas fa-plus-circle mr-2 text-indigo-500"></i> ${addOn}`);
+        });
+    } else {
+        addOnContainer.classed("hidden", true);
+    }
+    
+    if (allServices.size > 0) {
+        servicesContainer.classed("hidden", false);
+        allServices.forEach(srv => {
+            servicesList.append("div").attr("class", "flex items-center text-gray-600").html(`<i class="fas fa-user-tie mr-2 text-indigo-500"></i> ${srv}`);
+        });
+    } else {
+        servicesContainer.classed("hidden", true);
+    }
+}
 
 function clearPackageDetails() {
     d3.select("#add-ons-checkboxes").html("");
@@ -1297,7 +1384,6 @@ function resetView() {
     
     d3.selectAll("#category-filters input").property("checked", true);
     d3.selectAll(".legend-checkbox").property("checked", true);
-    allCategoriesChecked = true;
     
     d3.selectAll(".sow-question").property("checked", false);
     
@@ -1353,9 +1439,9 @@ function selectNodeFromSearch(d) {
             if (nodeData) {
                 app.interactionState = 'selected';
                 app.selectedNode = nodeData;
-                applyHighlight(nodeData);
+                if(typeof applyHighlight === 'function') applyHighlight(nodeData);
                 if (typeof showInfoPanel === 'function') showInfoPanel(nodeData); 
-                centerViewOnNode(nodeData);
+                if(typeof centerViewOnNode === 'function') centerViewOnNode(nodeData);
                 
                 // ANALYTICS: Search & Select
                 logAnalyticsEvent("Tool_Searched_And_Selected", { tool_id: d.id });
@@ -1394,10 +1480,10 @@ function toggleAllConnections() {
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
-let allCategoriesChecked = true;
 function toggleAllCategories() {
-    allCategoriesChecked = !allCategoriesChecked;
-    d3.selectAll("#category-filters input").property("checked", allCategoriesChecked);
+    const inputs = d3.selectAll("#category-filters input");
+    const allChecked = inputs.nodes().every(node => node.checked);
+    inputs.property("checked", !allChecked);
     if (typeof updateGraph === 'function') updateGraph(true);
 }
 
