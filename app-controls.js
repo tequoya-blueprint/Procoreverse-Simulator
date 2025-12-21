@@ -1,5 +1,5 @@
 // --- app-controls.js ---
-// VERSION: 1110 (DEMO MODE: KEEP BUILDER VISIBLE)
+// VERSION: 1200 (PHASE 8: DEEP LINKING & STATE SHARING)
 
 // --- REGIONAL CONFIGURATION (SOURCE OF TRUTH) ---
 const REGIONAL_CONFIG = {
@@ -262,13 +262,8 @@ const SOW_LIBRARY = {
     }
 };
 
-// --- ANALYTICS DISPATCHER (LIGHTWEIGHT) ---
-/**
- * Logs key user interactions to the console (and potentially external data layer).
- * Categories: Internal (Sales/Enablement) vs. External (Customer).
- */
+// --- ANALYTICS DISPATCHER ---
 function logAnalyticsEvent(eventName, eventData) {
-    // 1. Enrich with Context
     const payload = {
         event: eventName,
         timestamp: new Date().toISOString(),
@@ -276,12 +271,91 @@ function logAnalyticsEvent(eventName, eventData) {
         role: d3.select("#team-selector").property("value"),
         ...eventData
     };
-
-    // 2. Internal Console Log (for Dev/Demo validation)
     console.log(`[ANALYTICS] ${eventName}:`, payload);
-
-    // 3. Placeholder for External Dispatch (e.g., Pendo, Segment, Google Analytics)
     // if (window.analytics) window.analytics.track(eventName, payload);
+}
+
+// --- PHASE 8: DEEP LINKING (URL STATE) ---
+function updateURL() {
+    const params = new URLSearchParams();
+    
+    // 1. Region
+    const region = d3.select("#region-filter").property("value");
+    if (region && region !== 'all') params.set('region', region);
+    
+    // 2. Audience
+    const audience = d3.select("#audience-filter").property("value");
+    if (audience && audience !== 'all') params.set('audience', audience);
+    
+    // 3. Package
+    const checkedPackage = d3.select(".package-checkbox:checked");
+    if (!checkedPackage.empty()) {
+        params.set('package', checkedPackage.property("value"));
+    }
+    
+    // 4. Stack
+    if (app.state.myStack && app.state.myStack.size > 0) {
+        params.set('stack', Array.from(app.state.myStack).join(','));
+    }
+    
+    // 5. Update without reload
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+}
+
+function initDeepLinking() {
+    const params = new URLSearchParams(window.location.search);
+    
+    // 1. Region
+    const region = params.get('region');
+    if (region && region !== 'all') {
+        d3.select("#region-filter").property("value", region);
+        // Force Trigger change, but prevent it from wiping stack immediately
+        // Note: onRegionChange normally clears stack. We handle that below.
+        onRegionChange.call(d3.select("#region-filter").node());
+    }
+    
+    // 2. Audience (Wait for region to populate downstream)
+    const audience = params.get('audience');
+    if (audience && audience !== 'all') {
+        d3.select("#audience-filter").property("value", audience);
+        onAudienceChange.call(d3.select("#audience-filter").node());
+    }
+    
+    // 3. Package
+    const pkgName = params.get('package');
+    if (pkgName) {
+        // Manually find and check the box to trigger logic
+        const checkboxes = d3.selectAll(".package-checkbox");
+        checkboxes.each(function() {
+            if (this.value === pkgName) {
+                d3.select(this).property("checked", true);
+            }
+        });
+        updatePackageAddOns();
+        updateActivePackageState();
+    }
+    
+    // 4. Stack (Restore last)
+    const stackStr = params.get('stack');
+    if (stackStr) {
+        const tools = stackStr.split(',');
+        app.state.myStack = new Set(tools);
+        if (typeof highlightOwnedNodes === 'function') highlightOwnedNodes();
+    }
+    
+    // Final Calculation
+    if (typeof updateGraph === 'function') updateGraph(true);
+    calculateScoping();
+}
+
+function shareView() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        if(typeof showToast === 'function') showToast("Link copied to clipboard!", 3000);
+    }).catch(err => {
+        console.error('Could not copy text: ', err);
+    });
 }
 
 // --- INITIALIZATION ---
@@ -304,9 +378,9 @@ function initializeControls() {
     injectControlsFooter(); 
    
     // Filter Listeners
-    d3.select("#region-filter").on("change", onRegionChange);
-    d3.select("#audience-filter").on("change", onAudienceChange);
-    d3.select("#package-filter").on("change", onPackageChange); 
+    d3.select("#region-filter").on("change", function() { onRegionChange.call(this); updateURL(); });
+    d3.select("#audience-filter").on("change", function() { onAudienceChange.call(this); updateURL(); });
+    d3.select("#package-filter").on("change", function() { onPackageChange.call(this); updateURL(); });
     d3.select("#persona-filter").on("change", () => { if (typeof updateGraph === 'function') updateGraph(true) });
     
     // Procore-Led Toggle
@@ -374,6 +448,10 @@ function initializeControls() {
                     .on("click", toggleStackBuilderMode);
              }
         }
+        
+        // --- TRIGGER DEEP LINKING INIT ---
+        initDeepLinking();
+        
     }, 500);
 }
 
@@ -385,6 +463,7 @@ function injectControlsFooter() {
     controls.select("#reset-view").remove();
     controls.select("#demo-toggle-btn").remove();
     controls.select("#version-link").remove();
+    controls.select("#share-view-btn").remove();
     controls.select(".pt-5.mt-5.border-t").remove();
 
     // Create container
@@ -398,21 +477,28 @@ function injectControlsFooter() {
         .html('<i class="fas fa-sync-alt mr-2"></i> Reset View')
         .on("click", resetView);
 
-    // 2. Presentation Mode Toggle (Full Width)
+    // 2. Share View Button (New Phase 8)
+    footer.append("button")
+        .attr("id", "share-view-btn")
+        .attr("class", "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg text-sm transition shadow-md")
+        .html('<i class="fas fa-share-alt mr-2"></i> Share View')
+        .on("click", shareView);
+
+    // 3. Presentation Mode Toggle (Full Width)
     footer.append("button")
         .attr("id", "demo-toggle-btn")
         .attr("class", "w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center")
         .html('<i class="fas fa-desktop mr-2"></i> Presentation Mode: OFF')
         .on("click", toggleDemoMode);
 
-    // 3. Version Link (Centered)
+    // 4. Version Link (Centered)
     footer.append("div")
         .attr("class", "text-center")
         .append("a")
         .attr("href", "#")
         .attr("id", "version-link")
         .attr("class", "text-[10px] text-gray-400 hover:text-gray-600 font-mono no-underline")
-        .text("v2.4 Analytics")
+        .text("v1200 (Deep Linking)")
         .on("click", (e) => {
             e.preventDefault();
             const modal = document.getElementById('credits-modal-overlay');
@@ -567,6 +653,7 @@ function applyStackPreset(key) {
     logAnalyticsEvent("Stack_Preset_Applied", { preset_key: key, preset_label: STACK_PRESETS[key].label });
     
     if(typeof showToast === 'function') showToast(`Applied ${STACK_PRESETS[key].label}`);
+    updateURL();
 }
 
 function toggleStackItem(d) {
@@ -578,6 +665,7 @@ function toggleStackItem(d) {
         app.state.myStack.add(d.id);
     }
     highlightOwnedNodes();
+    updateURL();
 }
 
 function highlightOwnedNodes() {
