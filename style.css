@@ -1,5 +1,5 @@
 /* --- style.css --- */
-/* VERSION: 200 (BRAND COMPLIANCE + EXPANDED FORMAT) */
+/* VERSION: 205 (FULL RESTORATION + BRAND COMPLIANCE) */
 
 :root {
     /* Core Procore Colors */
@@ -104,11 +104,11 @@ body {
     font-size: 13px;
 }
 
-/* LINK STYLING */
+/* UPDATED LINK STYLING: Darker & More Opaque */
 .link {
     fill: none;
-    stroke: #666666;
-    stroke-opacity: 0.8;
+    stroke: #666666; /* Darker Grey */
+    stroke-opacity: 0.8; /* Higher Opacity */
     transition: stroke-opacity 0.4s ease, stroke 0.4s ease, stroke-width 0.4s ease;
     will-change: stroke-opacity, stroke, stroke-width;
 }
@@ -146,13 +146,25 @@ body {
     flex-direction: column;
 }
 
-#controls { opacity: 1; }
-#controls.collapsed { transform: translateX(calc(-100% - 1.5rem)); opacity: 0; }
+#controls {
+    opacity: 1;
+}
+#controls.collapsed {
+    transform: translateX(calc(-100% - 1.5rem));
+    opacity: 0;
+}
     
-#info-panel { transform: translateX(calc(100% + 1.5rem)); opacity: 0; }
-#info-panel.visible { transform: translateX(0); opacity: 1; box-shadow: var(--shadow-medium); }
+#info-panel {
+    transform: translateX(calc(100% + 1.5rem));
+    opacity: 0;
+}
+#info-panel.visible {
+    transform: translateX(0);
+    opacity: 1;
+    box-shadow: var(--shadow-medium);
+}
     
-/* BRAND COMPLIANT BUTTONS */
+/* BUTTONS - BRAND COMPLIANT */
 .btn-primary, .btn-brand {
     background-color: var(--procore-orange) !important;
     color: white !important;
@@ -178,7 +190,6 @@ body {
     box-shadow: none;
 }
 
-/* SECONDARY BUTTONS (Black/Dark) */
 .btn-secondary {
     background-color: var(--procore-black) !important;
     color: white !important;
@@ -191,6 +202,26 @@ body {
 .btn-secondary:hover {
     background-color: var(--procore-black-hover) !important;
     transform: translateY(-1px);
+}
+
+/* Fallback for legacy indigo buttons */
+.btn-indigo {
+    background-color: var(--procore-black) !important; 
+    color: white;
+    font-weight: 500; 
+    padding: 0.75rem 1rem; 
+    border-radius: 0.5rem; 
+    font-size: 0.875rem; 
+    transition: all 0.15s ease-in-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+}
+.btn-indigo:hover {
+    background-color: var(--procore-black-hover) !important; 
 }
 
 .input-style {
@@ -218,6 +249,7 @@ body {
     position: relative;
     z-index: 1; 
 }
+
 .accordion-item.active {
     z-index: 100; 
     box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
@@ -225,6 +257,7 @@ body {
     margin: 8px 0;
     border: 1px solid #f3f4f6;
 }
+
 .accordion-header {
     padding: 1rem 0.5rem;
     cursor: pointer;
@@ -236,7 +269,10 @@ body {
     transition: color 0.2s;
     background-color: white; 
 }
-.accordion-header:hover { color: var(--procore-orange); }
+.accordion-header:hover {
+    color: var(--procore-orange);
+}
+
 .accordion-content {
     max-height: 0;
     overflow: hidden; 
@@ -244,15 +280,24 @@ body {
     transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out, opacity 0.3s ease;
     opacity: 0;
 }
-.accordion-content.overflow-visible { overflow: visible; }
+
+.accordion-content.overflow-visible {
+    overflow: visible; 
+}
+
 .accordion-item.active .accordion-content {
     opacity: 1;
     padding-bottom: 1rem;
     padding-left: 0.5rem;
     padding-right: 0.5rem;
 }
-.accordion-icon { transition: transform 0.3s ease; }
-.accordion-item.active .accordion-icon { transform: rotate(180deg); }
+
+.accordion-icon {
+    transition: transform 0.3s ease;
+}
+.accordion-item.active .accordion-icon {
+    transform: rotate(180deg);
+}
 
 /* --- Search Results --- */
 #search-results {
@@ -296,7 +341,11 @@ body {
     pointer-events: none;
     transform: translateY(10px);
 }
-.tooltip-info.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.tooltip-info.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
 
 .tooltip-buttons { margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px; }
 .tooltip-buttons button {
@@ -306,6 +355,7 @@ body {
 .tooltip-buttons button:hover { background: #555; }
 .tooltip-buttons button#onboarding-next { background: var(--procore-orange); }
 .tooltip-buttons button#onboarding-next:hover { background: #e64a00; }
+
 
 /* Toast Notification */
 #toast-notification {
@@ -318,7 +368,14 @@ body {
 #toast-notification.show { transform: translate(-50%, 0); }
 
 /* --- HELP BUTTON GLOW FIX --- */
-#help-button { margin-top: 12px; margin-bottom: 24px; position: relative; z-index: 10; }
+#help-button {
+    /* Ensure breathing room for the glow animation */
+    margin-top: 12px;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 10;
+}
+
 .initial-pulse { animation: pulse-ring 2.5s infinite; }
 @keyframes pulse-ring {
     0% { box-shadow: 0 0 0 0 rgba(255, 82, 0, 0.7); }
@@ -337,18 +394,42 @@ body {
 #loading-overlay.hidden { opacity: 0; pointer-events: none; }
 
 .spinner {
-    width: 60px; height: 60px; border-radius: 50%; display: inline-block; position: relative;
-    border: 5px solid; border-color: rgba(0,0,0,0.1) rgba(0,0,0,0.1) transparent transparent;
-    box-sizing: border-box; animation: rotation 1s linear infinite;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+    border: 5px solid;
+    border-color: rgba(0,0,0,0.1) rgba(0,0,0,0.1) transparent transparent;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
 }
 .spinner::after {
-    content: ''; box-sizing: border-box; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto;
-    border: 5px solid; border-color: transparent transparent var(--procore-orange) var(--procore-orange);
-    width: 40px; height: 40px; border-radius: 50%;
-    animation: rotationBack 0.5s linear infinite; transform-origin: center center;
+    content: '';
+    box-sizing: border-box;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    border: 5px solid;
+    border-color: transparent transparent var(--procore-orange) var(--procore-orange);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    animation: rotationBack 0.5s linear infinite;
+    transform-origin: center center;
 }
-@keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-@keyframes rotationBack { 0% { transform: rotate(0deg); } 100% { transform: rotate(-360deg); } }
+
+@keyframes rotation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+@keyframes rotationBack {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(-360deg); }
+}
 
 #loading-overlay p { font-weight: 600; color: var(--procore-earth); margin-top: 25px; }
 
@@ -366,9 +447,13 @@ body {
     cursor: pointer; transition: all 0.2s var(--transition-bounce);
 }
 #zoom-controls button:hover {
-    background-color: #f9f9f9; transform: scale(1.1); box-shadow: var(--shadow-medium);
+    background-color: #f9f9f9;
+    transform: scale(1.1);
+    box-shadow: var(--shadow-medium);
 }
- #zoom-controls button:active { transform: scale(1.05); }
+ #zoom-controls button:active {
+    transform: scale(1.05);
+ }
 
 /* --- Gemini AI Modal --- */
 #ai-modal-overlay {
@@ -386,24 +471,45 @@ body {
     transform: scale(0.9) translateY(20px); transition: transform 0.3s ease, opacity 0.3s ease;
     opacity: 0;
 }
-#ai-modal-overlay.visible #ai-modal { transform: scale(1) translateY(0); opacity: 1; }
+#ai-modal-overlay.visible #ai-modal {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+.blinking-cursor { animation: blink 1s step-end infinite; }
+@keyframes blink { 50% { border-color: transparent; } }
 
 #info-connections li {
     border-bottom: 1px solid #f3f4f6; 
-    padding-bottom: 1rem; cursor: pointer; transition: background-color 0.2s;
-    padding: 0.5rem; margin: -0.5rem; border-radius: 0.5rem; 
+    padding-bottom: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    padding: 0.5rem; 
+    margin: -0.5rem; 
+    border-radius: 0.5rem; 
 }
-#info-connections li:hover { background-color: #f9fafb; }
-#info-connections li:last-child { border-bottom: none; }
+#info-connections li:hover {
+    background-color: #f9fafb; 
+}
+#info-connections li:last-child {
+    border-bottom: none;
+}
 
 #ai-explanation-content {
-    margin-top: 1rem; font-size: 0.875rem; color: #1f2937; 
-    padding: 1.25rem; background-color: #eef2ff; 
-    border-radius: 0.75rem; border: 1px solid #c7d2fe; line-height: 1.6;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: #1f2937; 
+    padding: 1.25rem; 
+    background-color: #eef2ff; 
+    border-radius: 0.75rem; 
+    border: 1px solid #c7d2fe; 
+    line-height: 1.6;
 }
 
 /* Gap Analysis Pulse */
-.pulsing-gap path { animation: gap-pulse 2s infinite ease-in-out; }
+.pulsing-gap path {
+    animation: gap-pulse 2s infinite ease-in-out;
+}
+
 @keyframes gap-pulse {
     0% { stroke-opacity: 1; stroke-width: 3px; filter: drop-shadow(0 0 5px rgba(243, 108, 35, 0.7)); }
     50% { stroke-opacity: 1; stroke-width: 6px; filter: drop-shadow(0 0 15px rgba(243, 108, 35, 1)); }
