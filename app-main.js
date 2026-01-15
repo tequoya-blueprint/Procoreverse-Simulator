@@ -1,18 +1,19 @@
 // --- app-main.js ---
-// VERSION: 1185 (FIX: PROCORE DOMAIN WHITELIST + PASSWORD BYPASS)
+// VERSION: 1190 (FIX: ATLASSIAN CLOUD SUPPORT + PC APPROVAL)
 
 // --- SECURITY PROTOCOL ---
 (function() {
-    // 1. CONFIGURATION
-    // UPDATED: Now allows any page on the Procore Confluence domain by default.
+    // 1. CONFIGURATION: SAFE ZONES
+    // We authorize both the Internal Server and the Cloud Atlassian instance.
     const ALLOWED_CONTEXTS = [
-        "confluence.procore.com", // Safe: Allows any internal Procore Confluence page
-        "localhost",              // Dev
-        "127.0.0.1"               // Dev
+        "procoretech.atlassian.net", // <--- ADDED: Your Cloud Confluence Domain
+        "confluence.procore.com",    // Legacy/Server Internal Domain
+        "localhost",                 // Dev
+        "127.0.0.1"                  // Dev
     ];
     
     // 2. DEVELOPER PASSWORD (The "Master Key")
-    // Enter this if you ever get locked out (e.g. opening file locally)
+    // Use this to approve your PC permanently.
     const DEV_PASSWORD = "Procore2025!"; 
 
     // 3. CONTEXT CHECK
@@ -26,11 +27,11 @@
         isAuthorized = true;
     }
     // B. Check Referrer (Confluence)
-    // We check if the referrer INCLUDES any of the allowed strings.
     else if (ALLOWED_CONTEXTS.some(allowed => referrer.includes(allowed))) {
         isAuthorized = true;
     }
     // C. Check LocalStorage (Saved Developer Token)
+    // This allows your "Approved PC" to run the file locally without the lock screen.
     else if (localStorage.getItem("procoreverse_dev_token") === DEV_PASSWORD) {
         console.log("Security: Developer Token Verified. Access Granted.");
         isAuthorized = true;
@@ -43,13 +44,13 @@
                 <h1 style="font-size:2rem;margin-bottom:1rem;text-transform:uppercase;letter-spacing:2px;">⚠️ Environment Locked</h1>
                 <p style="color:white;max-width:500px;line-height:1.5;">
                     The Simulator is detecting an unauthorized location.<br>
-                    <span style="color:#666;font-size:0.8rem;">(Detected Context: ${referrer ? referrer : 'Direct/Unknown'})</span>
+                    <span style="color:#666;font-size:0.8rem;">(Detected Context: ${referrer ? referrer : 'Direct File Access'})</span>
                 </p>
                 
                 <div style="margin-top:30px; display:flex; flex-direction:column; align-items:center;">
                     <p style="color:#fff;font-size:0.8rem;margin-bottom:10px;">Developer Override</p>
-                    <input type="password" id="dev-pass" placeholder="Enter Passcode" style="padding:10px;border-radius:4px;border:none;text-align:center;width:200px;margin-bottom:10px;">
-                    <button onclick="attemptUnlock()" style="background:#FF5200;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;font-weight:bold;">UNLOCK</button>
+                    <input type="password" id="dev-pass" placeholder="Enter Passcode" style="padding:10px;border-radius:4px;border:none;text-align:center;width:200px;margin-bottom:10px;color:black;">
+                    <button onclick="attemptUnlock()" style="background:#FF5200;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;font-weight:bold;">UNLOCK & APPROVE PC</button>
                     <p id="error-msg" style="color:red;font-size:0.8rem;margin-top:10px;opacity:0;">Invalid Passcode</p>
                 </div>
             </div>
@@ -58,6 +59,7 @@
         window.attemptUnlock = function() {
             const input = document.getElementById("dev-pass").value;
             if (input === DEV_PASSWORD) {
+                // SAVE THE TOKEN SO YOU DON'T HAVE TO TYPE IT AGAIN
                 localStorage.setItem("procoreverse_dev_token", DEV_PASSWORD);
                 window.location.reload(); 
             } else {
@@ -71,7 +73,7 @@
     }
 })();
 
-console.log("App Main 1185: Security Passed. Initializing Core...");
+console.log("App Main 1190: Security Passed. Initializing Core...");
 
 const app = {
     simulation: null,
