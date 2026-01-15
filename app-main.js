@@ -6,7 +6,7 @@
     // 1. CONFIGURATION: Enter your specific Confluence Page URLs here.
     // The simulator will ONLY run if it detects one of these URLs as the parent.
     const ALLOWED_PAGES = [
-        "https://procoretech.atlassian.net/wiki/spaces/DTSEEO/pages/4204527617/WIP+Procoreverse+Simulator"
+        "https://procoretech.atlassian.net/wiki/spaces/DTSEEO/pages/4204527617/WIP+Procoreverse+Simulator",
         "http://localhost",    // Keep for testing
         "http://127.0.0.1"     // Keep for testing
     ];
