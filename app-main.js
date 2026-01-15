@@ -6,7 +6,7 @@
     // 1. CONFIGURATION: SAFE ZONES
     // We authorize both the Internal Server and the Cloud Atlassian instance.
     const ALLOWED_CONTEXTS = [
-        "procoretech.atlassian.net", // <--- ADDED: Your Cloud Confluence Domain
+        "https://procoretech.atlassian.net/", // <--- ADDED: Your Cloud Confluence Domain
         "confluence.procore.com",    // Legacy/Server Internal Domain
         "localhost",                 // Dev
         "127.0.0.1"                  // Dev
