@@ -1,45 +1,77 @@
 // --- app-main.js ---
-// VERSION: 1175 (STRICT PAGE LOCK + DRAG LOGIC RESTORED)
+// VERSION: 1185 (FIX: PROCORE DOMAIN WHITELIST + PASSWORD BYPASS)
 
-// --- SECURITY PROTOCOL: SPECIFIC PAGE LOCK ---
+// --- SECURITY PROTOCOL ---
 (function() {
-    // 1. CONFIGURATION: ONE SPECIFIC PAGE
-    // Paste the EXACT URL of your Confluence page below.
-    const ALLOWED_PAGES = [
-        "https://procoretech.atlassian.net/wiki/spaces/DTSEEO/pages/4204527617/WIP+Procoreverse+Simulator",
-        "http://localhost",
-        "http://127.0.0.1"
+    // 1. CONFIGURATION
+    // UPDATED: Now allows any page on the Procore Confluence domain by default.
+    const ALLOWED_CONTEXTS = [
+        "confluence.procore.com", // Safe: Allows any internal Procore Confluence page
+        "localhost",              // Dev
+        "127.0.0.1"               // Dev
     ];
+    
+    // 2. DEVELOPER PASSWORD (The "Master Key")
+    // Enter this if you ever get locked out (e.g. opening file locally)
+    const DEV_PASSWORD = "Procore2025!"; 
 
-    // 2. CONTEXT CHECK
-    // In an iframe, 'document.referrer' is the URL of the parent page (Confluence).
+    // 3. CONTEXT CHECK
     const referrer = document.referrer || ""; 
     const currentHost = window.location.hostname;
     
-    // 3. BYPASS FOR DEVELOPMENT
+    let isAuthorized = false;
+    
+    // A. Check Host (Localhost)
     if (currentHost.includes("localhost") || currentHost.includes("127.0.0.1")) {
-        console.warn("Security: Running in Development Mode (Localhost Bypass).");
-    } else {
-        // 4. VALIDATION
-        // We check if the referrer MATCHES one of the allowed pages.
-        const isAuthorized = ALLOWED_PAGES.some(allowedUrl => referrer.includes(allowedUrl));
+        isAuthorized = true;
+    }
+    // B. Check Referrer (Confluence)
+    // We check if the referrer INCLUDES any of the allowed strings.
+    else if (ALLOWED_CONTEXTS.some(allowed => referrer.includes(allowed))) {
+        isAuthorized = true;
+    }
+    // C. Check LocalStorage (Saved Developer Token)
+    else if (localStorage.getItem("procoreverse_dev_token") === DEV_PASSWORD) {
+        console.log("Security: Developer Token Verified. Access Granted.");
+        isAuthorized = true;
+    }
 
-        if (!isAuthorized) {
-            // THE KILL SWITCH
-            document.body.innerHTML = `
-                <div style="height:100vh;background:#111;color:#FF5200;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:sans-serif;text-align:center;padding:20px;">
-                    <h1 style="font-size:2rem;margin-bottom:1rem;">⚠️ ACCESS DENIED</h1>
-                    <p style="color:white;max-width:600px;">This simulation is tied to a specific Confluence Page ID.</p>
-                    <p style="color:#888;font-size:0.9rem;margin-top:20px;">If you are the owner, please check the 'ALLOWED_PAGES' configuration.</p>
+    if (!isAuthorized) {
+        // RENDER LOCK SCREEN
+        document.body.innerHTML = `
+            <div style="height:100vh;background:#000;color:#FF5200;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:sans-serif;text-align:center;padding:20px;">
+                <h1 style="font-size:2rem;margin-bottom:1rem;text-transform:uppercase;letter-spacing:2px;">⚠️ Environment Locked</h1>
+                <p style="color:white;max-width:500px;line-height:1.5;">
+                    The Simulator is detecting an unauthorized location.<br>
+                    <span style="color:#666;font-size:0.8rem;">(Detected Context: ${referrer ? referrer : 'Direct/Unknown'})</span>
+                </p>
+                
+                <div style="margin-top:30px; display:flex; flex-direction:column; align-items:center;">
+                    <p style="color:#fff;font-size:0.8rem;margin-bottom:10px;">Developer Override</p>
+                    <input type="password" id="dev-pass" placeholder="Enter Passcode" style="padding:10px;border-radius:4px;border:none;text-align:center;width:200px;margin-bottom:10px;">
+                    <button onclick="attemptUnlock()" style="background:#FF5200;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;font-weight:bold;">UNLOCK</button>
+                    <p id="error-msg" style="color:red;font-size:0.8rem;margin-top:10px;opacity:0;">Invalid Passcode</p>
                 </div>
-            `;
-            // Freezes the javascript execution here.
-            throw new Error("Procoreverse Security: Context Mismatch (" + referrer + ")");
-        }
+            </div>
+        `;
+
+        window.attemptUnlock = function() {
+            const input = document.getElementById("dev-pass").value;
+            if (input === DEV_PASSWORD) {
+                localStorage.setItem("procoreverse_dev_token", DEV_PASSWORD);
+                window.location.reload(); 
+            } else {
+                const msg = document.getElementById("error-msg");
+                msg.style.opacity = 1;
+                setTimeout(() => msg.style.opacity = 0, 2000);
+            }
+        };
+
+        throw new Error("Procoreverse Security: Context Mismatch. Awaiting Override.");
     }
 })();
 
-console.log("App Main 1175: Security Protocols Active. Logic Restored.");
+console.log("App Main 1185: Security Passed. Initializing Core...");
 
 const app = {
     simulation: null,
@@ -116,7 +148,6 @@ function nodeClicked(event, d) {
 
 function nodeDoubleClicked(event, d) {
     event.stopPropagation();
-    // Potential for future zoom-in logic
 }
 
 // --- 2. LOCALIZATION HELPER ---
@@ -138,9 +169,7 @@ function getLocalizedLabel(nodeId) {
     return nodeId;
 }
 
-// --- 3. D3 DRAG LOGIC (RESTORED) ---
-// Restoring this locally to ensure the 'missing lines' issue is resolved 
-// and the file is self-contained.
+// --- 3. D3 DRAG LOGIC ---
 function drag(simulation) {
   function dragstarted(event) {
     if (!event.active) simulation.alphaTarget(0.3).restart();
