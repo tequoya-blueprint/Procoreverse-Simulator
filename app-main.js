@@ -1,46 +1,45 @@
 // --- app-main.js ---
-// VERSION: 1155 (SECURE: PAGE-LEVEL LOCKING ACTIVE)
+// VERSION: 1175 (STRICT PAGE LOCK + DRAG LOGIC RESTORED)
 
 // --- SECURITY PROTOCOL: SPECIFIC PAGE LOCK ---
 (function() {
-    // 1. CONFIGURATION: Enter your specific Confluence Page URLs here.
-    // The simulator will ONLY run if it detects one of these URLs as the parent.
+    // 1. CONFIGURATION: ONE SPECIFIC PAGE
+    // Paste the EXACT URL of your Confluence page below.
     const ALLOWED_PAGES = [
         "https://procoretech.atlassian.net/wiki/spaces/DTSEEO/pages/4204527617/WIP+Procoreverse+Simulator",
-        "http://localhost",    // Keep for testing
-        "http://127.0.0.1"     // Keep for testing
+        "http://localhost",
+        "http://127.0.0.1"
     ];
 
     // 2. CONTEXT CHECK
-    // In an iframe, 'document.referrer' is the URL of the Confluence page hosting us.
+    // In an iframe, 'document.referrer' is the URL of the parent page (Confluence).
     const referrer = document.referrer || ""; 
     const currentHost = window.location.hostname;
     
-    // 3. BYPASS FOR DEVELOPMENT (Localhost)
+    // 3. BYPASS FOR DEVELOPMENT
     if (currentHost.includes("localhost") || currentHost.includes("127.0.0.1")) {
         console.warn("Security: Running in Development Mode (Localhost Bypass).");
-        // We continue executing...
     } else {
         // 4. VALIDATION
-        // We check if the referrer includes one of the allowed page strings.
-        // Using .some() + .includes() allows for partial matches (e.g. matching the Page ID)
+        // We check if the referrer MATCHES one of the allowed pages.
         const isAuthorized = ALLOWED_PAGES.some(allowedUrl => referrer.includes(allowedUrl));
 
         if (!isAuthorized) {
+            // THE KILL SWITCH
             document.body.innerHTML = `
                 <div style="height:100vh;background:#111;color:#FF5200;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:sans-serif;text-align:center;padding:20px;">
-                    <h1 style="font-size:2rem;margin-bottom:1rem;">⚠️ ACCESS RESTRICTED</h1>
-                    <p style="color:white;max-width:600px;">This application is locked to a specific Confluence location.</p>
-                    <p style="color:#888;font-size:0.9rem;margin-top:20px;">Detected Context: ${referrer ? referrer : "Direct/Unknown Access"}</p>
+                    <h1 style="font-size:2rem;margin-bottom:1rem;">⚠️ ACCESS DENIED</h1>
+                    <p style="color:white;max-width:600px;">This simulation is tied to a specific Confluence Page ID.</p>
+                    <p style="color:#888;font-size:0.9rem;margin-top:20px;">If you are the owner, please check the 'ALLOWED_PAGES' configuration.</p>
                 </div>
             `;
-            // Stop execution immediately
-            throw new Error("Procoreverse Security: Unauthorized Parent Context (" + referrer + ")");
+            // Freezes the javascript execution here.
+            throw new Error("Procoreverse Security: Context Mismatch (" + referrer + ")");
         }
     }
 })();
 
-console.log("App Main 1155: Security Active. Procore Led Overlay Fix Active...");
+console.log("App Main 1175: Security Protocols Active. Logic Restored.");
 
 const app = {
     simulation: null,
@@ -117,6 +116,7 @@ function nodeClicked(event, d) {
 
 function nodeDoubleClicked(event, d) {
     event.stopPropagation();
+    // Potential for future zoom-in logic
 }
 
 // --- 2. LOCALIZATION HELPER ---
@@ -138,7 +138,34 @@ function getLocalizedLabel(nodeId) {
     return nodeId;
 }
 
-// --- 3. SETUP & LAYOUT ---
+// --- 3. D3 DRAG LOGIC (RESTORED) ---
+// Restoring this locally to ensure the 'missing lines' issue is resolved 
+// and the file is self-contained.
+function drag(simulation) {
+  function dragstarted(event) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    event.subject.fx = event.subject.x;
+    event.subject.fy = event.subject.y;
+  }
+  
+  function dragged(event) {
+    event.subject.fx = event.x;
+    event.subject.fy = event.y;
+  }
+  
+  function dragended(event) {
+    if (!event.active) simulation.alphaTarget(0);
+    event.subject.fx = null;
+    event.subject.fy = null;
+  }
+  
+  return d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended);
+}
+
+// --- 4. SETUP & LAYOUT ---
 function setupCategories() {
     const colorMap = { 
         "Preconstruction": "#CEC4A1",       
@@ -154,7 +181,7 @@ function setupCategories() {
         "Resource Management": "#566578",   
         "Emails": "#c94b4b",                
         "Project Map": "#F36C23",
-        "External Tech": "#2d3748" // Dark Charcoal for External Tech            
+        "External Tech": "#2d3748" 
     };
 
     app.categories = {}; 
@@ -190,7 +217,7 @@ function setHexFoci() {
         "Project Map": { angle: -60, dist: 0.5 },
         "External Integrations": { angle: 30, dist: 1.3 }, 
         "Emails": { angle: 210, dist: 1.3 },
-        "External Tech": { angle: 180, dist: 1.5 } // Positioned on the left periphery
+        "External Tech": { angle: 180, dist: 1.5 }
     };
     Object.keys(app.categories).forEach(cat => {
         const config = layoutMap[cat] || { angle: 0, dist: 0 };
@@ -300,7 +327,7 @@ function updateGraph(isFilterChange = true) {
     const isBuilderMode = app.state && app.state.isBuildingStack;
     const isPackageActive = filters.packageTools && filters.packageTools.size > 0;
 
-    // 3. Define "Active Nodes" (The ones meant to be fully visible)
+    // 3. Define "Active Nodes"
     let activeNodeIds = new Set();
     
     // --- V2.3: FILTER OUT EXCLUDED TOOLS FROM "ALL" LIST ---
@@ -313,11 +340,10 @@ function updateGraph(isFilterChange = true) {
     } else if (isPackageActive) {
         activeNodeIds = filters.packageTools;
     } else {
-        // Default View: Show all valid nodes for the region
         activeNodeIds = new Set(validNodes.map(n => n.id));
     }
 
-    // 4. STABLE FILTERING: Keep nodes in DOM to prevent layout jumps, but control via opacity.
+    // 4. STABLE FILTERING
     const filteredNodes = nodes.filter(d => {
         const inCategory = filters.categories.has(d.group);
         const inPersona = filters.persona === 'all' || (d.personas && d.personas.includes(filters.persona));
@@ -336,12 +362,10 @@ function updateGraph(isFilterChange = true) {
                 .on("click", nodeClicked).on("dblclick", nodeDoubleClicked)
                 .call(drag(app.simulation)); 
 
-            // --- V2.4 UPDATE: EXTERNAL TECH DIAMONDS ---
             nodeGroup.append("path")
                 .attr("d", d => {
                     const size = d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize;
                     if (d.group === "External Tech") {
-                        // Diamond Shape for External Tools (M0,-r Lr,0 L0,r L-r,0 Z)
                         return `M0,-${size}L${size},0L0,${size}L-${size},0Z`; 
                     }
                     return generateHexagonPath(size);
@@ -351,7 +375,6 @@ function updateGraph(isFilterChange = true) {
             
             nodeGroup.append("circle").attr("class", "procore-led-ring").attr("r", app.baseNodeSize + 6).attr("fill", "none").attr("stroke", "#F36C23").attr("stroke-width", 3).attr("stroke-opacity", 0); 
             
-            // LOCALIZATION: Use Helper to render text
             nodeGroup.append("text")
                 .text(d => getLocalizedLabel(d.id))
                 .attr("dy", d => (d.level === 'company' ? app.nodeSizeCompany : app.baseNodeSize) + 18);
@@ -418,9 +441,7 @@ function updateGraph(isFilterChange = true) {
                 .attr("stroke", d => (app.customScope && app.customScope.has(d.id)) ? "#2563EB" : "#F36C23")
                 .attr("stroke-dasharray", d => (app.customScope && app.customScope.has(d.id)) ? "4,2" : "none")
                 .attr("stroke-opacity", d => {
-                    // --- V2.4 FIX: ALLOW PROCORE LED RINGS IN GAP MODE ---
-                    // Original Code: if (isGapMode || !activeNodeIds.has(d.id)) return 0;
-                    if (!activeNodeIds.has(d.id)) return 0; // Check only for visibility
+                    if (!activeNodeIds.has(d.id)) return 0; 
                     return (filters.showProcoreLed && (filters.procoreLedTools.has(d.id) || app.customScope.has(d.id))) ? 0.8 : 0;
                 });
             return update;
@@ -428,7 +449,7 @@ function updateGraph(isFilterChange = true) {
         exit => exit.transition().duration(300).style("opacity", 0).remove()
     );
 
-    // 6. D3 Update - Links with PHANTOM LINE FIX
+    // 6. D3 Update - Links
     app.link = app.link.data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}-${d.type}`).join("path")
         .attr("class", d => `link ${d.type}`).attr("stroke-width", 2)
         .style("pointer-events", "none") 
@@ -469,17 +490,11 @@ function updateGraph(isFilterChange = true) {
     app.link.transition().duration(500)
         .style("opacity", d => {
             if (isBuilderMode) return 0.15;
-            
             const s = d.source.id || d.source;
             const t = d.target.id || d.target;
-            
-            // --- STRICT VISIBILITY GOVERNANCE ---
             const sActive = activeNodeIds.has(s);
             const tActive = activeNodeIds.has(t);
-
-            // 1. Both Visible (Active)
             if (sActive && tActive) {
-                // Slight dim if in "Procore Led" mode and not part of it
                 if (filters.showProcoreLed && !isGapMode) {
                     const sLed = filters.procoreLedTools.has(s) || app.customScope.has(s);
                     const tLed = filters.procoreLedTools.has(t) || app.customScope.has(t);
@@ -487,26 +502,23 @@ function updateGraph(isFilterChange = true) {
                 }
                 return 0.6;
             }
-
-            // 2. PHANTOM LINE FIX: If either node is not active, hide the line completely
             return 0; 
         })
-        .style("stroke-opacity", d => { // New explicit stroke-opacity handler
+        .style("stroke-opacity", d => { 
              if (isBuilderMode) return 0.15;
              const s = d.source.id || d.source;
              const t = d.target.id || d.target;
              const sActive = activeNodeIds.has(s);
              const tActive = activeNodeIds.has(t);
-             
              if (sActive && tActive) {
                  if (filters.showProcoreLed && !isGapMode) {
                     const sLed = filters.procoreLedTools.has(s) || app.customScope.has(s);
                     const tLed = filters.procoreLedTools.has(t) || app.customScope.has(t);
-                    return (sLed && tLed) ? 0.8 : 0.05; // Slightly higher stroke-opacity
+                    return (sLed && tLed) ? 0.8 : 0.05;
                  }
                  return 0.8;
              }
-             return 0; // Hide Ghost Connections
+             return 0; 
         });
 
     app.nodeG.raise(); 
