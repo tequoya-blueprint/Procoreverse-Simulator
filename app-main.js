@@ -1,7 +1,46 @@
 // --- app-main.js ---
-// VERSION: 1150 (FIX: PROCORE LED VISIBILITY IN GAP MODE)
+// VERSION: 1155 (SECURE: PAGE-LEVEL LOCKING ACTIVE)
 
-console.log("App Main 1150: Procore Led Overlay Fix Active...");
+// --- SECURITY PROTOCOL: SPECIFIC PAGE LOCK ---
+(function() {
+    // 1. CONFIGURATION: Enter your specific Confluence Page URLs here.
+    // The simulator will ONLY run if it detects one of these URLs as the parent.
+    const ALLOWED_PAGES = [
+        "https://procoretech.atlassian.net/wiki/spaces/DTSEEO/pages/4204527617/WIP+Procoreverse+Simulator"
+        "http://localhost",    // Keep for testing
+        "http://127.0.0.1"     // Keep for testing
+    ];
+
+    // 2. CONTEXT CHECK
+    // In an iframe, 'document.referrer' is the URL of the Confluence page hosting us.
+    const referrer = document.referrer || ""; 
+    const currentHost = window.location.hostname;
+    
+    // 3. BYPASS FOR DEVELOPMENT (Localhost)
+    if (currentHost.includes("localhost") || currentHost.includes("127.0.0.1")) {
+        console.warn("Security: Running in Development Mode (Localhost Bypass).");
+        // We continue executing...
+    } else {
+        // 4. VALIDATION
+        // We check if the referrer includes one of the allowed page strings.
+        // Using .some() + .includes() allows for partial matches (e.g. matching the Page ID)
+        const isAuthorized = ALLOWED_PAGES.some(allowedUrl => referrer.includes(allowedUrl));
+
+        if (!isAuthorized) {
+            document.body.innerHTML = `
+                <div style="height:100vh;background:#111;color:#FF5200;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:sans-serif;text-align:center;padding:20px;">
+                    <h1 style="font-size:2rem;margin-bottom:1rem;">⚠️ ACCESS RESTRICTED</h1>
+                    <p style="color:white;max-width:600px;">This application is locked to a specific Confluence location.</p>
+                    <p style="color:#888;font-size:0.9rem;margin-top:20px;">Detected Context: ${referrer ? referrer : "Direct/Unknown Access"}</p>
+                </div>
+            `;
+            // Stop execution immediately
+            throw new Error("Procoreverse Security: Unauthorized Parent Context (" + referrer + ")");
+        }
+    }
+})();
+
+console.log("App Main 1155: Security Active. Procore Led Overlay Fix Active...");
 
 const app = {
     simulation: null,
